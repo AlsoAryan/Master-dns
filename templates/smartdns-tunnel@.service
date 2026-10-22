@@ -1,0 +1,22 @@
+[Unit]
+Description=master dns tunnel to %i (BackPack)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# One per tunnel the admin panel set, named for its other end: on an exit or a
+# node, one per relay; on a relay, one per node. Started and stopped by the
+# admin panel or smartdns-sync. A relay's tunnel to the main exit, and the
+# first relay's when the installer made it, is smartdns-tunnel.service
+# instead. Each has its own directory: BackPack keeps its metrics beside its
+# config.
+# The listening end's firewall rule, when this exit is the one listening - a
+# reverse tunnel has none, and is not to log an error for it every start.
+ExecStartPre=-/bin/sh -c '[ ! -f /etc/nftables.d/41-smartdns-tunnel-%i.conf ] || /usr/sbin/nft -f /etc/nftables.d/41-smartdns-tunnel-%i.conf'
+ExecStart=/usr/local/lib/smart-dns/backpack -c /etc/smart-dns/relay-tunnels/%i/tunnel.toml
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

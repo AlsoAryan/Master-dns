@@ -1,0 +1,20 @@
+[Unit]
+Description=master dns node - another exit joined to the panel: relays and resolvers in, health and logs out
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# The rule that keeps nginx from proxying to this machine or to private
+# addresses - on a node there is no API port to close. The + runs it as root.
+ExecStartPre=-+/usr/local/bin/smartdns-api-guard
+ExecStart=/usr/local/bin/smartdns-sync --node
+Restart=always
+RestartSec=10
+# Root: it rewrites nginx's list of relays and its resolvers, and reloads it.
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

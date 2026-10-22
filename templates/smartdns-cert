@@ -1,0 +1,169 @@
+#!/bin/bash
+# smartdns-cert - obtain and renew the panel's TLS certificate.
+#
+# usage: smartdns-cert <domain>        get or renew a certificate
+#        smartdns-cert --renew         renew everything due (the timer's job)
+#        smartdns-cert --names <cert-name> <domain>...
+#                                      one certificate for several names - the
+#                                      DoH name the admin panel set, and the
+#                                      one before it, so both keep working
+#
+# Port 80 is the problem this script exists to work around. Let's Encrypt's
+# HTTP-01 challenge needs it, and on a relay port 80 is forwarded whole to the
+# exit node so that console downloads work: Sony and Microsoft serve game
+# packages over plain HTTP from Akamai edges that answer 443 with a certificate
+# naming no console host at all. Rebuilding nginx to terminate HTTP and answer
+# the challenge itself would put an L7 proxy in the middle of the exact path
+# that took a week to get right.
+#
+# So nginx is not touched. For the twenty seconds a challenge takes, an
+# nftables rule sends port 80 to a local certbot instead, and the rule is
+# removed afterwards - including when certbot fails, which is what the trap is
+# for. A leftover rule would send every console download into a dead port.
+#
+# The cost is honest: console HTTP downloads stall for those twenty seconds, on
+# the day a certificate is issued and again every sixty days. A download that
+# stalls resumes; a certificate that expires takes the panel down until someone
+# notices.
+#
+# If /etc/smart-dns/cloudflare.ini exists, DNS-01 is used instead and port 80
+# is never touched at all. Nothing here asks for that token - it is only used
+# when the operator has deliberately put it there.
+set -uo pipefail
+export PATH="$PATH:/usr/sbin:/sbin"
+
+CF_CONF=/etc/smart-dns/cloudflare.ini
+LIVE=/etc/letsencrypt/live
+ACME_PORT=8402
+NAT_TABLE=smartdns_acme
+
+R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; N=$'\e[0m'
+[ -t 1 ] || { R=; G=; Y=; N=; }
+die() { printf '%serror:%s %s\n' "$R" "$N" "$*" >&2; exit 1; }
+
+[ "$(id -u)" = 0 ] || die "run as root"
+
+# One certbot at a time. The renewal timer can start while this very script
+# is issuing a certificate - the installer restarts that timer on every run,
+# and it fires at once - and a second certbot refuses to run beside the
+# first: "Another instance of Certbot is already running". So each run of
+# this waits for the one before it, then for any other certbot on the
+# machine, before it starts.
+exec 9>/run/smartdns-cert.lock
+flock -w 600 9 || die "another certificate run did not finish in ten minutes"
+for _ in $(seq 1 60); do
+    pgrep -x certbot >/dev/null 2>&1 || break
+    sleep 5
+done
+
+open_port80() {
+    nft add table ip $NAT_TABLE 2>/dev/null
+    nft add chain ip $NAT_TABLE pre \
+        '{ type nat hook prerouting priority dstnat ; policy accept ; }' 2>/dev/null
+    nft add rule ip $NAT_TABLE pre tcp dport 80 redirect to :$ACME_PORT
+}
+
+close_port80() {
+    nft delete table ip $NAT_TABLE 2>/dev/null
+    return 0
+}
+
+# The names a certificate is for, from the certificate itself - so a renewal
+# asks for what was asked for the first time, several names included.
+cert_names() {
+    openssl x509 -noout -ext subjectAltName -in "$1" 2>/dev/null \
+        | tr ',' '\n' | sed -n 's/^ *DNS://p'
+}
+
+issue() {
+    local domain="$1"; shift
+    local names=() d
+    for d in "${@:-$domain}"; do names+=(-d "$d"); done
+    if [ -f "$CF_CONF" ]; then
+        # The operator supplied a DNS token, so prove it that way and leave
+        # port 80 alone entirely.
+        certbot certonly --dns-cloudflare \
+            --dns-cloudflare-credentials "$CF_CONF" \
+            --dns-cloudflare-propagation-seconds 30 \
+            --register-unsafely-without-email --agree-tos \
+            --non-interactive --quiet --cert-name "$domain" "${names[@]}"
+        return $?
+    fi
+
+    # Always put port 80 back, whatever happens next.
+    trap close_port80 EXIT INT TERM
+    open_port80 || die "could not redirect port 80 for the challenge"
+    certbot certonly --standalone --http-01-port "$ACME_PORT" \
+        --register-unsafely-without-email --agree-tos \
+        --non-interactive --quiet --cert-name "$domain" "${names[@]}"
+    local rc=$?
+    close_port80
+    trap - EXIT INT TERM
+    return $rc
+}
+
+case "${1:-}" in
+--renew)
+    # certbot decides what is due, so almost every run does nothing. The
+    # redirect is only opened when something actually needs renewing.
+    if certbot renew --dry-run >/dev/null 2>&1 || true; then :; fi
+    for path in "$LIVE"/*/; do
+        [ -d "$path" ] || continue
+        domain="$(basename "$path")"
+        openssl x509 -checkend $((30 * 86400)) -noout \
+            -in "$path/fullchain.pem" >/dev/null 2>&1 && continue
+        printf 'renewing %s\n' "$domain"
+        # shellcheck disable=SC2046 - one name per word, as certbot wants them
+        issue "$domain" $(cert_names "$path/fullchain.pem") && systemctl reload nginx 2>/dev/null
+    done
+    exit 0
+    ;;
+--names)
+    [ $# -ge 3 ] || die "usage: smartdns-cert --names <cert-name> <domain>..."
+    shift
+    NAME="$1"; shift
+    printf '    getting a certificate for %s\n' "$*"
+    issue "$NAME" "$@" || die "certbot could not get a certificate for $*"
+    printf '%s    certificate installed:%s %s\n' "$G" "$N" "$LIVE/$NAME/fullchain.pem"
+    exit 0
+    ;;
+"")
+    die "usage: smartdns-cert <domain>" ;;
+esac
+
+DOMAIN="$1"
+
+# A machine installed without a domain has this script but not certbot - the
+# installer only pulls certbot in when it is about to issue something. Since
+# the whole point of running this later is that there was no domain at install
+# time, "certbot: not found" is the most likely first thing anybody sees here.
+if ! command -v certbot >/dev/null 2>&1; then
+    printf '    installing certbot\n'
+    export DEBIAN_FRONTEND=noninteractive
+    pkgs=certbot
+    [ -f "$CF_CONF" ] && pkgs="$pkgs python3-certbot-dns-cloudflare"
+    apt-get update -qq >/dev/null 2>&1
+    # shellcheck disable=SC2086
+    apt-get install -y -qq $pkgs >/dev/null 2>&1 \
+        || die "could not install certbot:  apt-get install -y $pkgs"
+fi
+
+# Already have one with plenty of life left? Do nothing. Let's Encrypt limits
+# issuance per domain per week, and re-issuing on every installer run would
+# burn that allowance and then fail at the moment it mattered.
+if [ -d "$LIVE/$DOMAIN" ] && openssl x509 -checkend $((30 * 86400)) -noout \
+        -in "$LIVE/$DOMAIN/fullchain.pem" >/dev/null 2>&1; then
+    printf '    certificate for %s is current\n' "$DOMAIN"
+    exit 0
+fi
+
+if [ ! -f "$CF_CONF" ]; then
+    printf '    %sopening port 80 for about twenty seconds%s - console downloads\n' "$Y" "$N"
+    printf '    through this machine will stall until the challenge finishes\n'
+fi
+printf '    getting a certificate for %s\n' "$DOMAIN"
+issue "$DOMAIN" || die "certbot could not get a certificate for $DOMAIN.
+    The name must point at this machine and port 80 must be reachable from the
+    internet - that is how Let's Encrypt checks you control it."
+
+printf '%s    certificate installed:%s %s\n' "$G" "$N" "$LIVE/$DOMAIN/fullchain.pem"

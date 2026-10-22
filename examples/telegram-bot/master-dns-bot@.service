@@ -1,0 +1,19 @@
+[Unit]
+Description=master-dns Telegram bot of reseller %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/master-dns-bot-%i.env
+ExecStart=/usr/bin/python3 /usr/local/bin/master-dns-bot
+Restart=always
+RestartSec=10
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

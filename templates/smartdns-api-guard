@@ -1,0 +1,112 @@
+#!/bin/bash
+# smartdns-api-guard - let only the relays reach this exit's sync API (8443),
+# and keep nginx from proxying to this machine or to private addresses.
+#
+# usage: smartdns-api-guard           load the rule
+#        smartdns-api-guard --print   show the rule, and load nothing
+#
+# The panel already refuses any address that is not one of its relays, but only
+# after the TLS handshake: a stranger still gets that far, and enough strangers
+# holding connections open can wear the API down. Dropped here, they never get
+# a connection at all.
+#
+# nginx here proxies each connection to wherever the name it carries resolves.
+# Some names resolve to loopback in public DNS - discordapp.io, in the Discord
+# service, is 127.0.0.1 - and then nginx connects to itself, is handed the
+# same name, connects again: one connection became 15000 and the exit was
+# killed for memory (found on the test exit, 2026-09-25). A name resolving to
+# a private address is worse in another way: 169.254.169.254 is the cloud's
+# metadata service, which holds this machine's credentials. So nginx's own
+# connections to this machine, or to a private range, on the ports it proxies
+# are refused. Its real local upstreams - DoH, DoT, the Battle.net helper -
+# are on other ports, and the tunnel reaches nginx rather than the other way.
+#
+# smartdns-panel.service runs this before every start, so the list is always
+# the RELAY_IP the panel itself reads: a relay added there by hand is let in
+# the next time the panel restarts, as it would be by the panel.
+set -u
+
+# nginx's workers: nobody, as this installer's nginx.conf leaves them, or
+# www-data, as Debian's own would.
+NGINX_UIDS="33, 65534"
+PROXIED="80, 443, 1119, 4070"
+PRIVATE="0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16"
+
+# Variables only so a test can point them somewhere else; nothing else sets them.
+ETC="${SMARTDNS_ETC:-/etc/smart-dns}"
+NFT="${SMARTDNS_NFT:-/usr/sbin/nft}"
+
+valid_ip() {
+    local IFS=. p
+    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+    for p in $1; do [ "$p" -le 255 ] || return 1; done
+}
+
+# The API's port: 8443, or on a single machine the loopback one it moved to -
+# where 8443 is the customer panel, and must not be closed.
+port="$(sed -n 's/^API_PORT=//p' "$ETC/panel.env" 2>/dev/null | head -1)"
+case "$port" in ""|*[!0-9]*) port=8443 ;; esac
+
+# A relay's address on a layer-3 tunnel to this exit - the installer's
+# l3_block, which says how it is picked.
+l3_relay() {
+    local h n
+    h="$(printf 'master-dns-l3:%s' "$1" | sha256sum | cut -c1-4)"
+    n=$((16#$h % 16384))
+    echo "10.10.$((n / 64)).$(((n % 64) * 4 + 1))"
+}
+
+# The relays, and the other exits joined to this panel as nodes - and each
+# relay as it arrives over a layer-3 tunnel, from an address only that
+# tunnel's interface carries.
+list="127.0.0.1"
+for key in RELAY_IP NODE_IP; do
+    for ip in $(sed -n "s/^$key=//p" "$ETC/panel.env" 2>/dev/null | head -1 | tr ',' ' '); do
+        if valid_ip "$ip"; then
+            list="$list, $ip"
+            [ "$key" = RELAY_IP ] && list="$list, $(l3_relay "$ip")"
+        else echo "ignoring '$ip' in $key - not an IPv4 address" >&2; fi
+    done
+done
+# A node has no panel and no API: only the rule on nginx's own connections.
+api="        tcp dport $port ip saddr { $list } accept
+        tcp dport $port drop"
+if [ ! -f "$ETC/panel.env" ]; then
+    api=""
+elif [ "$list" = "127.0.0.1" ]; then
+    echo "no relays in RELAY_IP - only this machine will reach 8443" >&2
+fi
+
+rules="table inet smartdns_api
+delete table inet smartdns_api
+table inet smartdns_api {
+    chain input {
+        type filter hook input priority -5 ; policy accept ;
+$api
+    }
+    chain nginx_out {
+        type filter hook output priority 0 ; policy accept ;
+        meta skuid { $NGINX_UIDS } tcp dport { $PROXIED } fib daddr type local reject with tcp reset
+        meta skuid { $NGINX_UIDS } tcp dport { $PROXIED } ip daddr { $PRIVATE } reject with tcp reset
+    }
+}"
+
+case "${1:-}" in
+    --print) printf '%s\n' "$rules"; exit 0 ;;
+    -h|--help) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    "") ;;
+    *) echo "unknown option: $1  (try -h)" >&2; exit 1 ;;
+esac
+
+[ -x "$NFT" ] || NFT="$(command -v nft || true)"
+if [ -z "$NFT" ]; then
+    echo "nft is not installed - the sync API stays open, and the panel refuses strangers itself" >&2
+    exit 0
+fi
+if printf '%s\n' "$rules" | "$NFT" -f -; then
+    if [ -n "$api" ]; then echo "port $port answers: $list; nginx may not proxy to this machine or a private address"
+    else echo "nginx may not proxy to this machine or a private address"; fi
+else
+    echo "nft refused the rule - the sync API stays open, and the panel refuses strangers itself" >&2
+fi
+exit 0

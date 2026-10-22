@@ -1,0 +1,259 @@
+#!/bin/bash
+# smartdns-menu - every master dns command in one place, for when you do not
+# remember the name of the one you want.
+#
+# usage: sudo smartdns-menu
+#
+# Each choice shows the command it runs before running it, so the next time you
+# can type it yourself. Ctrl-C stops that command and comes back here.
+set -uo pipefail
+
+# Where this machine's config lives. Variables only so a test can point them
+# somewhere else; nothing else sets them.
+ETC="${SMARTDNS_ETC:-/etc/smart-dns}"
+VERSION_FILE="${SMARTDNS_VERSION_FILE:-/var/lib/smart-dns/version}"
+REPO="https://github.com/AlsoAryan/Master-dns"
+
+B=$'\e[1m'; D=$'\e[2m'; G=$'\e[32m'; Y=$'\e[33m'; N=$'\e[0m'
+[ -t 1 ] || { B=; D=; G=; Y=; N=; }
+
+case "${1:-}" in
+    -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    "") ;;
+    *) echo "unknown option: $1  (try -h)" >&2; exit 1 ;;
+esac
+[ "$(id -u)" = 0 ] || { echo "run as root:  sudo smartdns-menu" >&2; exit 1; }
+# Both is a single machine, the relay and the exit in one.
+if [ -f "$ETC/sync.env" ] && [ -f "$ETC/panel.env" ]; then role=single
+elif [ -f "$ETC/sync.env" ]; then role=relay
+elif [ -f "$ETC/panel.env" ]; then role=exit
+else echo "master dns is not installed on this machine" >&2; exit 1; fi
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo '?')"
+
+# ------------------------------------------------------------------ helpers
+pause() { printf '\n%spress enter to go back%s ' "$D" "$N"; read -r _ || exit 0; }
+
+# Show a command, then run it. Ctrl-C ends the command, not the menu.
+run() {
+    printf '\n%s$ %s%s\n\n' "$G" "$*" "$N"
+    trap ':' INT
+    "$@"
+    trap - INT
+    pause
+}
+
+# Ask for one value into REPLY. An empty answer means go back.
+ask() { printf '  %s: ' "$1"; read -r REPLY || exit 0; [ -n "$REPLY" ]; }
+
+sure() {
+    local a
+    printf '  %s%s%s [y/N]: ' "$Y" "$1" "$N"; read -r a || exit 0
+    case "$a" in y|Y|yes) return 0 ;; esac
+    return 1
+}
+
+# A menu: a title, then "label|action" items. The action is evaluated when
+# chosen; what the user typed reaches commands as "$REPLY", quoted, and is
+# never evaluated itself.
+choose() {
+    local title="$1" c i item back="${BACK:-back}"; shift
+    # The label is this menu's alone: the menus opened from here go back.
+    BACK=back
+    while :; do
+        printf '\n%s%s%s\n\n' "$B" "$title" "$N"
+        i=0
+        for item in "$@"; do
+            i=$((i + 1))
+            printf '  %2d) %s\n' "$i" "${item%%|*}"
+        done
+        printf '   0) %s\n\n' "$back"
+        printf 'choice: '; read -r c || exit 0
+        case "$c" in 0|q) return 0 ;; ""|*[!0-9]*) continue ;; esac
+        [ "$c" -le "$i" ] || continue
+        item="${!c}"
+        eval "${item#*|}"
+    done
+}
+
+# ------------------------------------------------------------------ actions
+watch_customer() {
+    printf '  username, label (u12) or address - enter for everybody: '
+    read -r REPLY || exit 0
+    if [ -n "$REPLY" ]; then run smartdns-watch "$REPLY"; else run smartdns-watch; fi
+}
+
+add_address() {
+    local ip
+    ask "address" || return 0; ip="$REPLY"
+    printf '  a name for it (optional): '; read -r REPLY || exit 0
+    if [ -n "$REPLY" ]; then run smartdns-acl add "$ip" "$REPLY"; else run smartdns-acl add "$ip"; fi
+}
+
+reset_counters() {
+    printf '  address, or --all for everyone: '; read -r REPLY || exit 0
+    [ -n "$REPLY" ] || return 0
+    sure "zero the usage of $REPLY?" && run smartdns-acl reset "$REPLY"
+}
+
+# The installer of the version this machine runs: a copy already here, or the
+# release of that version from GitHub. The same version, so changing a setting
+# never upgrades anything along the way.
+installer() {
+    local f
+    for f in /root/master-dns.sh "${SUDO_USER:+/home/$SUDO_USER/master-dns.sh}" ./master-dns.sh; do
+        if [ -n "$f" ] && [ -f "$f" ] && [ "$(bash "$f" --version 2>/dev/null)" = "$VERSION" ]; then
+            run bash "$f" "$@"; return 0
+        fi
+    done
+    echo "  there is no copy of the installer for $VERSION on this machine."
+    sure "download it from GitHub (v$VERSION) and run it?" || return 0
+    f="$(mktemp)"
+    if ! curl -fsSL -m 120 -o "$f" "$REPO/releases/download/v$VERSION/master-dns.sh"; then
+        echo "  the download failed - fetch master-dns.sh v$VERSION yourself and run it with $*"
+        rm -f "$f"; pause; return 0
+    fi
+    run bash "$f" "$@"
+    rm -f "$f"
+}
+
+update() {
+    local f latest
+    f="$(mktemp)"
+    printf '\n  fetching the latest installer...\n'
+    if ! curl -fsSL -m 120 -o "$f" "https://raw.githubusercontent.com/AlsoAryan/Master-dns/main/master-dns.sh"; then
+        echo "  the download failed"; rm -f "$f"; pause; return 0
+    fi
+    latest="$(bash "$f" --version 2>/dev/null || echo '?')"
+    printf '  installed: %s    latest: %s\n' "$VERSION" "$latest"
+    if [ "$latest" = "$VERSION" ]; then
+        sure "the same version - run it anyway, to check and repair?" || { rm -f "$f"; return 0; }
+    else
+        sure "upgrade this $role to $latest?" || { rm -f "$f"; return 0; }
+    fi
+    cp "$f" /root/master-dns.sh 2>/dev/null || true
+    run bash "$f"
+    rm -f "$f"
+}
+
+uninstall() {
+    local a
+    printf '  %sThis removes master dns from this machine.%s type uninstall to go ahead: ' "$Y" "$N"
+    read -r a || exit 0
+    [ "$a" = uninstall ] && installer --uninstall
+}
+
+# ------------------------------------------------------------------ menus
+menu_logs() {
+    local items=(
+        'each part: running or not, and its recent logs   (smartdns-logs)|run smartdns-logs'
+        'only warnings and errors   (smartdns-logs -e)|run smartdns-logs -e'
+        'follow the logs live, ctrl-c to stop   (smartdns-logs -f)|run smartdns-logs -f'
+        'more lines per part   (smartdns-logs -n)|ask "lines per part" && run smartdns-logs -n "$REPLY"'
+        'one file to send, secrets masked   (smartdns-logs --report)|run smartdns-logs --report'
+    )
+    [ "$role" != relay ] && [ -x /usr/local/bin/smartdns-bot-logs ] && items+=(
+        'logs of the Telegram bot   (smartdns-bot-logs)|run smartdns-bot-logs'
+    )
+    [ "$role" != exit ] && items+=(
+        'what this relay is doing   (smartdns status)|run smartdns status'
+        'the names a customer asks for, live   (smartdns-watch)|watch_customer'
+    )
+    choose "Status and logs" "${items[@]}"
+}
+
+menu_domains() {
+    choose "Domains" \
+        'every routed domain   (smartdns list)|run smartdns list' \
+        'routed domains matching a word   (smartdns find)|ask "word" && run smartdns find "$REPLY"' \
+        'route a domain through the exit   (smartdns add)|ask "domain" && run smartdns add "$REPLY"' \
+        'stop routing a domain   (smartdns del)|ask "domain" && run smartdns del "$REPLY"' \
+        'never route a domain, even under a routed one   (smartdns bypass)|ask "domain" && run smartdns bypass "$REPLY"' \
+        'undo a bypass   (smartdns unbypass)|ask "domain" && run smartdns unbypass "$REPLY"' \
+        'what this relay answers for a domain   (smartdns test)|ask "domain" && run smartdns test "$REPLY"' \
+        'what every template does with a domain   (smartdns-rules check)|ask "domain" && run smartdns-rules check "$REPLY"' \
+        'every template: its port, customers and rules   (smartdns-rules)|run smartdns-rules' \
+        'one template'"'"'s full lists   (smartdns-rules show)|ask "template name" && run smartdns-rules show "$REPLY"'
+}
+
+menu_customers() {
+    choose "Customers and access" \
+        'everyone, with usage   (smartdns-acl list)|run smartdns-acl list' \
+        'one address   (smartdns-acl usage)|ask "address" && run smartdns-acl usage "$REPLY"' \
+        'register an address by hand   (smartdns-acl add)|add_address' \
+        'remove an address   (smartdns-acl del)|ask "address" && sure "remove $REPLY?" && run smartdns-acl del "$REPLY"' \
+        'zero the usage counters   (smartdns-acl reset)|reset_counters' \
+        'closed to strangers, or open?   (smartdns-acl enforce status)|run smartdns-acl enforce status' \
+        'close it: registered addresses only   (smartdns-acl enforce on)|sure "only registered addresses will get through - go ahead?" && run smartdns-acl enforce on' \
+        'open it to everyone   (smartdns-acl enforce off)|sure "anyone who finds this relay could use it - go ahead?" && run smartdns-acl enforce off' \
+        'save the allowlist to disk now   (smartdns-acl save)|run smartdns-acl save' \
+        'speed limits in force   (smartdns-shape list)|run smartdns-shape list' \
+        'remove every speed limit   (smartdns-shape off)|sure "every customer goes unlimited until the next sync - go ahead?" && run smartdns-shape off'
+}
+
+menu_admin() {
+    choose "Admin panel" \
+        'its address - forgot it? start here   (smartdns-access)|run smartdns-access' \
+        'move it to another port   (smartdns-access port)|ask "new port" && run smartdns-access port "$REPLY"' \
+        'a new secret path   (smartdns-access path)|sure "the old address stops working - go ahead?" && run smartdns-access path' \
+        'the owner'"'"'s username   (smartdns-access username)|ask "new username" && run smartdns-access username "$REPLY"' \
+        'a new password   (smartdns-access password)|run smartdns-access password' \
+        'new path and new password at once   (smartdns-access rotate)|sure "the old address and password stop working - go ahead?" && run smartdns-access rotate'
+}
+
+menu_tunnel() {
+    choose "Tunnel between the relay and the exit" \
+        'is it on, and carrying traffic?   (smartdns-tunnel)|run smartdns-tunnel' \
+        'turn it off - plain TCP from now on   (smartdns-tunnel off)|sure "traffic goes straight to the exit from now on - go ahead?" && run smartdns-tunnel off' \
+        'turn it back on   (smartdns-tunnel on)|run smartdns-tunnel on' \
+        'change it: transport, port, which end dials   (master-dns.sh --tunnel)|installer --tunnel'
+}
+
+menu_install() {
+    choose "Installation" \
+        "the version installed here: $VERSION   (master-dns.sh --version)|printf '\n  %s\n' \"\$VERSION\"; pause" \
+        'update to the latest version|update' \
+        'get or renew a certificate   (smartdns-cert)|ask "domain" && run smartdns-cert "$REPLY"' \
+        'remove master dns from this machine   (master-dns.sh --uninstall)|uninstall'
+}
+
+restart_all() {
+    if [ "$role" != exit ]; then
+        sure "customers' open connections drop for a moment - go ahead?" || return 0
+    fi
+    run smartdns-restart
+}
+
+main() {
+    local items
+    if [ "$role" = relay ]; then
+        items=(
+            'status and logs|menu_logs'
+            'domains|menu_domains'
+            'customers and access|menu_customers'
+            'tunnel to the exit|menu_tunnel'
+            'restart everything   (smartdns-restart)|restart_all'
+            'installation, updates and certificates|menu_install'
+        )
+    elif [ "$role" = single ]; then
+        # No tunnel: there is nothing to tunnel between.
+        items=(
+            'status and logs|menu_logs'
+            'domains|menu_domains'
+            'customers and access|menu_customers'
+            'admin panel|menu_admin'
+            'restart everything   (smartdns-restart)|restart_all'
+            'installation, updates and certificates|menu_install'
+        )
+    else
+        items=(
+            'status and logs|menu_logs'
+            'admin panel|menu_admin'
+            'tunnel to the relay|menu_tunnel'
+            'restart everything   (smartdns-restart)|restart_all'
+            'installation, updates and certificates|menu_install'
+        )
+    fi
+    BACK=quit choose "master dns $VERSION - $role" "${items[@]}"
+}
+
+main

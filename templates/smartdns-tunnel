@@ -1,0 +1,93 @@
+#!/bin/bash
+# smartdns-tunnel - the tunnel between the relay and the exit: see it, stop it, start it.
+#
+# usage: smartdns-tunnel          what it is, and whether it is carrying traffic
+#        smartdns-tunnel off      back to plain TCP, now
+#        smartdns-tunnel on       start it again, with the settings it had
+#
+# Either end will do for off: the relay's nginx goes straight to the exit the
+# moment its end of the tunnel stops answering, whichever machine stopped it.
+# To change the transport, the port or which end dials, run the installer with
+# --tunnel on the exit and then on the relay.
+#
+# The tunnel itself is BackPack, the work of Amin Mohammadi:
+# github.com/AminMGMT/BackPack (AGPL-3.0).
+set -uo pipefail
+
+# Where this machine's config lives. A variable only so a test can point it
+# somewhere else; nothing else sets it.
+ETC="${SMARTDNS_ETC:-/etc/smart-dns}"
+UNIT=smartdns-tunnel.service
+LOCAL_HTTPS=18443
+
+case "${1:-status}" in
+    status|off|on) ;;
+    -h|--help) sed -n '2,/^set /p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 0 ;;
+    *) echo "unknown command: $1  (try -h)" >&2; exit 1 ;;
+esac
+[ "$(id -u)" = 0 ] || { echo "run as root:  sudo smartdns-tunnel" >&2; exit 1; }
+
+if [ -f "$ETC/sync.env" ]; then role=relay; env="$ETC/sync.env"
+elif [ -f "$ETC/panel.env" ]; then role=exit; env="$ETC/panel.env"
+else echo "master dns is not installed on this machine" >&2; exit 1; fi
+
+get() { sed -n "s/^$1=//p" "$env" 2>/dev/null | head -1; }
+set_key() {
+    local tmp; tmp="$(mktemp)"
+    grep -v "^$1=" "$env" > "$tmp" 2>/dev/null || true
+    printf '%s=%s\n' "$1" "$2" >> "$tmp"
+    cat "$tmp" > "$env"; rm -f "$tmp"
+}
+# Set up by the installer, whether on or off at the moment.
+configured() { [ -f "$ETC/tunnel/tunnel.toml" ] && [ -n "$(get TUNNEL_TRANSPORT)" ]; }
+
+show() {
+    if ! configured; then
+        echo "no tunnel is set up on this $role - the relay reaches the exit directly."
+        echo "to set one up:  sudo bash master-dns.sh --tunnel   (on the exit first, then the relay)"
+        return 0
+    fi
+    local port; port="$(get TUNNEL_PORT)"
+    printf 'tunnel     BackPack, %s, %s, port %s\n' "$(get TUNNEL_TRANSPORT)" "$(get TUNNEL_DIRECTION)" "$port"
+    printf 'setting    %s\n' "$([ "$(get TUNNEL)" = backpack ] && echo on || echo off)"
+    printf 'service    %s\n' "$(systemctl is-active $UNIT 2>/dev/null || true)"
+    if [ "$role" = relay ]; then
+        # Straight at the tunnel's own end: through nginx the fallback would
+        # answer too, and say nothing about the tunnel.
+        local code
+        code="$(curl -s -o /dev/null -m 8 --connect-to "github.com:443:127.0.0.1:$LOCAL_HTTPS" \
+                -w '%{http_code}' https://github.com/ 2>/dev/null || true)"
+        if [ "$code" = 200 ]; then
+            echo "traffic    through the tunnel"
+        else
+            echo "traffic    straight to the exit - the tunnel is not carrying anything"
+        fi
+    else
+        printf 'connected  %s tunnel connection(s) with the relay\n' \
+            "$(ss -Htn state established "( sport = :$port or dport = :$port )" 2>/dev/null | wc -l)"
+    fi
+}
+
+case "${1:-status}" in
+status)
+    show ;;
+off)
+    if ! configured; then show; exit 0; fi
+    systemctl disable --now "$UNIT" >/dev/null 2>&1 || true
+    # Kept, so an upgrade does not quietly bring it back.
+    set_key TUNNEL off
+    echo "tunnel stopped - traffic goes straight to the exit now."
+    [ "$role" = relay ] && echo "nginx falls back to the direct path by itself; nothing else to do here."
+    echo "the other machine's end keeps trying to reach this one, which does no harm;"
+    echo "stop it there as well with:  sudo smartdns-tunnel off"
+    ;;
+on)
+    if ! configured; then show; exit 1; fi
+    set_key TUNNEL backpack
+    systemctl enable --now "$UNIT" >/dev/null 2>&1 || true
+    sleep 4
+    show
+    echo
+    echo "if it is not carrying traffic yet, the other machine's end may be off:  sudo smartdns-tunnel on"
+    ;;
+esac

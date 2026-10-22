@@ -1,0 +1,18 @@
+[Unit]
+Description=Smart DNS over HTTPS and TLS - the relay's encrypted door
+After=network-online.target dnsmasq.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/smartdns-doh
+Restart=always
+RestartSec=3
+# Root only to wake the sync agent with a signal when a new device turns up;
+# it listens on loopback and nginx is the only thing that reaches it.
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

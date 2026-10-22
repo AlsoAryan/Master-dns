@@ -1,0 +1,641 @@
+#!/usr/bin/env python3
+"""smartdns-doh - DNS over HTTPS and over TLS, for the relay's customers.
+
+nginx holds TLS and HTTP/2 on both doors and hands this process plain
+requests on loopback:
+
+  443  DoH. nginx reads the name the client asked for, and sends the relay's
+       own name to its DoH server on 127.0.0.1:8453, which proxies /dns-query
+       here on 127.0.0.1:8055. Every other name goes on to the exit as before.
+
+  853  DoT. nginx ends TLS and passes the stream here on 127.0.0.1:8054 with
+       a PROXY protocol line in front, which says who connected.
+
+Both are behind the same gate as port 53. An address that is not let in -
+never registered, or out of volume or days - reaches here only through the
+gate's own doors (8853 for DoT; 5297 and the DoH server on 8454, which marks
+its requests X-Gate), and is answered from the gate's resolver: the customer
+panel's names, and this relay for everything else, so its phone offers to
+open the panel. This adds a way in for customers who already have one, not a
+way round the registration.
+
+Queries are answered by the same dnsmasq resolvers as port 53. On DoT the
+connecting address says whose template to use; on DoH the connection comes
+from nginx on loopback and says nothing, so the personal address carries a
+token instead - it only says which customer's template to answer from.
+
+Nothing is logged about what anybody asked. What is counted is how many
+queries each customer made, for the admin panel's figures and the customer
+page's "your DNS reaches us" line - never which names.
+
+Each customer is held to a rate - a broken device, or somebody who has the
+address and no business with it, cannot load the relay's resolvers.
+"""
+import base64
+import hashlib
+import http.server
+import json
+import os
+import re
+import socket
+import socketserver
+import struct
+import sys
+import threading
+import time
+import urllib.parse
+
+STATE = "/var/lib/smart-dns/doh.json"
+DOH_ADDR = ("127.0.0.1", 8055)
+DOT_ADDR = ("127.0.0.1", 8054)
+MAIN_PORT = 53
+UPSTREAM_TIMEOUT = 4
+DOT_IDLE = 30
+MAX_QUERY = 4096
+TOKEN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+# nginx on this machine: every DoH request arrives from here, after the gate
+# has let the customer in on 443.
+LOOPBACK = {"127.0.0.1", "::1", ""}
+# Where the counts go for smartdns-sync to collect: one finished file per
+# flush, so the two never need a lock between them. In /run, which is memory.
+STATS_DIR = "/run/smartdns-doh-stats"
+STATS_EVERY = 15
+# smartdns-watch, while it runs, leaves a file here and keeps it fresh; while
+# one is, every encrypted question and where its answer sent the customer
+# goes into WATCH_LOG for it to read, so it sees DoH and DoT as it sees plain
+# DNS. Nobody watching, nothing written; a watcher that died goes stale.
+WATCH_DIR = "/run/smartdns-watch"
+WATCH_LOG = WATCH_DIR + "/encrypted.log"
+WATCH_FRESH = 15
+# Queries a second each customer may make, and how many at once on top.
+# A phone opening an app asks for twenty names in a burst and then nothing;
+# this only ever stops something that keeps going.
+RATE = 50
+BURST = 200
+
+INFO, WARN, ERROR = 6, 4, 3
+
+
+def log(level, msg):
+    print("<%d>%s" % (level, msg), flush=True)
+
+
+# ---------------------------------------------------------------- state
+class State:
+    """What the sync agent last wrote: tokens, addresses, resolver ports.
+
+    Re-read when the file changes, so a customer the panel just created, or
+    an address it just let in, is known here within a sync - no restart.
+    """
+
+    def __init__(self, path=STATE):
+        self.path = path
+        self.stamp = None
+        self.data = {"tokens": {}, "ips": {}, "allowed": [], "enforcing": True}
+        self.allowed = set()
+        self.lock = threading.Lock()
+
+    def current(self):
+        try:
+            st = os.stat(self.path)
+            stamp = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return self.data
+        if stamp != self.stamp:
+            with self.lock:
+                if stamp != self.stamp:
+                    try:
+                        with open(self.path, encoding="utf-8") as fh:
+                            data = json.load(fh)
+                        self.data = data
+                        self.allowed = set(data.get("allowed") or [])
+                        self.stamp = stamp
+                    except (OSError, ValueError) as e:
+                        log(WARN, "state not read: %s" % e)
+        return self.data
+
+    def by_token(self, token):
+        if not token:
+            return None
+        key = hashlib.sha256(token.encode()).hexdigest()
+        entry = (self.current().get("tokens") or {}).get(key)
+        return (key, entry) if entry else None
+
+    def port_for(self, ip):
+        return int((self.current().get("ips") or {}).get(ip) or MAIN_PORT)
+
+    def logging(self, kind, key):
+        """Whether this customer asked for their queries to be kept for
+        support: DoH by account, DoT by address."""
+        data = self.current()
+        return str(key) in set(map(str, data.get("qlog_uids" if kind == "doh" else "qlog_ips")
+                                   or ()))
+
+    def self_ips(self):
+        return set(self.current().get("self") or ())
+
+    def is_allowed(self, ip):
+        data = self.current()
+        if not data.get("enforcing", True):
+            return True
+        return ip in self.allowed
+
+
+STATE_NOW = State()
+
+
+# ---------------------------------------------------------------- limits
+class Limiter:
+    """A bucket of queries per customer, refilled at RATE a second."""
+
+    def __init__(self, rate=RATE, burst=BURST):
+        self.rate, self.burst = float(rate), float(burst)
+        self.buckets = {}
+        self.warned = {}
+        self.lock = threading.Lock()
+
+    def allow(self, key, label=None):
+        """label is what the log says; the key may be a token, which does
+        not belong in a log the admin panel shows."""
+        now = time.monotonic()
+        with self.lock:
+            tokens, at = self.buckets.get(key, (self.burst, now))
+            tokens = min(self.burst, tokens + (now - at) * self.rate)
+            ok = tokens >= 1
+            self.buckets[key] = (tokens - 1 if ok else tokens, now)
+            if len(self.buckets) > 20000:
+                # Whoever has been quiet long enough to be full again is
+                # the same as somebody never seen.
+                full = self.burst / self.rate
+                self.buckets = {k: v for k, v in self.buckets.items()
+                                if now - v[1] < full}
+            if not ok and now - self.warned.get(key, -1e9) > 60:
+                self.warned[key] = now
+                log(WARN, "rate-limited: %s" % (label or key))
+        return ok
+
+
+LIMIT = Limiter()
+
+# The gate's resolver (smartdns-sync, "the way back"): for an address not let
+# in, the customer panel's names answered truly and every other name with
+# this relay, whose port 80 sends it to the panel. Held to a stricter rate
+# than a customer: anybody on the internet may reach it.
+GATE_PORT = 5299
+GATE_LIMIT = Limiter(rate=10, burst=40)
+
+
+def gate_answer(query, kind, who):
+    """The gate's answer to a query that came in by DoT or DoH from an
+    address not let in; refused over the rate, and a failure said as one."""
+    if not GATE_LIMIT.allow("gate:" + who, "gate %s, %s" % (kind, who)):
+        return refused(query)
+    try:
+        return ask(query, GATE_PORT)
+    except (OSError, ConnectionError):
+        return servfail(query)
+
+
+class Stats:
+    """How many queries each customer made since the last flush: DoH by
+    account, DoT by address. Counts only, never names."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.doh, self.dot = {}, {}
+        # For the customers who asked for it, and only them: which names,
+        # and where each answer sent them. {key: {"name\tverdict": [first,
+        # last, hits]}}, handed over like the counts.
+        self.qlog = {}
+
+    def count(self, kind, key):
+        with self.lock:
+            table = self.doh if kind == "doh" else self.dot
+            table[key] = table.get(key, 0) + 1
+
+    def note(self, key, name, verdict):
+        now = int(time.time())
+        with self.lock:
+            per = self.qlog.setdefault(key, {})
+            k = name + "\t" + verdict
+            if k in per:
+                per[k][1] = now
+                per[k][2] += 1
+            elif len(per) < 3000:
+                per[k] = [now, now, 1]
+
+    def take(self):
+        with self.lock:
+            out = {"doh": self.doh, "dot": self.dot, "qlog": self.qlog}
+            self.doh, self.dot, self.qlog = {}, {}, {}
+        return out
+
+
+STATS = Stats()
+
+
+def flush_stats(directory=STATS_DIR):
+    got = STATS.take()
+    if not got["doh"] and not got["dot"] and not got["qlog"]:
+        return
+    os.makedirs(directory, exist_ok=True)
+    name = os.path.join(directory, "%d-%d" % (time.time() * 1000, os.getpid()))
+    with open(name + ".tmp", "w", encoding="utf-8") as fh:
+        json.dump(got, fh)
+    os.replace(name + ".tmp", name + ".json")
+
+
+def flush_loop():
+    while True:
+        time.sleep(STATS_EVERY)
+        try:
+            flush_stats()
+        except OSError as e:
+            log(WARN, "counts not written: %s" % e)
+
+
+# ---------------------------------------------------------------- the report
+# Where an answer sent the customer, in the words smartdns-watch uses for
+# plain DNS, so the support report reads the same whichever way they asked.
+FILTERED = "10.10.34."
+
+
+def question(msg):
+    """(name, qtype) of a query, or None."""
+    try:
+        if len(msg) < 12 or struct.unpack("!H", msg[4:6])[0] != 1:
+            return None
+        labels, off = [], 12
+        while True:
+            n = msg[off]
+            if n == 0:
+                break
+            if n & 0xC0:
+                return None
+            labels.append(msg[off + 1:off + 1 + n].decode("ascii", "replace"))
+            off += 1 + n
+        return ".".join(labels).lower(), struct.unpack("!H", msg[off + 1:off + 3])[0]
+    except (IndexError, struct.error):
+        return None
+
+
+def skip_name(msg, off):
+    while True:
+        n = msg[off]
+        if n & 0xC0 == 0xC0:
+            return off + 2
+        if n == 0:
+            return off + 1
+        off += 1 + n
+
+
+def verdict(reply, relay):
+    """via relay, direct 1.2.3.4, filtered in Iran, no such name..."""
+    try:
+        rcode = reply[3] & 0x0F
+        if rcode == 3:
+            return "no such name"
+        if rcode:
+            return "refused (rcode %d)" % rcode
+        qd, an = struct.unpack("!HH", reply[4:8])
+        off = 12
+        for _ in range(qd):
+            off = skip_name(reply, off) + 4
+        addrs = []
+        for _ in range(an):
+            off = skip_name(reply, off)
+            rtype, _, _, rdlen = struct.unpack("!HHIH", reply[off:off + 10])
+            off += 10
+            if rtype == 1 and rdlen == 4:
+                addrs.append(socket.inet_ntoa(reply[off:off + 4]))
+            off += rdlen
+    except (IndexError, struct.error):
+        return "no address"
+    if any(a in relay for a in addrs):
+        return "via relay"
+    if any(a.startswith(FILTERED) for a in addrs):
+        return "filtered in Iran"
+    return ("direct " + addrs[0]) if addrs else "no address"
+
+
+class WatchFeed:
+    def __init__(self, directory=None):
+        self.directory = directory
+        self.lock = threading.Lock()
+        self.checked = 0.0
+        self.on = False
+
+    def paths(self):
+        d = self.directory or WATCH_DIR
+        return d, os.path.join(d, os.path.basename(WATCH_LOG))
+
+    def active(self):
+        """Whether some smartdns-watch is running - looked at once a second,
+        not once a query. When the last one goes, its log is emptied."""
+        now = time.time()
+        if now - self.checked < 1:
+            return self.on
+        self.checked = now
+        d, log_path = self.paths()
+        try:
+            on = any(n.endswith(".want") and os.stat(os.path.join(d, n)).st_mtime > now - WATCH_FRESH
+                     for n in os.listdir(d))
+        except OSError:
+            on = False
+        if self.on and not on:
+            try:
+                open(log_path, "w").close()
+            except OSError:
+                pass
+        self.on = on
+        return on
+
+    def note(self, kind, key, query, reply, state):
+        if not self.active():
+            return
+        q = question(query)
+        if not q or q[1] != 1 or not q[0]:
+            return          # A only, as smartdns-watch shows plain DNS
+        line = json.dumps({"t": int(time.time()), "kind": kind, "key": str(key),
+                           "name": q[0], "v": verdict(reply, state.self_ips())})
+        with self.lock:
+            try:
+                with open(self.paths()[1], "a", encoding="utf-8") as fh:
+                    fh.write(line + "\n")
+            except OSError:
+                pass
+
+
+WATCH = WatchFeed()
+
+
+def keep_for_report(key, query, reply, state):
+    q = question(query)
+    if q and q[1] == 1 and q[0]:      # A only, as smartdns-watch shows
+        STATS.note(key, q[0], verdict(reply, state.self_ips()))
+
+
+# ---------------------------------------------------------------- resolving
+def error_answer(query, rcode):
+    """The query turned into an answer with this rcode and no records: its
+    question kept, so the client can tell which of its questions this is."""
+    if len(query) < 12:
+        return b""
+    flags = struct.unpack("!H", query[2:4])[0]
+    flags = (flags | 0x8000 | 0x0080) & 0xFFF0 | rcode    # QR, RA, RCODE
+    end = 12
+    try:
+        if struct.unpack("!H", query[4:6])[0] == 1:
+            while query[end]:
+                if query[end] & 0xC0:
+                    raise IndexError
+                end += 1 + query[end]
+            end += 5
+            if end > len(query):
+                raise IndexError
+    except IndexError:
+        end = 12
+    qdcount = 1 if end > 12 else 0
+    return (query[:2] + struct.pack("!HHHHH", flags, qdcount, 0, 0, 0)
+            + query[12:end])
+
+
+def refused(query):
+    """REFUSED: not for you."""
+    return error_answer(query, 5)
+
+
+def servfail(query):
+    """SERVFAIL: the resolver behind us did not answer this time. A DNS
+    answer, not an HTTP error - a browser that gets a 502 from its DoH
+    server can decide the server is broken and go back to the operator's
+    plain DNS for a while, which is the thing the customer turned DoH on
+    to avoid. This one it just asks again."""
+    return error_answer(query, 2)
+
+
+def ask(query, port):
+    """Put the query to a local resolver and return its answer.
+
+    UDP first, as a client on port 53 would; TCP when the answer says it was
+    cut short, because a truncated answer handed back over an encrypted
+    channel would make the client retry over plain DNS - the thing it asked
+    us to avoid.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(UPSTREAM_TIMEOUT)
+    try:
+        s.sendto(query, ("127.0.0.1", port))
+        while True:
+            answer, _ = s.recvfrom(65535)
+            if answer[:2] == query[:2]:
+                break
+    finally:
+        s.close()
+    if len(answer) >= 4 and answer[2] & 0x02:
+        answer = ask_tcp(query, port)
+    return answer
+
+
+def ask_tcp(query, port):
+    with socket.create_connection(("127.0.0.1", port), UPSTREAM_TIMEOUT) as s:
+        s.sendall(struct.pack("!H", len(query)) + query)
+        size = struct.unpack("!H", read_exact(s, 2))[0]
+        return read_exact(s, size)
+
+
+def read_exact(sock, n):
+    out = b""
+    while len(out) < n:
+        chunk = sock.recv(n - len(out))
+        if not chunk:
+            raise ConnectionError("closed early")
+        out += chunk
+    return out
+
+
+# ---------------------------------------------------------------- DoH
+def b64url(text):
+    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+
+
+class DoH(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    server_version = "master-dns"
+    sys_version = ""
+
+    def log_message(self, fmt, *args):
+        # What somebody asked is not ours to keep.
+        pass
+
+    def fail(self, code, text=""):
+        body = text.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def route(self):
+        path = urllib.parse.urlparse(self.path).path.rstrip("/")
+        parts = path.split("/")
+        if len(parts) < 2 or parts[1] != "dns-query" or len(parts) > 3:
+            return None, "not here"
+        token = parts[2] if len(parts) == 3 else ""
+        if token and not TOKEN.match(token):
+            return None, "no such address"
+        return token, ""
+
+    def do_GET(self):
+        token, why = self.route()
+        if token is None:
+            return self.fail(404, why)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("dns")
+        if not q:
+            return self.fail(400, "dns= is missing")
+        try:
+            query = b64url(q[0])
+        except Exception:
+            return self.fail(400, "dns= is not base64url")
+        self.answer(token, query)
+
+    def do_POST(self):
+        token, why = self.route()
+        if token is None:
+            return self.fail(404, why)
+        if (self.headers.get("Content-Type") or "").split(";")[0].strip() \
+                != "application/dns-message":
+            return self.fail(415, "application/dns-message only")
+        size = int(self.headers.get("Content-Length") or 0)
+        if size <= 0 or size > MAX_QUERY:
+            return self.fail(413, "no query, or too big")
+        self.answer(token, self.rfile.read(size))
+
+    def answer(self, token, query):
+        if len(query) < 12 or len(query) > MAX_QUERY:
+            return self.fail(400, "not a DNS query")
+        ip = (self.headers.get("X-Real-IP") or "").strip()
+        # Only nginx reaches this, and only for somebody the gate let in; an
+        # address arriving from anywhere else has found a way round it.
+        if ip not in LOOPBACK:
+            return self.fail(403, "not through the relay")
+        # The gate's own DoH server: an address not let in, answered from the
+        # gate's resolver whatever address is in the path - the token is no
+        # way round registering.
+        if self.headers.get("X-Gate") == "1":
+            return self.reply(gate_answer(query, "doh",
+                                          (self.headers.get("X-Client-IP") or "-").strip()))
+        state = STATE_NOW
+        port = MAIN_PORT
+        uid = "0"
+        if token:
+            found = state.by_token(token)
+            if not found:
+                # A revoked address has to stop working, and say so plainly
+                # rather than answer with something that looks like DNS.
+                return self.fail(403, "this address is no longer valid")
+            port = int(found[1].get("port") or MAIN_PORT)
+            uid = str(found[1].get("uid") or "0")
+        if not LIMIT.allow("doh:" + (token or "-"), "DoH, account %s" % uid):
+            self.fail(429, "too many queries")
+            return
+        STATS.count("doh", uid)
+        try:
+            reply = ask(query, port)
+        except (OSError, ConnectionError) as e:
+            log(WARN, "resolver on %d did not answer: %s" % (port, e))
+            reply = servfail(query)
+        if uid != "0" and state.logging("doh", uid):
+            keep_for_report("doh:" + uid, query, reply, state)
+        if uid != "0":
+            WATCH.note("doh", uid, query, reply, state)
+        self.reply(reply)
+
+    def reply(self, reply):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/dns-message")
+        self.send_header("Content-Length", str(len(reply)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(reply)
+
+
+class DoHServer(http.server.ThreadingHTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+# ---------------------------------------------------------------- DoT
+PROXY_LINE = re.compile(rb"^PROXY (TCP4|TCP6|UNKNOWN) ?(\S*) ?(\S*) ?(\d*) ?(\d*)\r\n$")
+
+
+class DoT(socketserver.BaseRequestHandler):
+    def read_proxy(self):
+        line = b""
+        while not line.endswith(b"\r\n"):
+            ch = self.request.recv(1)
+            if not ch or len(line) > 107:
+                raise ConnectionError("no PROXY line")
+            line += ch
+        m = PROXY_LINE.match(line)
+        if not m:
+            raise ConnectionError("bad PROXY line")
+        return m.group(2).decode() if m.group(1) != b"UNKNOWN" else ""
+
+    def handle(self):
+        sock = self.request
+        sock.settimeout(DOT_IDLE)
+        try:
+            ip = self.read_proxy()
+            state = STATE_NOW
+            ok = state.is_allowed(ip)
+            port = state.port_for(ip)
+            while True:
+                head = sock.recv(2)
+                if len(head) < 2:
+                    return
+                size = struct.unpack("!H", head)[0]
+                if size < 12 or size > MAX_QUERY:
+                    return
+                query = read_exact(sock, size)
+                # An address not let in reaches here only through the gate's
+                # door (8853): it is answered from the gate's resolver - the
+                # customer panel's names, and this relay for everything else.
+                if not ok:
+                    reply = gate_answer(query, "dot", ip)
+                elif LIMIT.allow("dot:" + ip, "DoT, %s" % ip):
+                    STATS.count("dot", ip)
+                    try:
+                        reply = ask(query, port)
+                    except (OSError, ConnectionError) as e:
+                        # As on DoH: an answer that says so. The
+                        # connection used to close here, and every other
+                        # question on it went with it.
+                        log(WARN, "resolver on %d did not answer: %s" % (port, e))
+                        reply = servfail(query)
+                    if state.logging("dot", ip):
+                        keep_for_report("dot:" + ip, query, reply, state)
+                    WATCH.note("dot", ip, query, reply, state)
+                else:
+                    reply = refused(query)
+                sock.sendall(struct.pack("!H", len(reply)) + reply)
+        except (OSError, ConnectionError):
+            return
+
+
+class DoTServer(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+def main():
+    doh = DoHServer(DOH_ADDR, DoH)
+    dot = DoTServer(DOT_ADDR, DoT)
+    threading.Thread(target=dot.serve_forever, daemon=True).start()
+    threading.Thread(target=flush_loop, daemon=True).start()
+    log(INFO, "DoH on %s:%d, DoT on %s:%d" % (DOH_ADDR + DOT_ADDR))
+    doh.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

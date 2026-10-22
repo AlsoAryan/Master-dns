@@ -1,0 +1,482 @@
+#!/usr/bin/env python3
+"""smartdns-watch - the names a customer asks for, live, and where each went.
+
+usage: smartdns-watch               everybody, each line naming who asked
+       smartdns-watch ali           one customer, by username
+       smartdns-watch u12           ...or by the label smartdns-acl list shows
+       smartdns-watch 5.200.12.34   ...or by address
+       smartdns-watch --json IP...  every answer to these addresses, a JSON
+                                    line each - how smartdns-sync keeps a
+                                    customer's report for support
+
+DoH and DoT are shown too, marked so: the relay's DoH server hands over each
+encrypted question and its answer while a watch is running.
+
+For finding what a service needs routed: have the customer open it until it
+fails, and watch. "via relay" is already routed. "direct" went around the
+relay - if the service refuses Iran, those are the names to add, with
+`smartdns add NAME` or the panel's domains page. "filtered in Iran" is Iran's
+own block, which no routing gets past.
+
+It reads this relay's DNS answers off the wire as they leave - the very answer
+the device got, nothing asked again - and keeps nothing: what it prints is all
+there is. Ctrl-C stops it.
+"""
+import collections
+import ipaddress
+import json
+import os
+import signal
+import socket
+import struct
+import subprocess
+import sys
+import time
+
+SYNC_ENV = "/etc/smart-dns/sync.env"
+USER_NAMES = "/var/lib/smart-dns/users.json"
+ACL = "/usr/local/bin/smartdns-acl"
+ETH_P_IP = 0x0800
+# Where the DoH server leaves encrypted questions for us while we ask for
+# them - see WATCH_DIR in smartdns-doh.
+WATCH_DIR = "/run/smartdns-watch"
+WATCH_LOG = WATCH_DIR + "/encrypted.log"
+SO_ATTACH_FILTER = 26
+# The address Iran's filtering hands out for a name it blocks.
+FILTERED = "10.10.34."
+# How long a question may go unanswered before it is shown as such. The relay
+# drops an unregistered address's questions without a word, so this is also
+# how an address that is not allowed shows up.
+WAIT = 3.0
+
+# The socket takes every protocol, not IPv4 alone. A socket for one protocol is
+# handed only what arrives, and the relay's answers - the half that says where
+# each name went - are what it sends; only an every-protocol socket sees those.
+# That is what tcpdump does too.
+ETH_P_ALL = 0x0003
+
+# A classic BPF program, run in the kernel on every packet: IPv4, UDP, not a
+# fragment, with 53 at either end. Everything else - which on a relay is
+# nearly all of it, game downloads included - never reaches this process.
+# A packet socket of type SOCK_DGRAM hands the filter the IP header at 0; the
+# protocol comes from the kernel's own note on the packet.
+BPF = [
+    (0x28, 0, 0, 0xFFFFF000),   # ldh proto         the packet's ethertype
+    (0x15, 0, 10, ETH_P_IP),    # jeq #0x0800       IPv4, or drop
+    (0x30, 0, 0, 9),            # ldb [9]           protocol
+    (0x15, 0, 8, 17),           # jeq #17           UDP, or drop
+    (0x28, 0, 0, 6),            # ldh [6]           flags + fragment offset
+    (0x45, 6, 0, 0x1FFF),       # jset #0x1fff      a later fragment: drop
+    (0xB1, 0, 0, 0),            # ldxb 4*([0]&0xf)  header length
+    (0x48, 0, 0, 0),            # ldh [x+0]         source port
+    (0x15, 2, 0, 53),           # jeq #53           accept
+    (0x48, 0, 0, 2),            # ldh [x+2]         destination port
+    (0x15, 0, 1, 53),           # jeq #53           accept, or drop
+    (0x06, 0, 0, 0x40000),      # ret               accept
+    (0x06, 0, 0, 0),            # ret #0            drop
+]
+
+
+def attach_filter(sock):
+    import ctypes
+    prog = b"".join(struct.pack("HBBI", *ins) for ins in BPF)
+    buf = ctypes.create_string_buffer(prog, len(prog))
+    sock.setsockopt(socket.SOL_SOCKET, SO_ATTACH_FILTER,
+                    struct.pack("HP", len(BPF), ctypes.addressof(buf)))
+
+
+# ------------------------------------------------------------------ packets
+def parse_ip_udp(pkt):
+    """(src, dst, sport, dport, payload) of an IPv4 UDP packet, else None."""
+    if len(pkt) < 28 or pkt[0] >> 4 != 4 or pkt[9] != 17:
+        return None
+    ihl = (pkt[0] & 0x0F) * 4
+    if ihl < 20 or len(pkt) < ihl + 8:
+        return None
+    sport, dport, ulen = struct.unpack("!HHH", pkt[ihl:ihl + 6])
+    return (socket.inet_ntoa(pkt[12:16]), socket.inet_ntoa(pkt[16:20]),
+            sport, dport, pkt[ihl + 8:ihl + max(ulen, 8)])
+
+
+def read_name(msg, off):
+    """A DNS name at `off`, and the offset just past where it was written."""
+    labels, end, jumps = [], None, 0
+    while True:
+        if off >= len(msg):
+            raise ValueError("truncated name")
+        n = msg[off]
+        if n & 0xC0 == 0xC0:
+            if off + 1 >= len(msg) or jumps > 20:
+                raise ValueError("bad pointer")
+            if end is None:
+                end = off + 2
+            off = ((n & 0x3F) << 8) | msg[off + 1]
+            jumps += 1
+            continue
+        if n & 0xC0:
+            raise ValueError("bad label")
+        if n == 0:
+            return ".".join(labels).lower(), (off + 1 if end is None else end)
+        labels.append(msg[off + 1:off + 1 + n].decode("ascii", "replace"))
+        off += 1 + n
+
+
+def parse_dns(msg):
+    """(id, is_response, rcode, name, qtype, [A addresses]) or None."""
+    if len(msg) < 12:
+        return None
+    qid, flags, qdcount, ancount = struct.unpack("!HHHH", msg[:8])
+    if qdcount != 1:
+        return None
+    try:
+        name, off = read_name(msg, 12)
+        qtype = struct.unpack("!H", msg[off:off + 2])[0]
+        off += 4
+        addrs = []
+        for _ in range(ancount if flags & 0x8000 else 0):
+            _, off = read_name(msg, off)
+            rtype, _, _, rdlen = struct.unpack("!HHIH", msg[off:off + 10])
+            off += 10
+            if rtype == 1 and rdlen == 4 and off + 4 <= len(msg):
+                addrs.append(socket.inet_ntoa(msg[off:off + 4]))
+            off += rdlen
+    except (ValueError, struct.error):
+        return None
+    return qid, bool(flags & 0x8000), flags & 0x0F, name, qtype, addrs
+
+
+# ------------------------------------------------------------------ watching
+class Watcher:
+    """Pairs each question with its answer and prints a line per name.
+
+    A name is printed once, and again only if where it went changes - a CDN
+    hands out a different address every few seconds, which is not news.
+    """
+
+    def __init__(self, relay_ips, who, targets=None, out=None, clock=time.time,
+                 as_json=False):
+        self.as_json = as_json
+        self.local = set(relay_ips)
+        self.who = who
+        self.targets = targets
+        self.out = out or (lambda line: print(line, flush=True))
+        self.clock = clock
+        self.pending = {}
+        self.shown = {}
+        self.counts = collections.Counter()
+
+    def feed(self, pkt):
+        p = parse_ip_udp(pkt)
+        if not p:
+            return
+        src, dst, sport, dport, payload = p
+        if dport == 53 and src not in self.local:
+            client, port, asking = src, sport, True
+        elif sport == 53 and src in self.local and dst not in self.local:
+            client, port, asking = dst, dport, False
+        else:
+            return      # this relay asking its own upstream, or being answered
+        if self.targets is not None and client not in self.targets:
+            return
+        d = parse_dns(payload)
+        if not d:
+            return
+        qid, is_answer, rcode, name, qtype, addrs = d
+        if qtype != 1 or not name:
+            return      # AAAA and the rest: the relay serves IPv4 only
+        if asking and not is_answer:
+            self.pending[(client, port, qid)] = (name, self.clock())
+        elif is_answer and not asking:
+            self.pending.pop((client, port, qid), None)
+            self.report(client, name, self.verdict(rcode, addrs))
+
+    def verdict(self, rcode, addrs):
+        if rcode == 3:
+            return "no such name"
+        if rcode:
+            return "refused (rcode %d)" % rcode
+        if any(a in self.local for a in addrs):
+            return "via relay"
+        if any(a.startswith(FILTERED) for a in addrs):
+            return "filtered in Iran"
+        if addrs:
+            return "direct " + addrs[0]
+        return "no address"
+
+    def tick(self):
+        now = self.clock()
+        for key, (name, when) in list(self.pending.items()):
+            if now - when >= WAIT:
+                del self.pending[key]
+                self.report(key[0], name, "no answer")
+
+    def encrypted(self, event, users):
+        """One DoH or DoT answer the DoH server passed on. DoT names its
+        customer by address; DoH by account, which is found by its label."""
+        kind, key = event.get("kind"), str(event.get("key") or "")
+        name, verdict = str(event.get("name") or ""), str(event.get("v") or "")
+        if not name or kind not in ("doh", "dot"):
+            return
+        if kind == "dot":
+            ips = [key]
+        else:
+            ips = sorted(ip for ip, u in users.items() if u.get("label") == "u" + key)
+        client = next((ip for ip in ips if self.targets is None or ip in self.targets), None)
+        if client is None and (self.targets is not None or ips):
+            return
+        self.report(client or "u" + key, name, verdict, via=kind.upper())
+
+    def report(self, client, name, verdict, via=""):
+        if self.as_json:
+            # Every answer, not only the changes: the one keeping the report
+            # counts them, and a name asked again is news to it.
+            self.out(json.dumps({"t": int(self.clock()), "ip": client,
+                                 "name": name, "v": verdict}))
+            return
+        kind = "direct" if verdict.startswith("direct") else verdict
+        if self.shown.get((client, name, via)) == kind:
+            return
+        self.shown[(client, name, via)] = kind
+        self.counts[kind.split(" (")[0]] += 1
+        stamp = time.strftime("%H:%M:%S", time.localtime(self.clock()))
+        who = "" if self.targets and len(self.targets) == 1 else \
+            "%-14s " % self.who.get(client, client)[:14]
+        self.out("%s  %s%-44s %s%s" % (stamp, who, name, verdict,
+                                          "   (%s)" % via if via else ""))
+
+    def summary(self):
+        total = sum(self.counts.values())
+        if not total:
+            return "no names seen"
+        parts = ["%d %s" % (n, k) for k, n in self.counts.most_common()]
+        return "%d names: %s" % (total, ", ".join(parts))
+
+
+# ------------------------------------------------------------------ who is who
+def run(*args):
+    try:
+        return subprocess.run(list(args), capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def self_ip():
+    try:
+        with open(SYNC_ENV) as fh:
+            for line in fh:
+                k, _, v = line.strip().partition("=")
+                if k.strip() == "SELF_IP":
+                    return v.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return None
+
+
+def local_addresses():
+    found = {"127.0.0.1"}
+    r = run("ip", "-4", "-o", "addr", "show")
+    for line in (r.stdout if r else "").splitlines():
+        parts = line.split()
+        if "inet" in parts:
+            found.add(parts[parts.index("inet") + 1].split("/")[0])
+    mine = self_ip()
+    if mine:
+        found.add(mine)
+    return found
+
+
+def load_users():
+    """{ip: {"label": "u12", "user": "ali"}} and the set that is allowed.
+
+    Usernames come from the panel by way of the sync agent. An older panel sends
+    none, and then the labels from the allowlist are all there is.
+    """
+    users = {}
+    try:
+        with open(USER_NAMES, encoding="utf-8") as fh:
+            data = json.load(fh)
+        if isinstance(data, dict):
+            users = {ip: v for ip, v in data.items() if isinstance(v, dict)}
+    except (OSError, ValueError):
+        pass
+    allowed = set()
+    r = run(ACL, "list", "--json")
+    try:
+        for row in json.loads(r.stdout) if r and r.returncode == 0 else []:
+            allowed.add(row["ip"])
+            users.setdefault(row["ip"], {"label": row.get("name", ""), "user": ""})
+    except (ValueError, KeyError, TypeError):
+        pass
+    return users, allowed
+
+
+def resolve(arg, users):
+    """The addresses an argument means: itself, or a customer's."""
+    try:
+        return {str(ipaddress.IPv4Address(arg.strip()))}
+    except ValueError:
+        pass
+    want = arg.strip().lower()
+    return {ip for ip, u in users.items()
+            if want and want in ((u.get("user") or "").lower(),
+                                 (u.get("label") or "").lower())}
+
+
+def display(users):
+    return {ip: (u.get("user") or u.get("label") or ip) for ip, u in users.items()}
+
+
+# ------------------------------------------------------------------ main
+def main(argv):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    if hasattr(signal, "SIGPIPE"):
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    usage = __doc__.split("\n\n")[1]
+    if argv and argv[0] in ("-h", "--help"):
+        print(usage)
+        return 0
+    as_json = bool(argv) and argv[0] == "--json"
+    if as_json:
+        argv = argv[1:]
+        try:
+            wanted = {str(ipaddress.IPv4Address(a)) for a in argv}
+        except ValueError:
+            wanted = set()
+        if not wanted:
+            print("--json takes one address or more", file=sys.stderr)
+            return 2
+    if not as_json and (len(argv) > 1 or (argv and argv[0].startswith("-"))):
+        print(usage, file=sys.stderr)
+        return 2
+    if os.geteuid() != 0:
+        print("run as root:  sudo smartdns-watch", file=sys.stderr)
+        return 1
+    if not os.path.exists(SYNC_ENV):
+        print("this is not a relay - run it where the customers' DNS is answered",
+              file=sys.stderr)
+        return 1
+
+    users, allowed = load_users()
+    who = display(users)
+    targets = None
+    if as_json:
+        targets = wanted
+    elif argv:
+        targets = resolve(argv[0], users)
+        if not targets:
+            print("no customer or address matches %r - the registered ones:  "
+                  "sudo smartdns-acl list" % argv[0], file=sys.stderr)
+            return 1
+
+    try:
+        sock = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM,
+                             socket.htons(ETH_P_ALL))
+        attach_filter(sock)
+    except (OSError, AttributeError) as e:
+        print("cannot watch the network here: %s" % e, file=sys.stderr)
+        return 1
+
+    if as_json:
+        pass
+    elif targets:
+        print("watching %s - ctrl-c to stop" % ", ".join(
+            "%s (%s)" % (ip, who.get(ip, "not registered")) for ip in sorted(targets)))
+    else:
+        print("watching everybody - ctrl-c to stop")
+    if not as_json:
+        print("  via relay = already goes through the exit   direct = goes around it"
+              "   filtered = blocked inside Iran\n", flush=True)
+    for ip in sorted(targets or ()) if not as_json else ():
+        if ip not in allowed:
+            print("  note: %s is not allowed on this relay, so its questions are "
+                  "dropped - they will show as 'no answer'\n" % ip, flush=True)
+
+    # timeout(1) and systemd stop with SIGTERM; end the same way ctrl-c does.
+    def stop(*_):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, stop)
+
+    w = Watcher(local_addresses(), who, targets, as_json=as_json)
+    # The encrypted questions: not for --json, whose DoH and DoT part the
+    # DoH server keeps for the report itself.
+    feed = None if as_json else EncryptedFeed()
+    sock.settimeout(0.5)
+    try:
+        while True:
+            try:
+                w.feed(sock.recv(65535))
+            except socket.timeout:
+                pass
+            w.tick()
+            if feed:
+                for event in feed.read():
+                    w.encrypted(event, users)
+    except KeyboardInterrupt:
+        if not as_json:
+            print("\n" + w.summary())
+    finally:
+        if feed:
+            feed.close()
+    return 0
+
+
+class EncryptedFeed:
+    """Asks the DoH server for what it answers, and reads it as it comes."""
+
+    def __init__(self, directory=WATCH_DIR, clock=time.time):
+        self.directory, self.clock = directory, clock
+        self.log = os.path.join(directory, os.path.basename(WATCH_LOG))
+        self.want = os.path.join(directory, "%d.want" % os.getpid())
+        self.touched = 0.0
+        try:
+            os.makedirs(directory, exist_ok=True)
+            self.offset = os.path.getsize(self.log)
+        except OSError:
+            self.offset = 0
+        self.touch()
+
+    def touch(self):
+        try:
+            with open(self.want, "w"):
+                pass
+            self.touched = self.clock()
+        except OSError:
+            pass
+
+    def read(self):
+        if self.clock() - self.touched >= 5:
+            self.touch()
+        try:
+            size = os.path.getsize(self.log)
+        except OSError:
+            return []
+        if size < self.offset:
+            self.offset = 0         # emptied while nobody was watching
+        if size == self.offset:
+            return []
+        with open(self.log, "rb") as fh:
+            fh.seek(self.offset)
+            chunk = fh.read()
+        # Only whole lines; a half-written one is read next time.
+        whole = chunk[:chunk.rfind(b"\n") + 1]
+        self.offset += len(whole)
+        out = []
+        for line in whole.decode("utf-8", "replace").splitlines():
+            try:
+                out.append(json.loads(line))
+            except ValueError:
+                pass
+        return out
+
+    def close(self):
+        try:
+            os.unlink(self.want)
+        except OSError:
+            pass
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

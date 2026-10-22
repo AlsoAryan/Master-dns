@@ -1,0 +1,67 @@
+#!/bin/bash
+# smartdns-bot-logs - what the Telegram bot has been doing.
+#
+# usage: smartdns-bot-logs          whether it runs, and its last 100 lines
+#        smartdns-bot-logs -e       only what went wrong
+#        smartdns-bot-logs -f       follow it live (ctrl-c to stop)
+#        smartdns-bot-logs -n 500   more lines (default 100)
+#
+# The bot's token is replaced by <token> wherever it turns up, so what this
+# prints can be copied into a chat asking for help.
+set -uo pipefail
+
+# Variables only so a test can point them somewhere else; nothing else sets them.
+BOT_ENV="${SMARTDNS_BOT_ENV:-/etc/master-dns-bot.env}"
+UNIT=master-dns-bot
+
+n=100
+follow=no
+errors=no
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -e|--errors) errors=yes ;;
+        -f|--follow) follow=yes ;;
+        -n) shift; n="${1:-}" ;;
+        -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown option: $1  (try -h)" >&2; exit 1 ;;
+    esac
+    shift
+done
+case "$n" in ''|*[!0-9]*) echo "-n wants a number of lines" >&2; exit 1 ;; esac
+[ "$(id -u)" = 0 ] || { echo "run as root:  sudo smartdns-bot-logs" >&2; exit 1; }
+
+token="$(sed -n 's/^BOT_TOKEN=//p' "$BOT_ENV" 2>/dev/null | head -1)"
+
+# Plain string replacement, not a pattern: a token is letters, digits, ':' and
+# '-', and nothing in it should be read as anything else.
+mask() {
+    awk -v t="$token" '{
+        if (length(t)) while ((i = index($0, t)) > 0)
+            $0 = substr($0, 1, i - 1) "<token>" substr($0, i + length(t))
+        print; fflush()
+    }'
+}
+
+# The bot prints its troubles in words rather than with a log level, so "only
+# what went wrong" is these words.
+trouble() {
+    if [ "$errors" = yes ]; then
+        grep -iE --line-buffered 'fail|could not|error|traceback|refused|getupdates:|missing'
+    else
+        cat
+    fi
+}
+
+if [ "$follow" = yes ]; then
+    journalctl -u "$UNIT" -f -n 20 --no-pager -o short-iso | mask | trouble
+    exit 0
+fi
+
+if [ -z "$token" ]; then
+    echo "the Telegram bot is not set up on this machine - admin panel, Bot page"
+else
+    state="$(systemctl is-active "$UNIT" 2>/dev/null || true)"
+    echo "Telegram bot: ${state:-unknown}"
+fi
+echo
+journalctl -u "$UNIT" -n "$n" --no-pager -o short-iso | mask | trouble || true

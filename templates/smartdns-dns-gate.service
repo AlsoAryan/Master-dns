@@ -1,0 +1,16 @@
+[Unit]
+Description=Smart DNS: the service's own names for addresses not registered yet
+After=network-online.target
+PartOf=smartdns-sync.service
+
+[Service]
+Type=simple
+# Its own file only - not /etc/dnsmasq.d, not the templates' shared rules: an
+# address that has not registered gets the customer panel's name and nothing
+# else, so it can reach the page that registers it.
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/smartdns-profiles/gate.conf
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

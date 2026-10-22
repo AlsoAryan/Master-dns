@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""smartdns-operators - which Iranian operator each customer address is on.
+
+The admin panel shows it under every address, so "it does not work on
+Irancell" can be checked against who is actually on Irancell. The answer comes
+from the routing registry: every operator announces its address blocks under
+its own AS number, and RIPE publishes who announces what. This fetches that
+list for the operators customers actually connect from, once a day, into one
+file the panel reads.
+
+Nothing about a customer leaves the server. What is fetched is the operators'
+own public address lists; the matching happens in the panel. An operator whose
+list could not be fetched keeps yesterday's, so a RIPE outage leaves the panel
+as it was rather than blank.
+"""
+import ipaddress
+import json
+import os
+import sys
+import tempfile
+import time
+import urllib.request
+from datetime import datetime, timezone
+
+OUT = "/var/lib/smart-dns/operators.json"
+URL = ("https://stat.ripe.net/data/announced-prefixes/data.json"
+       "?resource=AS%d&sourceapp=master-dns")
+
+# AS number and the name the operator is known by here. Each was checked
+# against RIPE's own holder name, which is the comment beside it.
+OPERATORS = [
+    (197207, "همراه اول"),       # MCCI - Mobile Communication Company of Iran
+    (44244, "ایرانسل"),          # IranCell - Iran Cell Service and Communication
+    (57218, "رایتل"),            # RighTel - Rightel Communication Service
+    (58224, "مخابرات"),          # TCI - Iran Telecommunication Company
+    (31549, "شاتل"),             # RASANA - Aria Shatel
+    (34369, "شاتل موبایل"),      # AS-SHATELMOBILE - Aria Shatel PJSC
+    (43754, "آسیاتک"),           # ASIATECH - Asiatech Data Transmission
+    (16322, "پارس‌آنلاین"),      # PARSONLINE - Parsan Lin
+    (50810, "مبین‌نت"),          # Mobinnet - Mobin Net Communication
+    (56402, "های‌وب"),           # DADEHGOSTAR - Dadeh Gostar Asr Novin (HiWEB)
+    (25184, "افرانت"),           # AFRANET
+    (42337, "رسپینا"),           # RESPINA - Respina Networks & Beyond
+    (49100, "پیشگامان"),         # IR-THR-PTE - Pishgaman Toseeh Ertebatat
+    (39501, "صبانت"),            # NGSAS - Neda Gostar Saba
+    (24631, "فناپ تلکام"),       # FANAPTELECOM - Fanavari Ertebabat Pasargad Arian
+]
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def fetch(asn):
+    """The address blocks one AS announces, as strings. Raises on failure."""
+    req = urllib.request.Request(URL % asn,
+                                 headers={"User-Agent": "master-dns"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        data = json.load(r)
+    if data.get("status") != "ok":
+        raise ValueError("RIPE answered %r" % data.get("status"))
+    out = []
+    for item in data["data"]["prefixes"]:
+        try:
+            out.append(str(ipaddress.ip_network(item["prefix"], strict=False)))
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not out:
+        # An operator that announces nothing is a broken answer, not an
+        # operator that has left - keeping yesterday's list is the safer read.
+        raise ValueError("no prefixes")
+    return sorted(set(out))
+
+
+def load(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get("operators", {})
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def save(path, operators):
+    folder = os.path.dirname(path)
+    os.makedirs(folder, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=folder, prefix=".operators.")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump({"updated": now(), "operators": operators}, fh,
+                      ensure_ascii=False, sort_keys=True)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+def refresh(path=OUT, pause=0.5):
+    old = load(path)
+    new, failed = {}, []
+    for i, (asn, name) in enumerate(OPERATORS):
+        if i and pause:
+            time.sleep(pause)            # RIPE asks callers to go gently
+        key = str(asn)
+        # Three tries: one dropped connection should not cost an operator a
+        # day, and on the first day there is no yesterday's list to fall on.
+        for attempt in range(3):
+            try:
+                new[key] = {"name": name, "prefixes": fetch(asn), "fetched": now()}
+                break
+            except Exception as e:
+                err = e
+                if pause and attempt < 2:
+                    time.sleep(pause * 4)
+        else:
+            failed.append("AS%d %s: %s" % (asn, name, err))
+            if key in old:
+                new[key] = dict(old[key], name=name)
+    for line in failed:
+        print("could not fetch %s - keeping the last list" % line)
+    if len(failed) == len(OPERATORS):
+        print("nothing could be fetched; %s left as it was" % path)
+        return 1
+    save(path, new)
+    print("%d operators, %d address blocks"
+          % (len(new), sum(len(v["prefixes"]) for v in new.values())))
+    return 0
+
+
+if __name__ == "__main__":
+    # The names are Persian. A console that cannot show them gets a
+    # placeholder, not a traceback in place of the day's list.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
+    sys.exit(refresh())

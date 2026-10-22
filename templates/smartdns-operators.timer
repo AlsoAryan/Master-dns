@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh which operator each customer address is on
+
+[Timer]
+# Operators' address blocks change slowly, so once a day is plenty. Spread out,
+# so exits installed together do not all ask RIPE in the same minute.
+OnBootSec=10min
+OnUnitActiveSec=1d
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

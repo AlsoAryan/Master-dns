@@ -1,0 +1,23 @@
+[Unit]
+Description=master dns tunnel between the relay and the exit (BackPack)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# BackPack keeps one tunnel running from this file, and redials on its own when
+# the other end goes away. Its menu, web panel and kernel tuning stay off: the
+# file says so, and this machine's tuning is the installer's to decide.
+# The listening end's firewall rule - its port answers the other machine only.
+# Loaded here as well as at boot, since an exit's nftables service does not
+# read /etc/nftables.d; the leading - makes a missing file (the dialling end)
+# no failure.
+ExecStartPre=-/usr/sbin/nft -f /etc/nftables.d/40-smartdns-tunnel.conf
+ExecStart=/usr/local/lib/smart-dns/backpack -c /etc/smart-dns/tunnel/tunnel.toml
+Restart=always
+RestartSec=5
+# Every customer connection is a stream in the tunnel, and a console download
+# opens dozens at once.
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

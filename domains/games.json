@@ -1,0 +1,1384 @@
+{
+  "sections": [
+    {
+      "key": "games",
+      "label": "بازی‌ها"
+    },
+    {
+      "key": "ai",
+      "label": "هوش مصنوعی"
+    },
+    {
+      "key": "media",
+      "label": "رسانه و ارتباط"
+    },
+    {
+      "key": "dev",
+      "label": "برنامه‌نویسی و ابزار"
+    },
+    {
+      "key": "infra",
+      "label": "زیرساخت و شبکه"
+    },
+    {
+      "key": "other",
+      "label": "بقیه"
+    },
+    {
+      "key": "bypass",
+      "label": "دور زده‌ها"
+    }
+  ],
+  "games": [
+    {
+      "key": "steam",
+      "name": "استیم",
+      "en": "Steam",
+      "kind": "platform",
+      "needs": [
+        "steam/main",
+        "steam/download"
+      ],
+      "note": "فروشگاه و لانچر. ورود و چت استیم مستقیم می‌ماند"
+    },
+    {
+      "key": "epicstore",
+      "name": "اپیک گیمز",
+      "en": "Epic Games Store",
+      "kind": "platform",
+      "needs": [
+        "epic/main",
+        "epic/download"
+      ]
+    },
+    {
+      "key": "xbox",
+      "name": "ایکس‌باکس و گیم‌پس",
+      "en": "Xbox / Game Pass",
+      "kind": "platform",
+      "needs": [
+        "xbox/online",
+        "xbox/download"
+      ]
+    },
+    {
+      "key": "psn",
+      "name": "پلی‌استیشن",
+      "en": "PlayStation Network",
+      "kind": "platform",
+      "needs": [
+        "playstation/online",
+        "playstation/download"
+      ]
+    },
+    {
+      "key": "nintendo",
+      "name": "نینتندو",
+      "en": "Nintendo",
+      "kind": "platform",
+      "needs": [
+        "nintendo/main"
+      ]
+    },
+    {
+      "key": "battlenet",
+      "name": "بتل‌نت",
+      "en": "Battle.net",
+      "kind": "platform",
+      "needs": [
+        "blizzard/main",
+        "blizzard/download"
+      ]
+    },
+    {
+      "key": "eaapp",
+      "name": "EA App",
+      "en": "EA App",
+      "kind": "platform",
+      "needs": [
+        "ea/main",
+        "ea/download"
+      ]
+    },
+    {
+      "key": "ubiconnect",
+      "name": "یوبی‌سافت کانکت",
+      "en": "Ubisoft Connect",
+      "kind": "platform",
+      "needs": [
+        "ubisoft/main",
+        "ubisoft/download"
+      ]
+    },
+    {
+      "key": "riotclient",
+      "name": "کلاینت رایوت",
+      "en": "Riot Client",
+      "kind": "platform",
+      "needs": [
+        "riot/main",
+        "riot/download"
+      ]
+    },
+    {
+      "key": "rockstarlauncher",
+      "name": "راک‌استار",
+      "en": "Rockstar Games",
+      "kind": "platform",
+      "needs": [
+        "rockstar/main",
+        "rockstar/download"
+      ]
+    },
+    {
+      "key": "gogstore",
+      "name": "GOG و itch.io",
+      "en": "GOG / itch.io",
+      "kind": "platform",
+      "needs": [
+        "gog/main",
+        "gog/download"
+      ]
+    },
+    {
+      "key": "bethesdanet",
+      "name": "بتسدا",
+      "en": "Bethesda",
+      "kind": "platform",
+      "needs": [
+        "bethesda/main"
+      ]
+    },
+    {
+      "key": "garena",
+      "name": "گارنا",
+      "en": "Garena",
+      "kind": "platform",
+      "needs": [
+        "othergames/garena"
+      ]
+    },
+    {
+      "key": "faceit",
+      "name": "فیس‌ایت",
+      "en": "FACEIT",
+      "kind": "platform",
+      "needs": [
+        "othergames/faceit",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "gameloop",
+      "name": "گیم‌لوپ تنسنت",
+      "en": "GameLoop",
+      "kind": "platform",
+      "needs": [
+        "othergames/tencentgames"
+      ]
+    },
+    {
+      "key": "unity",
+      "name": "موتور Unity",
+      "en": "Unity",
+      "kind": "platform",
+      "needs": [
+        "othergames/unity"
+      ]
+    },
+    {
+      "key": "miscgames",
+      "name": "متفرقه",
+      "en": "Other game tools",
+      "kind": "platform",
+      "needs": [
+        "othergames/misc"
+      ]
+    },
+    {
+      "key": "valorant",
+      "name": "والورانت",
+      "en": "Valorant",
+      "kind": "game",
+      "needs": [
+        "riot/main",
+        "riot/download"
+      ],
+      "note": "صدای بازی روی Vivox است و مستقیم می‌ماند"
+    },
+    {
+      "key": "lol",
+      "name": "لیگ آو لجندز",
+      "en": "League of Legends",
+      "kind": "game",
+      "needs": [
+        "riot/main",
+        "riot/download"
+      ],
+      "note": "چت و لیست دوستانش روی pvp.net است — پورت ۵۲۲۳، که رله نمی‌برد. خود بازی کار می‌کند"
+    },
+    {
+      "key": "tft",
+      "name": "تفت",
+      "en": "Teamfight Tactics",
+      "kind": "game",
+      "needs": [
+        "riot/main",
+        "riot/download"
+      ]
+    },
+    {
+      "key": "wildrift",
+      "name": "وایلد ریفت",
+      "en": "Wild Rift",
+      "kind": "game",
+      "needs": [
+        "riot/main"
+      ]
+    },
+    {
+      "key": "2xko",
+      "name": "2XKO",
+      "en": "2XKO",
+      "kind": "game",
+      "needs": [
+        "riot/main"
+      ]
+    },
+    {
+      "key": "cod",
+      "name": "کال آو دیوتی",
+      "en": "Call of Duty",
+      "kind": "game",
+      "needs": [
+        "blizzard/main",
+        "blizzard/download"
+      ]
+    },
+    {
+      "key": "overwatch",
+      "name": "اورواچ ۲",
+      "en": "Overwatch 2",
+      "kind": "game",
+      "needs": [
+        "blizzard/main",
+        "blizzard/download"
+      ]
+    },
+    {
+      "key": "diablo",
+      "name": "دیابلو",
+      "en": "Diablo",
+      "kind": "game",
+      "needs": [
+        "blizzard/main",
+        "blizzard/download"
+      ]
+    },
+    {
+      "key": "wow",
+      "name": "ورلد آو وارکرفت",
+      "en": "World of Warcraft",
+      "kind": "game",
+      "needs": [
+        "blizzard/main",
+        "blizzard/download"
+      ]
+    },
+    {
+      "key": "hearthstone",
+      "name": "هارث‌استون",
+      "en": "Hearthstone",
+      "kind": "game",
+      "needs": [
+        "blizzard/main"
+      ]
+    },
+    {
+      "key": "starcraft",
+      "name": "استارکرفت",
+      "en": "StarCraft II",
+      "kind": "game",
+      "needs": [
+        "blizzard/main",
+        "blizzard/download"
+      ]
+    },
+    {
+      "key": "apex",
+      "name": "ایپکس لجندز",
+      "en": "Apex Legends",
+      "kind": "game",
+      "needs": [
+        "ea/main",
+        "ea/download",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "battlefield",
+      "name": "بتلفیلد",
+      "en": "Battlefield",
+      "kind": "game",
+      "needs": [
+        "ea/main",
+        "ea/download"
+      ]
+    },
+    {
+      "key": "fc",
+      "name": "EA FC (فیفا)",
+      "en": "EA Sports FC",
+      "kind": "game",
+      "needs": [
+        "ea/main",
+        "ea/download"
+      ]
+    },
+    {
+      "key": "sims",
+      "name": "سیمز",
+      "en": "The Sims",
+      "kind": "game",
+      "needs": [
+        "ea/main",
+        "ea/download"
+      ]
+    },
+    {
+      "key": "nfs",
+      "name": "نید فور اسپید",
+      "en": "Need for Speed",
+      "kind": "game",
+      "needs": [
+        "ea/main"
+      ]
+    },
+    {
+      "key": "f1",
+      "name": "F1",
+      "en": "F1",
+      "kind": "game",
+      "needs": [
+        "ea/main",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "fortnite",
+      "name": "فورتنایت",
+      "en": "Fortnite",
+      "kind": "game",
+      "needs": [
+        "epic/main",
+        "epic/download"
+      ]
+    },
+    {
+      "key": "rocketleague",
+      "name": "راکت لیگ",
+      "en": "Rocket League",
+      "kind": "game",
+      "needs": [
+        "epic/main",
+        "epic/download"
+      ]
+    },
+    {
+      "key": "fallguys",
+      "name": "فال گایز",
+      "en": "Fall Guys",
+      "kind": "game",
+      "needs": [
+        "epic/main"
+      ]
+    },
+    {
+      "key": "r6",
+      "name": "رینبو سیکس",
+      "en": "Rainbow Six Siege",
+      "kind": "game",
+      "needs": [
+        "ubisoft/main",
+        "ubisoft/download"
+      ]
+    },
+    {
+      "key": "assassins",
+      "name": "اساسینز کرید",
+      "en": "Assassin's Creed",
+      "kind": "game",
+      "needs": [
+        "ubisoft/main",
+        "ubisoft/download"
+      ]
+    },
+    {
+      "key": "farcry",
+      "name": "فارکرای",
+      "en": "Far Cry",
+      "kind": "game",
+      "needs": [
+        "ubisoft/main",
+        "ubisoft/download"
+      ]
+    },
+    {
+      "key": "division",
+      "name": "دیویژن",
+      "en": "The Division",
+      "kind": "game",
+      "needs": [
+        "ubisoft/main",
+        "ubisoft/download"
+      ]
+    },
+    {
+      "key": "forhonor",
+      "name": "فور آنر",
+      "en": "For Honor",
+      "kind": "game",
+      "needs": [
+        "ubisoft/main"
+      ]
+    },
+    {
+      "key": "brawlhalla",
+      "name": "براول‌هالا",
+      "en": "Brawlhalla",
+      "kind": "game",
+      "needs": [
+        "sports/brawlhalla",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "gta",
+      "name": "GTA Online",
+      "en": "GTA Online",
+      "kind": "game",
+      "needs": [
+        "rockstar/main",
+        "rockstar/download",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "rdr",
+      "name": "رد دد ردمپشن ۲",
+      "en": "Red Dead Redemption 2",
+      "kind": "game",
+      "needs": [
+        "rockstar/main",
+        "rockstar/download"
+      ]
+    },
+    {
+      "key": "minecraft",
+      "name": "ماینکرفت",
+      "en": "Minecraft",
+      "kind": "game",
+      "needs": [
+        "minecraft/main",
+        "xbox/online"
+      ]
+    },
+    {
+      "key": "halo",
+      "name": "هیلو",
+      "en": "Halo",
+      "kind": "game",
+      "needs": [
+        "xbox/online",
+        "xbox/download"
+      ]
+    },
+    {
+      "key": "forza",
+      "name": "فورزا",
+      "en": "Forza",
+      "kind": "game",
+      "needs": [
+        "xbox/online",
+        "xbox/download"
+      ]
+    },
+    {
+      "key": "seaofthieves",
+      "name": "سی آو ثیوز",
+      "en": "Sea of Thieves",
+      "kind": "game",
+      "needs": [
+        "xbox/online",
+        "xbox/download"
+      ]
+    },
+    {
+      "key": "aoe",
+      "name": "ایج آو امپایرز",
+      "en": "Age of Empires",
+      "kind": "game",
+      "needs": [
+        "coop/ageofempires",
+        "xbox/online",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "roblox",
+      "name": "روبلاکس",
+      "en": "Roblox",
+      "kind": "game",
+      "needs": [
+        "roblox/main",
+        "roblox/download"
+      ]
+    },
+    {
+      "key": "clashofclans",
+      "name": "کلش آو کلنز",
+      "en": "Clash of Clans",
+      "kind": "game",
+      "needs": [
+        "supercell/main"
+      ]
+    },
+    {
+      "key": "clashroyale",
+      "name": "کلش رویال",
+      "en": "Clash Royale",
+      "kind": "game",
+      "needs": [
+        "supercell/main"
+      ]
+    },
+    {
+      "key": "brawlstars",
+      "name": "براول استارز",
+      "en": "Brawl Stars",
+      "kind": "game",
+      "needs": [
+        "supercell/main"
+      ]
+    },
+    {
+      "key": "hayday",
+      "name": "هی دی",
+      "en": "Hay Day",
+      "kind": "game",
+      "needs": [
+        "supercell/main"
+      ]
+    },
+    {
+      "key": "boombeach",
+      "name": "بوم بیچ",
+      "en": "Boom Beach",
+      "kind": "game",
+      "needs": [
+        "supercell/main"
+      ]
+    },
+    {
+      "key": "squadbusters",
+      "name": "اسکواد باسترز",
+      "en": "Squad Busters",
+      "kind": "game",
+      "needs": [
+        "supercell/main"
+      ]
+    },
+    {
+      "key": "pubgmobile",
+      "name": "پابجی موبایل",
+      "en": "PUBG Mobile",
+      "kind": "game",
+      "needs": [
+        "pubgmobile/main"
+      ],
+      "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند"
+    },
+    {
+      "key": "pubgpc",
+      "name": "پابجی رایانه",
+      "en": "PUBG: Battlegrounds",
+      "kind": "game",
+      "needs": [
+        "othergames/krafton",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "stumbleguys",
+      "name": "استامبل گایز",
+      "en": "Stumble Guys",
+      "kind": "game",
+      "needs": [
+        "coop/stumbleguys"
+      ]
+    },
+    {
+      "key": "monopolygo",
+      "name": "مونوپولی گو",
+      "en": "Monopoly GO",
+      "kind": "game",
+      "needs": [
+        "coop/scopely"
+      ]
+    },
+    {
+      "key": "arcraiders",
+      "name": "ARC Raiders",
+      "en": "ARC Raiders",
+      "kind": "game",
+      "needs": [
+        "shooters/arcraiders",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "arenabreakout",
+      "name": "آرنا بریک‌اوت",
+      "en": "Arena Breakout",
+      "kind": "game",
+      "needs": [
+        "shooters/arenabreakout"
+      ]
+    },
+    {
+      "key": "arma",
+      "name": "آرما",
+      "en": "Arma",
+      "kind": "game",
+      "needs": [
+        "shooters/bohemia",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "dayz",
+      "name": "DayZ",
+      "en": "DayZ",
+      "kind": "game",
+      "needs": [
+        "shooters/bohemia",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "helldivers",
+      "name": "هل‌دایورز ۲",
+      "en": "Helldivers 2",
+      "kind": "game",
+      "needs": [
+        "shooters/helldivers",
+        "steam/main",
+        "playstation/online"
+      ],
+      "note": "ورودش از حساب PSN می‌گذرد، پس پلی‌استیشن هم لازم است"
+    },
+    {
+      "key": "dbd",
+      "name": "دد بای دی‌لایت",
+      "en": "Dead by Daylight",
+      "kind": "game",
+      "needs": [
+        "shooters/deadbydaylight",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "bloodstrike",
+      "name": "بلاد استرایک",
+      "en": "Blood Strike",
+      "kind": "game",
+      "needs": [
+        "shooters/bloodstrike"
+      ]
+    },
+    {
+      "key": "hunt",
+      "name": "هانت شوداون",
+      "en": "Hunt: Showdown",
+      "kind": "game",
+      "needs": [
+        "shooters/huntshowdown",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "rust",
+      "name": "راست",
+      "en": "Rust",
+      "kind": "game",
+      "needs": [
+        "shooters/rust",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "fragpunk",
+      "name": "فرگ‌پانک",
+      "en": "FragPunk",
+      "kind": "game",
+      "needs": [
+        "shooters/fragpunk",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "grayzone",
+      "name": "گری زون وارفر",
+      "en": "Gray Zone Warfare",
+      "kind": "game",
+      "needs": [
+        "shooters/grayzone",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "hll",
+      "name": "هل لت لوز",
+      "en": "Hell Let Loose",
+      "kind": "game",
+      "needs": [
+        "shooters/hellletloose",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "worms",
+      "name": "ورمز و Dredge",
+      "en": "Team17 games",
+      "kind": "game",
+      "needs": [
+        "shooters/team17",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "paladins",
+      "name": "پلدینز و اسمایت",
+      "en": "Paladins / SMITE",
+      "kind": "game",
+      "needs": [
+        "shooters/hirez",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "squadgame",
+      "name": "اسکواد",
+      "en": "Squad",
+      "kind": "game",
+      "needs": [
+        "shooters/squad",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "lostlight",
+      "name": "لاست لایت",
+      "en": "Lost Light",
+      "kind": "game",
+      "needs": [
+        "shooters/lostlight"
+      ]
+    },
+    {
+      "key": "shadowgun",
+      "name": "شدوگان",
+      "en": "Shadowgun",
+      "kind": "game",
+      "needs": [
+        "shooters/madfinger"
+      ]
+    },
+    {
+      "key": "marvelrivals",
+      "name": "مارول رایولز",
+      "en": "Marvel Rivals",
+      "kind": "game",
+      "needs": [
+        "shooters/marvelrivals",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "insurgency",
+      "name": "اینسرجنسی",
+      "en": "Insurgency",
+      "kind": "game",
+      "needs": [
+        "shooters/insurgency",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "deltaforce",
+      "name": "دلتا فورس",
+      "en": "Delta Force",
+      "kind": "game",
+      "needs": [
+        "shooters/deltaforce",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "thefinals",
+      "name": "د فاینالز",
+      "en": "THE FINALS",
+      "kind": "game",
+      "needs": [
+        "shooters/thefinals",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "readyornot",
+      "name": "ردی اور نات",
+      "en": "Ready or Not",
+      "kind": "game",
+      "needs": [
+        "shooters/readyornot",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "tarkov",
+      "name": "اسکیپ فرام تارکوف",
+      "en": "Escape from Tarkov",
+      "kind": "game",
+      "needs": [
+        "shooters/tarkov"
+      ]
+    },
+    {
+      "key": "albion",
+      "name": "آلبیون آنلاین",
+      "en": "Albion Online",
+      "kind": "game",
+      "needs": [
+        "anime/albion",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "eldenring",
+      "name": "الدن رینگ",
+      "en": "Elden Ring",
+      "kind": "game",
+      "needs": [
+        "anime/bandainamco",
+        "anime/fromsoftware",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "tekken",
+      "name": "تکن",
+      "en": "Tekken",
+      "kind": "game",
+      "needs": [
+        "anime/bandainamco",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "genshin",
+      "name": "گنشین ایمپکت",
+      "en": "Genshin Impact",
+      "kind": "game",
+      "needs": [
+        "anime/hoyoverse"
+      ]
+    },
+    {
+      "key": "starrail",
+      "name": "هونکای استار ریل",
+      "en": "Honkai: Star Rail",
+      "kind": "game",
+      "needs": [
+        "anime/hoyoverse"
+      ]
+    },
+    {
+      "key": "zzz",
+      "name": "زنلس زون زیرو",
+      "en": "Zenless Zone Zero",
+      "kind": "game",
+      "needs": [
+        "anime/hoyoverse"
+      ]
+    },
+    {
+      "key": "blackdesert",
+      "name": "بلک دزرت",
+      "en": "Black Desert",
+      "kind": "game",
+      "needs": [
+        "anime/pearlabyss",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "umamusume",
+      "name": "اوما موسومه",
+      "en": "Uma Musume",
+      "kind": "game",
+      "needs": [
+        "anime/cygames"
+      ]
+    },
+    {
+      "key": "warframe",
+      "name": "وارفریم",
+      "en": "Warframe",
+      "kind": "game",
+      "needs": [
+        "anime/warframe",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "arknights",
+      "name": "آرک‌نایتس",
+      "en": "Arknights",
+      "kind": "game",
+      "needs": [
+        "anime/hypergryph"
+      ]
+    },
+    {
+      "key": "poe",
+      "name": "پث آو اگزایل",
+      "en": "Path of Exile",
+      "kind": "game",
+      "needs": [
+        "anime/pathofexile",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "wuwa",
+      "name": "ووترینگ ویوز",
+      "en": "Wuthering Waves",
+      "kind": "game",
+      "needs": [
+        "anime/kurogames"
+      ]
+    },
+    {
+      "key": "newworld",
+      "name": "نیو ورلد",
+      "en": "New World",
+      "kind": "game",
+      "needs": [
+        "anime/newworld",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "oncehuman",
+      "name": "وانس هیومن",
+      "en": "Once Human",
+      "kind": "game",
+      "needs": [
+        "anime/oncehuman",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "guildwars2",
+      "name": "گیلد وارز ۲",
+      "en": "Guild Wars 2",
+      "kind": "game",
+      "needs": [
+        "anime/guildwars2",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "ffxiv",
+      "name": "فاینال فانتزی XIV",
+      "en": "Final Fantasy XIV",
+      "kind": "game",
+      "needs": [
+        "anime/ffxiv",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "lostark",
+      "name": "لاست آرک",
+      "en": "Lost Ark",
+      "kind": "game",
+      "needs": [
+        "anime/smilegate",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "throneliberty",
+      "name": "ثرون اند لیبرتی",
+      "en": "Throne and Liberty",
+      "kind": "game",
+      "needs": [
+        "anime/throneliberty",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "strinova",
+      "name": "استرینووا",
+      "en": "Strinova",
+      "kind": "game",
+      "needs": [
+        "anime/strinova",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "tof",
+      "name": "تاور آو فانتزی",
+      "en": "Tower of Fantasy",
+      "kind": "game",
+      "needs": [
+        "anime/toweroffantasy"
+      ]
+    },
+    {
+      "key": "perfectworld",
+      "name": "پرفکت ورلد",
+      "en": "Perfect World",
+      "kind": "game",
+      "needs": [
+        "anime/perfectworld"
+      ]
+    },
+    {
+      "key": "starcitizen",
+      "name": "استار سیتیزن",
+      "en": "Star Citizen",
+      "kind": "game",
+      "needs": [
+        "coop/starcitizen"
+      ]
+    },
+    {
+      "key": "cnc",
+      "name": "کامند اند کانکر",
+      "en": "Command & Conquer",
+      "kind": "game",
+      "needs": [
+        "coop/cnc"
+      ]
+    },
+    {
+      "key": "conan",
+      "name": "کونان اگزایلز و Dune",
+      "en": "Conan Exiles / Dune",
+      "kind": "game",
+      "needs": [
+        "coop/funcom",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "eso",
+      "name": "الدر اسکرولز آنلاین",
+      "en": "Elder Scrolls Online",
+      "kind": "game",
+      "needs": [
+        "coop/zenimax",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "warthunder",
+      "name": "وار ثاندر",
+      "en": "War Thunder",
+      "kind": "game",
+      "needs": [
+        "coop/gaijin",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "warthundermobile",
+      "name": "وار ثاندر موبایل",
+      "en": "War Thunder Mobile",
+      "kind": "game",
+      "needs": [
+        "coop/gaijin"
+      ]
+    },
+    {
+      "key": "enlisted",
+      "name": "انلیستد",
+      "en": "Enlisted",
+      "kind": "game",
+      "needs": [
+        "coop/gaijin"
+      ]
+    },
+    {
+      "key": "darktide",
+      "name": "وارهمر دارک‌تاید",
+      "en": "Warhammer: Darktide",
+      "kind": "game",
+      "needs": [
+        "coop/fatshark",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "plaguetale",
+      "name": "بازی‌های Focus",
+      "en": "Focus Entertainment games",
+      "kind": "game",
+      "needs": [
+        "coop/focus",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "amongus",
+      "name": "اِمانگ آس",
+      "en": "Among Us",
+      "kind": "game",
+      "needs": [
+        "coop/amongus",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "phasmophobia",
+      "name": "فاسموفوبیا",
+      "en": "Phasmophobia",
+      "kind": "game",
+      "needs": [
+        "coop/phasmophobia",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "palworld",
+      "name": "پال‌ورلد",
+      "en": "Palworld",
+      "kind": "game",
+      "needs": [
+        "coop/palworld",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "payday",
+      "name": "پی‌دی",
+      "en": "PAYDAY",
+      "kind": "game",
+      "needs": [
+        "coop/payday",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "terraria",
+      "name": "ترراریا",
+      "en": "Terraria",
+      "kind": "game",
+      "needs": [
+        "coop/terraria",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "recroom",
+      "name": "رک روم",
+      "en": "Rec Room",
+      "kind": "game",
+      "needs": [
+        "coop/recroom"
+      ]
+    },
+    {
+      "key": "ark",
+      "name": "ارک",
+      "en": "ARK: Survival",
+      "kind": "game",
+      "needs": [
+        "coop/ark",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "vrchat",
+      "name": "وی‌آرچت",
+      "en": "VRChat",
+      "kind": "game",
+      "needs": [
+        "coop/vrchat",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "wot",
+      "name": "ورلد آو تنکس",
+      "en": "World of Tanks",
+      "kind": "game",
+      "needs": [
+        "coop/wargaming"
+      ]
+    },
+    {
+      "key": "wows",
+      "name": "ورلد آو وارشیپس",
+      "en": "World of Warships",
+      "kind": "game",
+      "needs": [
+        "coop/wargaming"
+      ]
+    },
+    {
+      "key": "straightback",
+      "name": "Straightback Games",
+      "en": "Straightback Games",
+      "kind": "game",
+      "needs": [
+        "coop/straightback",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "guiltygear",
+      "name": "گیلتی گیر",
+      "en": "Guilty Gear",
+      "kind": "game",
+      "needs": [
+        "sports/arcsystem",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "assettocorsa",
+      "name": "آستتو کورسا",
+      "en": "Assetto Corsa",
+      "kind": "game",
+      "needs": [
+        "sports/assettocorsa",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "streetfighter",
+      "name": "استریت فایتر",
+      "en": "Street Fighter",
+      "kind": "game",
+      "needs": [
+        "sports/capcom",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "monsterhunter",
+      "name": "مانستر هانتر",
+      "en": "Monster Hunter",
+      "kind": "game",
+      "needs": [
+        "sports/capcom",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "efootball",
+      "name": "ای‌فوتبال",
+      "en": "eFootball",
+      "kind": "game",
+      "needs": [
+        "sports/konami",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "mortalkombat",
+      "name": "مورتال کامبت",
+      "en": "Mortal Kombat",
+      "kind": "game",
+      "needs": [
+        "sports/wbgames",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "multiversus",
+      "name": "مولتی‌ورسس",
+      "en": "MultiVersus",
+      "kind": "game",
+      "needs": [
+        "sports/wbgames",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "ets2",
+      "name": "یورو تراک",
+      "en": "Euro Truck Simulator",
+      "kind": "game",
+      "needs": [
+        "sports/eurotruck",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "ufl",
+      "name": "UFL",
+      "en": "UFL",
+      "kind": "game",
+      "needs": [
+        "sports/ufl"
+      ]
+    },
+    {
+      "key": "cyberpunk",
+      "name": "سایبرپانک ۲۰۷۷",
+      "en": "Cyberpunk 2077",
+      "kind": "game",
+      "needs": [
+        "othergames/cdprojekt",
+        "gog/main",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "witcher",
+      "name": "ویچر",
+      "en": "The Witcher",
+      "kind": "game",
+      "needs": [
+        "othergames/cdprojekt",
+        "gog/main",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "anticheat",
+      "name": "ضدتقلب‌ها (EAC، BattlEye)",
+      "en": "Anti-cheat (EAC, BattlEye)",
+      "kind": "platform",
+      "needs": [
+        "anticheat/main"
+      ],
+      "note": "زیر ده‌ها بازی است؛ روی ۴۴۳ کار می‌کند و از سرور رد می‌شود"
+    },
+    {
+      "key": "riotchat",
+      "name": "چت رایوت",
+      "en": "Riot chat (PVP.net)",
+      "kind": "platform",
+      "needs": [
+        "gamebackend/main"
+      ],
+      "note": "پیش‌فرض خاموش: روی ۵۲۲۳ است، که رله نمی‌برد"
+    }
+  ]
+}

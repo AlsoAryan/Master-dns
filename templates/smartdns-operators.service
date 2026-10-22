@@ -1,0 +1,9 @@
+[Unit]
+Description=Fetch Iranian operators' address blocks for the admin panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/smartdns-operators
+TimeoutStartSec=300
