@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.1"
+VERSION="0.0.2"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -56,10 +56,18 @@ BACKUP_DIR="/var/backups/smart-dns"
 # ---------------------------------------------------------------- output
 if [ -t 1 ]; then
     B=$'\033[1m'; G=$'\033[32m'; Y=$'\033[33m'; RD=$'\033[31m'; N=$'\033[0m'
+    C=$'\033[1;36m'; D=$'\033[2m'
 else
-    B=""; G=""; Y=""; RD=""; N=""
+    B=""; G=""; Y=""; RD=""; N=""; C=""; D=""
 fi
-step() { printf '\n%s==>%s %s%s%s\n' "$G" "$N" "$B" "$*" "$N"; }
+# Steps are numbered and timed, so a long install shows where it is and how
+# long each part took, instead of a bare list of headings.
+STEP_N=0; T_START="$(date +%s)"
+step() {
+    STEP_N=$((STEP_N + 1))
+    printf '\n  %s%02d%s  %s%s%s  %s+%ss%s\n' "$C" "$STEP_N" "$N" "$B" "$*" "$N" \
+           "$D" "$(( $(date +%s) - T_START ))" "$N"
+}
 info() { printf '    %s\n' "$*"; }
 warn() { printf '    %s%s%s\n' "$Y" "$*" "$N"; }
 die()  { printf '\n%sERROR:%s %s\n\n' "$RD" "$N" "$*" >&2; exit 1; }
@@ -2807,8 +2815,14 @@ if [ "$fail" = 0 ]; then
             && mv -f "$STATE_DIR/installer/master-dns.sh.tmp" "$STATE_DIR/installer/master-dns.sh" \
             && info "kept this installer for the admin panel to upgrade the other servers with"
     fi
-    printf '%s%s is installed and working, version %s.%s\n' \
-           "$G" "$ROLE" "$VERSION" "$N"
+    printf '  %s+----------------------------------------------+%s\n' "$C" "$N"
+    printf '  %s|%s  %sMaster DNS%s is ready  -  %-9s v%-10s %s|%s\n' "$C" "$N" "$B" "$N" \
+           "$ROLE" "$VERSION" "$C" "$N"
+    printf '  %s|%s  %s%d steps in %ds%s%-30s%s|%s\n' "$C" "$N" "$D" "$STEP_N" \
+           "$(( $(date +%s) - T_START ))" "$N" "" "$C" "$N"
+    printf '  %s+----------------------------------------------+%s\n' "$C" "$N"
+    # The admin panel reads this line from a remote upgrade's log to know it worked.
+    printf '%s%s is installed and working, version %s.%s\n' "$G" "$ROLE" "$VERSION" "$N"
 else
     printf '%sSomething is off - see the failures above.%s\n' "$Y" "$N"
 fi

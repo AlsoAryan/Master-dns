@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.1"
+VERSION="0.0.2"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -56,10 +56,18 @@ BACKUP_DIR="/var/backups/smart-dns"
 # ---------------------------------------------------------------- output
 if [ -t 1 ]; then
     B=$'\033[1m'; G=$'\033[32m'; Y=$'\033[33m'; RD=$'\033[31m'; N=$'\033[0m'
+    C=$'\033[1;36m'; D=$'\033[2m'
 else
-    B=""; G=""; Y=""; RD=""; N=""
+    B=""; G=""; Y=""; RD=""; N=""; C=""; D=""
 fi
-step() { printf '\n%s==>%s %s%s%s\n' "$G" "$N" "$B" "$*" "$N"; }
+# Steps are numbered and timed, so a long install shows where it is and how
+# long each part took, instead of a bare list of headings.
+STEP_N=0; T_START="$(date +%s)"
+step() {
+    STEP_N=$((STEP_N + 1))
+    printf '\n  %s%02d%s  %s%s%s  %s+%ss%s\n' "$C" "$STEP_N" "$N" "$B" "$*" "$N" \
+           "$D" "$(( $(date +%s) - T_START ))" "$N"
+}
 info() { printf '    %s\n' "$*"; }
 warn() { printf '    %s%s%s\n' "$Y" "$*" "$N"; }
 die()  { printf '\n%sERROR:%s %s\n\n' "$RD" "$N" "$*" >&2; exit 1; }
@@ -2807,8 +2815,14 @@ if [ "$fail" = 0 ]; then
             && mv -f "$STATE_DIR/installer/master-dns.sh.tmp" "$STATE_DIR/installer/master-dns.sh" \
             && info "kept this installer for the admin panel to upgrade the other servers with"
     fi
-    printf '%s%s is installed and working, version %s.%s\n' \
-           "$G" "$ROLE" "$VERSION" "$N"
+    printf '  %s+----------------------------------------------+%s\n' "$C" "$N"
+    printf '  %s|%s  %sMaster DNS%s is ready  -  %-9s v%-10s %s|%s\n' "$C" "$N" "$B" "$N" \
+           "$ROLE" "$VERSION" "$C" "$N"
+    printf '  %s|%s  %s%d steps in %ds%s%-30s%s|%s\n' "$C" "$N" "$D" "$STEP_N" \
+           "$(( $(date +%s) - T_START ))" "$N" "" "$C" "$N"
+    printf '  %s+----------------------------------------------+%s\n' "$C" "$N"
+    # The admin panel reads this line from a remote upgrade's log to know it worked.
+    printf '%s%s is installed and working, version %s.%s\n' "$G" "$ROLE" "$VERSION" "$N"
 else
     printf '%sSomething is off - see the failures above.%s\n' "$Y" "$N"
 fi
@@ -11760,6 +11774,61 @@ exit 0
 #        return 200, {"ok": True, "balance": balance,
 #                     "user": admin_user_view(self.store, user, self.relays)}
 #
+#    def api_admin_adjust(self, body, uid):
+#        """Add days or traffic to an account, or take some off - by hand.
+#
+#        {"days": 7} / {"days": -3} move the end date; {"gb": 5} / {"gb": -2}
+#        (or "bytes") move the quota. Either or both. Two things this will not
+#        do: turn a quota of zero - which means unlimited here - into a number,
+#        and leave a quota at zero by taking too much, which would make the
+#        account unlimited. A quota taken to or below nothing becomes one byte:
+#        spent, not free."""
+#        user, err = self.admin_target(uid)
+#        if err:
+#            return err
+#        days, delta = body.get("days"), body.get("bytes")
+#        if body.get("gb") is not None:
+#            try:
+#                delta = int(round(float(body["gb"]) * 1024 ** 3))
+#            except (TypeError, ValueError):
+#                return 400, refused("bad_amount", "gb باید عدد باشد")
+#        try:
+#            days = None if days is None else int(days)
+#            delta = None if delta is None else int(delta)
+#        except (TypeError, ValueError):
+#            return 400, refused("bad_amount", "days و bytes باید عدد صحیح باشند")
+#        if not days and not delta:
+#            return 400, refused("bad_amount", "days یا gb (یا bytes) را بدهید، غیر از صفر")
+#        if abs(days or 0) > 3650 or abs(delta or 0) > 1024 ** 5:
+#            return 400, refused("bad_amount", "این مقدار از حد مجاز بیشتر است")
+#        sets, args, said = [], [], []
+#        if days:
+#            ends = parse_ts(user["expires_at"])
+#            if ends is None and days < 0:
+#                return 409, refused("no_expiry", "این حساب تاریخ پایان ندارد؛ چیزی برای کم کردن نیست")
+#            base = max(ends, datetime.now(timezone.utc)) if ends and days > 0 \
+#                else (ends or datetime.now(timezone.utc))
+#            sets.append("expires_at = ?")
+#            args.append((base + timedelta(days=days)).isoformat(timespec="seconds"))
+#            said.append("%+d روز" % days)
+#        if delta:
+#            if not (user["quota_bytes"] or 0):
+#                return 409, refused("no_quota", "حجم این حساب نامحدود است یا هنوز پلنی ندارد؛ "
+#                                    "اول پلن بدهید")
+#            sets.append("quota_bytes = ?")
+#            args.append(max(1, user["quota_bytes"] + delta))
+#            said.append("%+.2f گیگ" % (delta / 1024 ** 3))
+#        # Back under the limit, the warnings it already crossed may fire again.
+#        self.store.run("UPDATE users SET %s, warned = 0 WHERE id = ?" % ", ".join(sets),
+#                       tuple(args) + (user["id"],))
+#        self.admin_log("user #%d adjusted: %s" % (user["id"], ", ".join(said)))
+#        user = self.store.one("SELECT * FROM users WHERE id = ?", (user["id"],))
+#        emit(self.store, user, "plan.adjusted", {
+#            "days": days or 0, "bytes": delta or 0,
+#            "text": "🛠 حساب شما به‌روز شد: %s" % "، ".join(said)})
+#        return 200, {"ok": True, "message": "، ".join(said),
+#                     "user": admin_user_view(self.store, user, self.relays)}
+#
 #    def api_admin_tickets(self, body):
 #        which = (self.query.get("status") or ["open"])[0]
 #        if which not in ("open", "answered", "closed", "all"):
@@ -11889,6 +11958,7 @@ exit 0
 #        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/status$"), "admin_status"),
 #        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/plan$"), "admin_plan"),
 #        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/wallet$"), "admin_wallet"),
+#        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/adjust$"), "admin_adjust"),
 #        ("GET", re.compile(r"/api/v1/admin/tickets$"), "admin_tickets"),
 #        ("GET", re.compile(r"/api/v1/admin/tickets/(\d{1,12})$"), "admin_ticket"),
 #        ("GET", re.compile(r"/api/v1/admin/tickets/(\d{1,12})/messages/(\d{1,12})/image$"),
@@ -16442,7 +16512,7 @@ exit 0
 # --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
 # --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
 # --err-bg:#2a1219;--warn-bg:#2a2310;--warn-line:#6e5a2c;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--sun:inline;--moon:none;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
 # --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.25);
 # --pop:0 10px 30px rgba(0,0,0,.5)"""
 #LIGHT = """color-scheme:light;
@@ -16452,7 +16522,7 @@ exit 0
 # --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
 # --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
 # --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--sun:none;--moon:inline;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
 # --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
 # --pop:0 10px 30px rgba(16,24,40,.15)"""
 ## Blue is the default and lives in DARK / LIGHT above. Each other accent only
@@ -16460,6 +16530,8 @@ exit 0
 #ACCENTS = {
 #    "pink": ("--accent:#ff7eb6;--accent2:#ff9cc8;--btn:#c2185b;--btn-hover:#d81b6a",
 #             "--accent:#c2185b;--accent2:#db2777;--btn:#be185d;--btn-hover:#9d174d"),
+#    "red": ("--accent:#ff6b6b;--accent2:#ff8e8e;--btn:#dc2626;--btn-hover:#ef4444",
+#            "--accent:#c62828;--accent2:#dc2626;--btn:#c62828;--btn-hover:#a61e1e"),
 #    "green": ("--accent:#4ade80;--accent2:#86efac;--btn:#15803d;--btn-hover:#16a34a",
 #              "--accent:#15803d;--accent2:#16a34a;--btn:#15803d;--btn-hover:#166534"),
 #}
@@ -16485,13 +16557,13 @@ exit 0
 #THEME_HEAD = ("<script>try{var d=document.documentElement,"
 #              "t=localStorage.getItem('theme'),a=localStorage.getItem('accent');"
 #              "if(t=='light'||t=='dark')d.setAttribute('data-theme',t);"
-#              "if(a=='blue'||a=='pink'||a=='green')d.setAttribute('data-accent',a)"
+#              "if(a=='blue'||a=='pink'||a=='green'||a=='red')d.setAttribute('data-accent',a)"
 #              "}catch(e){}</script>")
 #_DOTS = "".join(
 #    "<button type='button' class='dot %s' title='%s' aria-label='%s'"
 #    " onclick=\"(function(r){r.setAttribute('data-accent','%s');"
 #    "try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
-#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز")))
+#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز")))
 #THEME_BUTTON = (
 #    "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره'"
 #    " onclick=\"(function(r){var c=r.getAttribute('data-theme')||"
@@ -16553,6 +16625,14 @@ exit 0
 #:root[data-accent=pink] .dot.pink,:root[data-accent=green] .dot.green{
 # box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
+#@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
+#body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+# background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 20%,transparent),transparent),
+#  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 16%,transparent),transparent);
+# animation:md-drift 20s ease-in-out infinite alternate}
+#.dot.red{background:var(--c-red)}
+#:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+#
 #.card{border-radius:28px;padding:30px;box-shadow:var(--shadow);
 # animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both}
 #input,textarea{border-radius:14px}
@@ -16565,6 +16645,11 @@ exit 0
 #a.tk,label.plan,.pay{border-radius:14px}.thread>div{border-radius:18px}
 #.icon{animation:md-float 3.5s ease-in-out infinite}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#
+#.card{position:relative;overflow:hidden}
+#.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
+# background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
+# background-size:200% 100%;animation:md-flow 6s linear infinite}
 #"""
 #
 #USER_CSS = THEME_CSS + FONT_FACE + """
@@ -24344,7 +24429,7 @@ exit 0
 # --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
 # --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
 # --err-bg:#2a1219;--warn-bg:#2a2310;--warn-line:#6e5a2c;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--sun:inline;--moon:none;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
 # --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.25);
 # --pop:0 10px 30px rgba(0,0,0,.5)"""
 #LIGHT = """color-scheme:light;
@@ -24354,7 +24439,7 @@ exit 0
 # --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
 # --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
 # --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--sun:none;--moon:inline;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
 # --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
 # --pop:0 10px 30px rgba(16,24,40,.15)"""
 ## Blue is the default and lives in DARK / LIGHT above. Each other accent only
@@ -24362,6 +24447,8 @@ exit 0
 #ACCENTS = {
 #    "pink": ("--accent:#ff7eb6;--accent2:#ff9cc8;--btn:#c2185b;--btn-hover:#d81b6a",
 #             "--accent:#c2185b;--accent2:#db2777;--btn:#be185d;--btn-hover:#9d174d"),
+#    "red": ("--accent:#ff6b6b;--accent2:#ff8e8e;--btn:#dc2626;--btn-hover:#ef4444",
+#            "--accent:#c62828;--accent2:#dc2626;--btn:#c62828;--btn-hover:#a61e1e"),
 #    "green": ("--accent:#4ade80;--accent2:#86efac;--btn:#15803d;--btn-hover:#16a34a",
 #              "--accent:#15803d;--accent2:#16a34a;--btn:#15803d;--btn-hover:#166534"),
 #}
@@ -24387,13 +24474,13 @@ exit 0
 #THEME_HEAD = ("<script>try{var d=document.documentElement,"
 #              "t=localStorage.getItem('theme'),a=localStorage.getItem('accent');"
 #              "if(t=='light'||t=='dark')d.setAttribute('data-theme',t);"
-#              "if(a=='blue'||a=='pink'||a=='green')d.setAttribute('data-accent',a)"
+#              "if(a=='blue'||a=='pink'||a=='green'||a=='red')d.setAttribute('data-accent',a)"
 #              "}catch(e){}</script>")
 #_DOTS = "".join(
 #    "<button type='button' class='dot %s' title='%s' aria-label='%s'"
 #    " onclick=\"(function(r){r.setAttribute('data-accent','%s');"
 #    "try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
-#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز")))
+#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز")))
 #THEME_BUTTON = (
 #    "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره'"
 #    " onclick=\"(function(r){var c=r.getAttribute('data-theme')||"
@@ -24432,6 +24519,14 @@ exit 0
 #:root[data-accent=pink] .dot.pink,:root[data-accent=green] .dot.green{
 # box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
+#@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
+#body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+# background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 20%,transparent),transparent),
+#  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 16%,transparent),transparent);
+# animation:md-drift 20s ease-in-out infinite alternate}
+#.dot.red{background:var(--c-red)}
+#:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+#
 #header{border-radius:26px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(14px);
 # background:color-mix(in srgb,var(--card) 80%,transparent)}
 #header::after{content:'';position:absolute;left:26px;right:26px;bottom:-1px;height:2px;border-radius:2px;
@@ -24455,6 +24550,31 @@ exit 0
 # -webkit-text-fill-color:transparent;animation:md-flow 6s linear infinite}
 #@media (max-width:700px){header{border-radius:20px;position:static}.card{border-radius:18px}}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#
+#.card h2::before{content:'';display:inline-block;width:4px;height:1.05em;border-radius:4px;
+# margin-inline-end:10px;vertical-align:-3px;background:linear-gradient(var(--accent),var(--accent2))}
+#.stat{position:relative;overflow:hidden;border:0;
+# background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 13%,var(--bg)),var(--bg) 70%)}
+#.stat::before{content:'';position:absolute;top:-26px;inset-inline-end:-26px;width:76px;height:76px;
+# border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,transparent)}
+#.stat .n{position:relative}
+#th{background:var(--row);border-bottom:0}
+#th:first-child{border-radius:0 12px 12px 0}th:last-child{border-radius:12px 0 0 12px}
+#html[dir=ltr] th:first-child{border-radius:12px 0 0 12px}html[dir=ltr] th:last-child{border-radius:0 12px 12px 0}
+#@media (min-width:1000px){
+# .wrap{max-width:none;margin:0;padding-inline-start:290px}
+# header{position:fixed;top:92px;bottom:16px;inset-inline-start:16px;width:244px;z-index:5;
+#  flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:12px;margin:0;
+#  padding:18px 12px;overflow-y:auto;border-radius:26px}
+# header::after{display:none}
+# header h1{padding:0 10px 12px;border-bottom:1px solid var(--line);white-space:normal}
+# nav{flex-direction:column;flex:1;gap:3px}
+# nav a{padding:10px 14px;border-radius:14px;font-size:13.5px;
+#  border-inline-start:3px solid transparent;transition:background .2s,padding .2s}
+# nav a:hover{padding-inline-start:20px}
+# nav a.on{border-inline-start-color:var(--accent);box-shadow:none}
+# nav a.out{margin:auto 0 0;border-top:1px solid var(--line);border-radius:14px}
+#}
 #"""
 #
 #CSS = THEME_CSS + """
@@ -43348,6 +43468,14 @@ exit 0
 #"آبی": "Blue",
 #"صورتی": "Pink",
 #"سبز": "Green",
+#"قرمز": "Red",
+#"gb باید عدد باشد": "gb must be a number",
+#"days و bytes باید عدد صحیح باشند": "days and bytes must be whole numbers",
+#"days یا gb (یا bytes) را بدهید، غیر از صفر": "Give days or gb (or bytes), other than zero",
+#"این مقدار از حد مجاز بیشتر است": "That is more than is allowed",
+#"این حساب تاریخ پایان ندارد؛ چیزی برای کم کردن نیست": "This account has no end date; there is nothing to take off",
+#"حجم این حساب نامحدود است یا هنوز پلنی ندارد؛ اول پلن بدهید": "This account's traffic is unlimited, or it has no plan yet; give it a plan first",
+#"🛠 حساب شما به‌روز شد:": "🛠 Your account was updated:",
 #"رنگ تاکیدی": "Accent colour",
 #"وارد شوید": "sign in",
 #"وارفریم": "Warframe",

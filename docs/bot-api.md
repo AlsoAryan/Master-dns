@@ -352,6 +352,7 @@ curl -s -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
 | `password.reset_code` | مشتری در پنل وب «بازیابی رمز» زد | `code` (شش رقم)، `minutes` |
 | `wallet.referral` | کسی که با لینک این مشتری آمده بود خرید کرد و پورسانتش به کیف پول رفت | `amount`، `balance` |
 | `wallet.changed` | ادمین دستی موجودی را عوض کرد | `amount` (منفی یعنی کم شد)، `balance` |
+| `plan.adjusted` | ادمین روز یا حجم را دستی عوض کرد | `days`، `bytes` (منفی یعنی کم شد)، `text` آماده |
 | `broadcast` | ادمین «پیام همگانی» فرستاد؛ برای هر گیرنده یک خبر | `broadcast_id`، `text` (ممکن است خالی باشد)، و اگر عکس یا فیلم دارد `media`: فهرست نوع‌ها به ترتیب، مثل `["photo", "video"]` |
 | `ping` | دکمهٔ «ارسال آزمایشی» | — (`telegram_id` خالی است) |
 
@@ -392,6 +393,7 @@ def from_panel(secret, header, body):      # body: bytes، همان‌طور ک�
 | `POST /admin/users/{id}/status` | `{"status": "suspended"}` یا `{"status": "active"}` |
 | `POST /admin/users/{id}/plan` | `{"plan_id": 1}` — دادن پلن بدون رسید (مثلاً پرداخت نقدی) |
 | `POST /admin/users/{id}/wallet` | `{"amount": "50000", "note": "هدیه"}` — اضافه کردن به کیف پول؛ `"-50000"` کم می‌کند. کمتر از صفر نمی‌شود (`409` با `wallet_short`). به مشتری خبر `wallet.changed` می‌رود |
+| `POST /admin/users/{id}/adjust` | `{"days": 7, "gb": -2}` — روز و حجم را بدهید یا کم کنید؛ هر کدام جدا یا هر دو. `days` بیشتر از ۳۶۵۰ و `gb` بیشتر از حد نمی‌شود (`400` با `bad_amount`). حسابی که حجمش نامحدود است یا هنوز پلن ندارد حجم نمی‌گیرد (`409` با `no_quota`) و حسابی که تاریخ پایان ندارد روزش کم نمی‌شود (`409` با `no_expiry`). کم کردنِ بیش از باقی‌مانده حجم را به یک بایت می‌رساند، نه صفر (صفر یعنی نامحدود). به مشتری خبر `plan.adjusted` می‌رود |
 | `GET /admin/tickets?status=open` | تیکت‌ها؛ `open` (پیش‌فرض)، `answered`، `closed`، `all` |
 | `GET /admin/tickets/{id}` | یک تیکت با پیام‌ها و صاحبش |
 | `GET /admin/tickets/{id}/messages/{message_id}/image` | عکس یک پیام تیکت: `{"content_type", "data"}` (base64) |

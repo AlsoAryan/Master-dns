@@ -492,6 +492,37 @@ check("the operator's bot can change a wallet too", code_ == 200
       and user(sara["id"])["wallet"] == 150000, str(body))
 code_, body = call("POST", "/admin/users/%d/wallet" % sara["id"], {"amount": "-900000"})
 check("  never below nothing", code_ == 409 and user(sara["id"])["wallet"] == 150000)
+
+# Days and traffic by hand: either way, never to unlimited by accident.
+store.run("UPDATE users SET quota_bytes = 0, expires_at = NULL WHERE id = ?", (sara["id"],))
+code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], {"gb": 1})
+check("adjust: no quota to add to is refused, not made up",
+      code_ == 409 and body["error"] == "no_quota", str(body))
+code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], {"days": -1})
+check("adjust: no end date to take days from is refused",
+      code_ == 409 and body["error"] == "no_expiry", str(body))
+store.run("UPDATE users SET quota_bytes = ?, used_bytes = 0, expires_at = ? WHERE id = ?",
+          (10 * GB, "2099-01-10T00:00:00+00:00", sara["id"]))
+code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], {"days": 7, "gb": 5})
+check("adjust: days and traffic added together", code_ == 200
+      and user(sara["id"])["quota_bytes"] == 15 * GB
+      and user(sara["id"])["expires_at"].startswith("2099-01-17"), str(body))
+code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], {"days": -2, "gb": -3.5})
+check("adjust: and taken off, with fractions of a GB", code_ == 200
+      and user(sara["id"])["quota_bytes"] == int(11.5 * GB)
+      and user(sara["id"])["expires_at"].startswith("2099-01-15"), str(body))
+code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], {"gb": -999})
+check("adjust: taking too much leaves one byte, never zero (zero is unlimited)",
+      code_ == 200 and user(sara["id"])["quota_bytes"] == 1, str(body))
+store.run("UPDATE users SET expires_at = ? WHERE id = ?",
+          ("2000-01-01T00:00:00+00:00", sara["id"]))
+code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], {"days": 3})
+check("adjust: days added to a lapsed account count from today, not from the past",
+      code_ == 200 and user(sara["id"])["expires_at"] > "2020", str(body))
+for bad in ({}, {"days": 0}, {"days": "x"}, {"days": 99999}, {"gb": "abc"}):
+    code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], bad)
+    check("adjust: %s is refused" % bad, code_ == 400, str(body))
+check("adjust: the customer's bot is told", len(outbox("plan.adjusted")) >= 4)
 res = panel.create_receipt(store, user(sara["id"]), dict(SLIP, kind="topup", amount="100000"))
 code_, body = call("GET", "/admin/receipts")
 check("its receipts say which are top-ups",

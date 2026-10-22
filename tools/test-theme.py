@@ -85,8 +85,8 @@ for name, pal in (("dark", dark), ("light", light)):
 check("blue is the default accent in both themes",
       dark["accent"] == "#5aa2ff" and light["accent"] == "#1d5fd6")
 check("the same accents on both panels", admin.ACCENTS == sync.ACCENTS)
-check("pink and green are offered besides blue",
-      sorted(admin.ACCENTS) == ["green", "pink"])
+check("pink, green and red are offered besides blue",
+      sorted(admin.ACCENTS) == ["green", "pink", "red"])
 for acc, pair in admin.ACCENTS.items():
     for theme, base, over in (("dark", dark, pair[0]), ("light", light, pair[1])):
         pal = dict(base, **palette(over))
@@ -107,7 +107,7 @@ check("light when it was picked, whatever the device says",
       ":root[data-theme=light]{" + admin.LIGHT in t)
 check("the stored choice is taken only if it is a known one",
       "t=='light'||t=='dark'" in admin.THEME_HEAD and
-      "a=='blue'||a=='pink'||a=='green'" in admin.THEME_HEAD)
+      "a=='blue'||a=='pink'||a=='green'||a=='red'" in admin.THEME_HEAD)
 check("every accent has its own rule, for each theme",
       all((":root[data-accent=%s]{" % n) in t and
           (":root[data-theme=light][data-accent=%s]{" % n) in t

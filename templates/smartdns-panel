@@ -7079,6 +7079,61 @@ class AdminAPI:
         return 200, {"ok": True, "balance": balance,
                      "user": admin_user_view(self.store, user, self.relays)}
 
+    def api_admin_adjust(self, body, uid):
+        """Add days or traffic to an account, or take some off - by hand.
+
+        {"days": 7} / {"days": -3} move the end date; {"gb": 5} / {"gb": -2}
+        (or "bytes") move the quota. Either or both. Two things this will not
+        do: turn a quota of zero - which means unlimited here - into a number,
+        and leave a quota at zero by taking too much, which would make the
+        account unlimited. A quota taken to or below nothing becomes one byte:
+        spent, not free."""
+        user, err = self.admin_target(uid)
+        if err:
+            return err
+        days, delta = body.get("days"), body.get("bytes")
+        if body.get("gb") is not None:
+            try:
+                delta = int(round(float(body["gb"]) * 1024 ** 3))
+            except (TypeError, ValueError):
+                return 400, refused("bad_amount", "gb باید عدد باشد")
+        try:
+            days = None if days is None else int(days)
+            delta = None if delta is None else int(delta)
+        except (TypeError, ValueError):
+            return 400, refused("bad_amount", "days و bytes باید عدد صحیح باشند")
+        if not days and not delta:
+            return 400, refused("bad_amount", "days یا gb (یا bytes) را بدهید، غیر از صفر")
+        if abs(days or 0) > 3650 or abs(delta or 0) > 1024 ** 5:
+            return 400, refused("bad_amount", "این مقدار از حد مجاز بیشتر است")
+        sets, args, said = [], [], []
+        if days:
+            ends = parse_ts(user["expires_at"])
+            if ends is None and days < 0:
+                return 409, refused("no_expiry", "این حساب تاریخ پایان ندارد؛ چیزی برای کم کردن نیست")
+            base = max(ends, datetime.now(timezone.utc)) if ends and days > 0 \
+                else (ends or datetime.now(timezone.utc))
+            sets.append("expires_at = ?")
+            args.append((base + timedelta(days=days)).isoformat(timespec="seconds"))
+            said.append("%+d روز" % days)
+        if delta:
+            if not (user["quota_bytes"] or 0):
+                return 409, refused("no_quota", "حجم این حساب نامحدود است یا هنوز پلنی ندارد؛ "
+                                    "اول پلن بدهید")
+            sets.append("quota_bytes = ?")
+            args.append(max(1, user["quota_bytes"] + delta))
+            said.append("%+.2f گیگ" % (delta / 1024 ** 3))
+        # Back under the limit, the warnings it already crossed may fire again.
+        self.store.run("UPDATE users SET %s, warned = 0 WHERE id = ?" % ", ".join(sets),
+                       tuple(args) + (user["id"],))
+        self.admin_log("user #%d adjusted: %s" % (user["id"], ", ".join(said)))
+        user = self.store.one("SELECT * FROM users WHERE id = ?", (user["id"],))
+        emit(self.store, user, "plan.adjusted", {
+            "days": days or 0, "bytes": delta or 0,
+            "text": "🛠 حساب شما به‌روز شد: %s" % "، ".join(said)})
+        return 200, {"ok": True, "message": "، ".join(said),
+                     "user": admin_user_view(self.store, user, self.relays)}
+
     def api_admin_tickets(self, body):
         which = (self.query.get("status") or ["open"])[0]
         if which not in ("open", "answered", "closed", "all"):
@@ -7208,6 +7263,7 @@ class BotAPI(AdminAPI, http.server.BaseHTTPRequestHandler):
         ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/status$"), "admin_status"),
         ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/plan$"), "admin_plan"),
         ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/wallet$"), "admin_wallet"),
+        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/adjust$"), "admin_adjust"),
         ("GET", re.compile(r"/api/v1/admin/tickets$"), "admin_tickets"),
         ("GET", re.compile(r"/api/v1/admin/tickets/(\d{1,12})$"), "admin_ticket"),
         ("GET", re.compile(r"/api/v1/admin/tickets/(\d{1,12})/messages/(\d{1,12})/image$"),
