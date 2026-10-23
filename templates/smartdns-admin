@@ -3964,54 +3964,57 @@ body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none
 .dot.red{background:var(--c-red)}
 :root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 
-header{border-radius:26px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(14px);
- background:color-mix(in srgb,var(--card) 80%,transparent)}
-header::after{content:'';position:absolute;left:26px;right:26px;bottom:-1px;height:2px;border-radius:2px;
- background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);
- background-size:200% 100%;animation:md-flow 5s linear infinite}
-nav a{border-radius:999px}
-nav a.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent)}
-.card{border-radius:22px;animation:md-rise .55s cubic-bezier(.2,.8,.2,1) both}
-.wrap>.card:nth-child(3){animation-delay:.06s}.wrap>.card:nth-child(4){animation-delay:.12s}
-.wrap>.card:nth-child(5){animation-delay:.18s}.wrap>.card:nth-child(n+6){animation-delay:.24s}
-.card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
-.stat{border-radius:16px;transition:transform .2s,border-color .2s}
-.stat:hover{transform:translateY(-3px);border-color:var(--accent)}
-input,select,textarea{border-radius:12px}td input,td select{border-radius:10px}
-code{border-radius:8px}.msg{border-radius:14px}
-.receipt{border-radius:16px}.thread>div{border-radius:18px}
-.brand .mark{display:inline-block;width:1em;height:1em;animation:md-float 4s ease-in-out infinite}
-.brand .mark svg{display:block;width:100%;height:100%}
-.brand .name{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
- background-size:200% auto;-webkit-background-clip:text;background-clip:text;
- -webkit-text-fill-color:transparent;animation:md-flow 6s linear infinite}
-@media (max-width:700px){header{border-radius:20px;position:static}.card{border-radius:18px}}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-
-.card h2::before{content:'';display:inline-block;width:4px;height:1.05em;border-radius:4px;
- margin-inline-end:10px;vertical-align:-3px;background:linear-gradient(var(--accent),var(--accent2))}
-.stat{position:relative;overflow:hidden;border:0;
- background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 13%,var(--bg)),var(--bg) 70%)}
-.stat::before{content:'';position:absolute;top:-26px;inset-inline-end:-26px;width:76px;height:76px;
- border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,transparent)}
-.stat .n{position:relative}
-th{background:var(--row);border-bottom:0}
-th:first-child{border-radius:0 12px 12px 0}th:last-child{border-radius:12px 0 0 12px}
-html[dir=ltr] th:first-child{border-radius:12px 0 0 12px}html[dir=ltr] th:last-child{border-radius:0 12px 12px 0}
+/* Master DNS 0.0.3: a dashboard layout - sidebar, flat cards, compact tables. */
+header{border-radius:14px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(14px);
+ background:color-mix(in srgb,var(--card) 85%,transparent)}
+header::after{display:none}
+nav a{border-radius:10px;color:var(--muted)}
+nav a:hover{background:var(--row);color:var(--fg)}
+nav a.on{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:none;font-weight:600}
+button{border-radius:10px}
+input,select,textarea{border-radius:10px}td input,td select{border-radius:8px}
+code{border-radius:6px}.msg{border-radius:12px}.receipt{border-radius:12px}.thread>div{border-radius:14px}
+.card{border-radius:14px;box-shadow:none;animation:md-rise .5s cubic-bezier(.2,.8,.2,1) both}
+.wrap>.card:nth-child(3){animation-delay:.05s}.wrap>.card:nth-child(4){animation-delay:.1s}
+.wrap>.card:nth-child(5){animation-delay:.15s}.wrap>.card:nth-child(n+6){animation-delay:.2s}
+.card:hover{border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
+.card h2{font-size:15px;letter-spacing:.01em}
+.stat{position:relative;border-radius:12px;padding-inline-end:58px;border:1px solid var(--line);
+ background:var(--bg);transition:transform .2s,border-color .2s}
+.stat:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.stat::before{position:absolute;top:50%;inset-inline-end:14px;transform:translateY(-50%);
+ width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:14px;
+ background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.stat:nth-child(4n+1)::before{content:'●'}.stat:nth-child(4n+2)::before{content:'▲'}
+.stat:nth-child(4n+3)::before{content:'■'}.stat:nth-child(4n+4)::before{content:'◆'}
+th{background:transparent;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;
+ color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+td{border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+tbody tr:hover td,tr:hover>td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.bar{height:6px}
+.brand .mark{width:28px;height:28px}
+.brand .name{font-size:20px}
 @media (min-width:1000px){
- .wrap{max-width:none;margin:0;padding-inline-start:290px}
- header{position:fixed;top:92px;bottom:16px;inset-inline-start:16px;width:244px;z-index:5;
-  flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:12px;margin:0;
-  padding:18px 12px;overflow-y:auto;border-radius:26px}
- header::after{display:none}
- header h1{padding:0 10px 12px;border-bottom:1px solid var(--line);white-space:normal}
- nav{flex-direction:column;flex:1;gap:3px}
- nav a{padding:10px 14px;border-radius:14px;font-size:13.5px;
-  border-inline-start:3px solid transparent;transition:background .2s,padding .2s}
- nav a:hover{padding-inline-start:20px}
- nav a.on{border-inline-start-color:var(--accent);box-shadow:none}
- nav a.out{margin:auto 0 0;border-top:1px solid var(--line);border-radius:14px}
+ .wrap{max-width:none;margin:0;padding:64px 28px 40px;padding-inline-start:276px}
+ .brand{position:fixed;top:0;right:0;left:auto;width:248px;height:64px;z-index:7;margin:0;
+  display:flex;align-items:center;justify-content:center;gap:10px;background:var(--card);
+  border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+ html[dir=ltr] .brand{right:auto;left:0;border-left:0;border-right:1px solid var(--line)}
+ header{position:fixed;top:64px;bottom:0;inset-inline-start:0;width:248px;z-index:6;margin:0;
+  flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:10px;padding:16px 12px;
+  overflow-y:auto;border:0;border-inline-end:1px solid var(--line);border-radius:0;
+  background:var(--card);backdrop-filter:none}
+ header h1{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--faint);padding:0 12px;white-space:normal}
+ nav{flex-direction:column;flex:1;gap:2px}
+ nav a{padding:9px 12px;font-size:13.5px;transition:background .2s,color .2s}
+ nav a.out{margin:auto 0 0;border-top:1px solid var(--line);border-radius:0 0 10px 10px;padding-top:14px}
+ button.theme{left:auto;right:auto;inset-inline-end:14px}
+ .accents{left:auto;right:auto;inset-inline-end:62px}
+ button.theme.lang{left:auto;right:auto;inset-inline-end:170px}
 }
+@media (max-width:999px){.brand{margin:8px 0}}
+@media (max-width:700px){header{position:static;border-radius:12px}.card{border-radius:12px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 """
 
 CSS = THEME_CSS + """
@@ -6851,7 +6854,7 @@ def admin_stats_page(p, r):
                    " WHERE u.owner_admin = ? AND t.status = 'open'", (sid,))), "تیکت باز"),
         (str(one_n("SELECT count(*) FROM plans WHERE owner_admin = ? AND active = 1",
                    (sid,))), "پلن فعال"))
-    out.append("<div class='card'><h2>خلاصه</h2><div class='grid'>")
+    out.append("<div class='card'><h2>نمای کلی</h2><div class='grid'>")
     for v, label in stats:
         out.append("<div class='stat'><div class='n'>%s</div><div class='l'>%s</div></div>"
                    % (html.escape(v), label))
@@ -7138,13 +7141,13 @@ def me_card(p):
 def page(title, body, cfg, active="", msg=None, msg_kind="good"):
     nav = ""
     waiting = tickets_waiting()
-    for path, label in (("", "خانه"), ("users", "کاربران"), ("receipts", "رسیدها"),
-                        ("tickets", "تیکت‌ها (%d)" % waiting if waiting else "تیکت‌ها"),
-                        ("plans", "پلن‌ها"), ("pay", "پرداخت"), ("templates", "قالب‌ها"), ("domains", "دامنه‌ها"),
-                        ("bot", "ربات"), ("api", "API"), ("nodes", "نود"),
+    for path, label in (("", "داشبورد"), ("users", "کاربران"), ("receipts", "واریزی‌ها"),
+                        ("tickets", "پشتیبانی (%d)" % waiting if waiting else "پشتیبانی"),
+                        ("plans", "بسته‌ها"), ("pay", "درگاه‌ها"), ("templates", "الگوها"), ("domains", "مسیریابی"),
+                        ("bot", "ربات تلگرام"), ("api", "API"), ("nodes", "سرورها"),
                         ("wireguard", "وایرگارد"), ("settings", "تنظیمات"),
-                        ("logs", "لاگ"), ("diagnose", "عیب‌یابی"), ("admins", "ادمین‌ها"),
-                        ("me", "حساب من")):
+                        ("logs", "گزارش‌ها"), ("diagnose", "وضعیت سیستم"), ("admins", "مدیران"),
+                        ("me", "پروفایل")):
         # A single machine has no relays of its own to manage.
         if path in ("nodes", "wireguard") and one_server():
             continue
@@ -7168,7 +7171,7 @@ def page(title, body, cfg, active="", msg=None, msg_kind="good"):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="data:,">
 <title>%s</title>%s<style>%s</style></head><body>%s<div class="wrap">%s
-<header><h1>%s</h1><nav>%s<a class='out' href='/%s/logout'>خروج</a></nav></header>
+<header><h1>%s</h1><nav>%s<a class='out' href='/%s/logout'>خروج از پنل</a></nav></header>
 %s%s%s</div></body></html>""" % (html.escape(title), THEME_HEAD,
                                  font_face("/" + cfg["ADMIN_PATH"]) + CSS,
                                  THEME_BUTTON, brand_html(),
@@ -7186,7 +7189,7 @@ def login_page(cfg, error=None):
 <link rel="icon" href="data:,">
 <title>ورود</title>%s<style>%s</style></head><body>%s<div class="wrap">%s
 <div class="login" style="margin-top:6vh">
-<div class="card"><h2>پنل مدیریت</h2>%s
+<div class="card"><h2>مرکز مدیریت</h2>%s
 <form method="post" action="/%s/"><div class="f"><label>نام کاربری</label>
 <input name="username" autocomplete="username" dir="ltr" autocapitalize="none"
 spellcheck="false" autofocus style="width:100%%"></div>
@@ -8175,28 +8178,28 @@ class Admin(http.server.BaseHTTPRequestHandler):
         msg = msg[0] if msg else None
         kind = "err" if (msg or "").startswith("!") else "good"
         msg = msg.lstrip("!") if msg else None
-        pages = {"": ("پنل مدیریت", self.home), "index": ("پنل مدیریت", self.home),
+        pages = {"": ("مرکز مدیریت", self.home), "index": ("مرکز مدیریت", self.home),
                  "users": ("کاربران", self.users),
-                 "receipts": ("رسیدها", self.receipts),
-                 "plans": ("پلن‌ها", self.plans),
+                 "receipts": ("واریزی‌ها", self.receipts),
+                 "plans": ("بسته‌ها", self.plans),
                  "pay": ("اطلاعات پرداخت", self.pay_page),
-                 "tickets": ("تیکت‌ها", self.tickets),
-                 "templates": ("قالب‌ها", self.templates),
-                 "domains": ("دامنه‌ها", self.domains),
+                 "tickets": ("پشتیبانی", self.tickets),
+                 "templates": ("الگوها", self.templates),
+                 "domains": ("مسیریابی", self.domains),
                  "api": ("API ربات", self.api_keys),
                  "bot": ("ربات تلگرام", self.bot_page),
                  "settings": ("تنظیمات", self.settings),
                  "restore": ("بازگردانی", self.restore_page),
-                 "logs": ("لاگ", self.logs),
-                 "diagnose": ("عیب‌یابی", diagnose_page),
-                 "nodes": ("نود", nodes_page),
+                 "logs": ("گزارش‌ها", self.logs),
+                 "diagnose": ("وضعیت سیستم", diagnose_page),
+                 "nodes": ("سرورها", nodes_page),
                  "server": ("آمار سرور", self.server_page),
                  "usage": ("مصرف کاربر", self.user_usage_page),
                  "wallet": ("کیف پول کاربر", self.wallet_page),
                  "wg": ("وایرگارد کاربر", lambda: wg_page(self.path)),
                  "wireguard": ("وایرگارد", lambda: wg_admin_page(CFG["ADMIN_PATH"])),
-                 "admins": ("ادمین‌ها", self.admins_page),
-                 "me": ("حساب من", lambda: me_card(CFG["ADMIN_PATH"]))}
+                 "admins": ("مدیران", self.admins_page),
+                 "me": ("پروفایل", lambda: me_card(CFG["ADMIN_PATH"]))}
         if rest not in pages:
             return self.lost()
         title, fn = pages[rest]
@@ -8226,7 +8229,7 @@ class Admin(http.server.BaseHTTPRequestHandler):
         ips = STORE.one("SELECT count(*) c FROM ips i JOIN users u ON u.id = i.user_id"
                         " WHERE i.wg = 0" + extra, args)
         online = online_rows(extra, args) if may("users") else None
-        out = ["<div class='card'><h2>خلاصه</h2><div class='grid'>"]
+        out = ["<div class='card'><h2>نمای کلی</h2><div class='grid'>"]
         stats = [(u["c"], "کاربر"), (act["c"], "فعال")]
         if online is not None:
             stats.append((len(online), "آنلاین"))

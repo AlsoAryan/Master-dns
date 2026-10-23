@@ -200,8 +200,8 @@ check("with a way to add one, take one off, and install one",
       "action='/p/relay-add'" in card and "action='/p/relay-del'" in card
       and ("s3cret." in card or not made) and "203.0.113.9" in card)
 asrc = read("templates/smartdns-admin")
-check("on a page of its own, 'نود', not in the settings",
-      '"nodes": ("نود", nodes_page),' in asrc and '("nodes", "نود")' in asrc
+check("on a page of its own, 'سرورها', not in the settings",
+      '"nodes": ("سرورها", nodes_page),' in asrc and '("nodes", "سرورها")' in asrc
       and "out.append(relays_card(p))" not in asrc)
 check("  which a single machine, with no relays of its own, does not list",
       'if path in ("nodes", "wireguard") and one_server():' in asrc)
