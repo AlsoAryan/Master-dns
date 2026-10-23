@@ -62,10 +62,8 @@ route to Google over IPv6); **udp** 53, 3478.
   caps, service templates down to single domains.
 - **Selling**: plans, receipts, discount codes, a free trial, a wallet,
   invitation links, extra devices, and resellers with their own plans and bot.
-- **Panels**: a dashboard-style operator panel and a customer panel in Persian or
-  English, light and dark, with a blue, pink, green or red accent. The public
-  forms are guarded against bots and floods: a hidden trap field, a signed
-  timer and a per-address limit, none of which a person notices.
+- **Panels**: an operator panel and a customer panel in Persian or English,
+  light and dark, with a blue, pink, green or red accent.
 - **Encrypted DNS**: DoH and DoT per server, an address per customer, an iPhone
   profile, a Windows 11 command. WireGuard for where DNS alone is not enough.
 - **Scale**: more exits and single servers on one panel, a standby that takes

@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.3"
+VERSION="0.0.2"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -16644,7 +16644,6 @@ exit 0
 #.dns,details.pw{border-radius:18px}
 #a.tk,label.plan,.pay{border-radius:14px}.thread>div{border-radius:18px}
 #.icon{animation:md-float 3.5s ease-in-out infinite}
-#.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 #
 #.card{position:relative;overflow:hidden}
@@ -17021,60 +17020,6 @@ exit 0
 #REF_RE = re.compile(r"[A-Za-z0-9]{6,16}")
 #
 #
-## ------------------------------------------------------------ anti-spam
-## The public forms are the one place a stranger can make the panel do work:
-## sign up, sign in, ask for a code. Three cheap checks stand in front of them,
-## none of which a person ever sees: a field only a bot fills in, a stamp that
-## proves the form was open for a moment (and not for a day), and a count per
-## address. A real person passes all three without noticing.
-#GUARD_KEY = os.urandom(16)          # a restart only means "open the page again"
-#GUARD_MIN_AGE, GUARD_MAX_AGE = 2, 2 * 3600
-#GUARD_LIMITS = {"signup": (6, 3600), "login": (20, 600), "forgot": (8, 3600)}
-#GUARD_HITS = {}
-#GUARD_LOCK = threading.Lock()
-#
-#
-#def guard_stamp(now=None):
-#    ts = str(int(now if now is not None else time.time()))
-#    mac = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
-#    return "%s.%s" % (ts, mac)
-#
-#
-#def guard_fields():
-#    """The hidden half of a form: the trap field and the stamp."""
-#    return ("<input class='hp' name='website' tabindex='-1' autocomplete='off' "
-#            "aria-hidden='true'><input type='hidden' name='ft' value='%s'>" % guard_stamp())
-#
-#
-#def guard_check(form, ip, kind, now=None):
-#    """None when the submission looks human, otherwise what to tell them."""
-#    now = now if now is not None else time.time()
-#    if form.get("website"):
-#        return "درخواست پذیرفته نشد"
-#    ts, _, mac = (form.get("ft") or "").partition(".")
-#    good = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
-#    if not ts.isdigit() or not hmac.compare_digest(mac, good):
-#        return "صفحه را دوباره باز کنید و دوباره بفرستید"
-#    age = now - int(ts)
-#    if age < GUARD_MIN_AGE:
-#        return "کمی آهسته‌تر؛ دوباره بفرستید"
-#    if age > GUARD_MAX_AGE:
-#        return "این صفحه کهنه شده؛ دوباره بازش کنید"
-#    limit, window = GUARD_LIMITS[kind]
-#    with GUARD_LOCK:
-#        key = (kind, ip)
-#        kept = [t for t in GUARD_HITS.get(key, []) if t > now - window]
-#        if len(kept) >= limit:
-#            GUARD_HITS[key] = kept
-#            return "تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کنید"
-#        kept.append(now)
-#        GUARD_HITS[key] = kept
-#        if len(GUARD_HITS) > 5000:      # never grow without bound
-#            for k in [k for k, v in GUARD_HITS.items() if not v or v[-1] < now - 3600]:
-#                GUARD_HITS.pop(k, None)
-#    return None
-#
-#
 #def signup_form(banner="", ref=""):
 #    # An invitation code, carried on to the panel with the form. Only its own
 #    # characters, so it goes into the page as it is.
@@ -17083,7 +17028,7 @@ exit 0
 #            ("<div class='msg good'>🎁 با لینک دعوت یکی از دوستانتان آمده‌اید.</div>"
 #             if ref else "") +
 #            "<h1>ثبت‌نام</h1><p class='sub'>%s</p>"
-#            "<form method='post' action='/signup'>%s%s"
+#            "<form method='post' action='/signup'>%s"
 #            "<label>نام</label>"
 #            "<input name='name' maxlength='60' autocomplete='name'>"
 #            "<label>نام کاربری</label>"
@@ -17102,14 +17047,14 @@ exit 0
 #            "حروف انگلیسی، عدد، و . _ - ؛ بزرگ و کوچک فرقی ندارد. اگر قبلاً "
 #            "کسی گرفته باشدش، پیغام می‌دهد.</p>"
 #            "<p class='alt'>حساب دارید؟ <a href='/login'>وارد شوید</a></p>"
-#            % (html.escape(brand()), guard_fields(),
+#            % (html.escape(brand()),
 #               "<input type='hidden' name='ref' value='%s'>" % ref if ref else ""))
 #
 #
 #def login_form(banner=""):
 #    return (banner +
 #            "<h1>ورود</h1><p class='sub'>%s</p>"
-#            "<form method='post' action='/login'>%s"
+#            "<form method='post' action='/login'>"
 #            "<label>نام کاربری</label>"
 #            "<input name='username' required maxlength='32' "
 #            "autocapitalize='none' spellcheck='false' "
@@ -17119,7 +17064,7 @@ exit 0
 #            "autocomplete='current-password'>"
 #            "<button>ورود</button></form>%s"
 #            "<p class='alt'>حساب ندارید؟ <a href='/signup'>ثبت‌نام کنید</a></p>"
-#            % (html.escape(brand()), guard_fields(), forgot_line()))
+#            % (html.escape(brand()), forgot_line()))
 #
 #
 #def forgot_line():
@@ -17145,7 +17090,7 @@ exit 0
 #            "<div class='icon'>🔑</div><h1>بازیابی رمز</h1>"
 #            "<p class='sub'>اگر حسابتان به تلگرام وصل باشد، یک کد شش‌رقمی به تلگرامتان "
 #            "می‌فرستیم.</p>"
-#            "<form method='post' action='/forgot'>" + guard_fields() +
+#            "<form method='post' action='/forgot'>"
 #            "<label>نام کاربری</label>"
 #            "<input name='username' required maxlength='32' autocapitalize='none' "
 #            "spellcheck='false' autocomplete='username'>"
@@ -17158,7 +17103,7 @@ exit 0
 #    return (banner +
 #            "<div class='icon'>✉️</div><h1>کد را وارد کنید</h1>"
 #            "<p class='sub'>کد شش‌رقمی‌ای که در تلگرام گرفتید، و رمز تازه.</p>"
-#            "<form method='post' action='/forgot-code'>%s"
+#            "<form method='post' action='/forgot-code'>"
 #            "<input type='hidden' name='username' value='%s'>"
 #            "<label>کد</label>"
 #            "<input name='code' required maxlength='6' inputmode='numeric' "
@@ -17171,7 +17116,7 @@ exit 0
 #            "autocomplete='new-password'>"
 #            "<button>ذخیره و ورود</button></form>"
 #            "<p class='alt'>کد نرسید؟ <a href='/forgot'>دوباره بفرستید</a></p>"
-#            % (guard_fields(), html.escape(username, quote=True)))
+#            % html.escape(username, quote=True))
 #
 #
 #def telegram_box(info):
@@ -18647,12 +18592,6 @@ exit 0
 #        raise ValueError("فایلی انتخاب نشده بود")
 #
 #    def form(self):
-#        """The POST body, read once per request however many handlers ask."""
-#        if getattr(self, "_form_cache", None) is None:
-#            self._form_cache = self._read_form()
-#        return self._form_cache
-#
-#    def _read_form(self):
 #        """Read the POST body. Bounded, because this is a public port in Iran
 #        and nothing stops somebody announcing a gigabyte.
 #
@@ -18855,19 +18794,12 @@ exit 0
 #        self.wfile.write(blob)
 #
 #    def do_POST(self):
-#        self._form_cache = None      # a connection can carry several requests
 #        path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
 #        if self.sent_elsewhere(path):
 #            return
 #
-#        if path in ("/signup", "/login", "/forgot", "/forgot-code"):
-#            form = self.form()
-#            kind = {"/signup": "signup", "/login": "login"}.get(path, "forgot")
-#            why = guard_check(form, self.client_ip(), kind)
-#            if why:
-#                log(WARN, "panel: %s from %s held back: %s" % (path, self.client_ip(), why))
-#                return self.redirect(path if path != "/forgot-code" else "/forgot", why, bad=True)
 #        if path in ("/signup", "/login"):
+#            form = self.form()
 #            endpoint = "/user-signup" if path == "/signup" else "/user-password-login"
 #            back = path
 #            payload = {"username": form.get("username", ""),
@@ -24595,57 +24527,54 @@ exit 0
 #.dot.red{background:var(--c-red)}
 #:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
-#/* Master DNS 0.0.3: a dashboard layout - sidebar, flat cards, compact tables. */
-#header{border-radius:14px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(14px);
-# background:color-mix(in srgb,var(--card) 85%,transparent)}
-#header::after{display:none}
-#nav a{border-radius:10px;color:var(--muted)}
-#nav a:hover{background:var(--row);color:var(--fg)}
-#nav a.on{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:none;font-weight:600}
-#button{border-radius:10px}
-#input,select,textarea{border-radius:10px}td input,td select{border-radius:8px}
-#code{border-radius:6px}.msg{border-radius:12px}.receipt{border-radius:12px}.thread>div{border-radius:14px}
-#.card{border-radius:14px;box-shadow:none;animation:md-rise .5s cubic-bezier(.2,.8,.2,1) both}
-#.wrap>.card:nth-child(3){animation-delay:.05s}.wrap>.card:nth-child(4){animation-delay:.1s}
-#.wrap>.card:nth-child(5){animation-delay:.15s}.wrap>.card:nth-child(n+6){animation-delay:.2s}
-#.card:hover{border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
-#.card h2{font-size:15px;letter-spacing:.01em}
-#.stat{position:relative;border-radius:12px;padding-inline-end:58px;border:1px solid var(--line);
-# background:var(--bg);transition:transform .2s,border-color .2s}
-#.stat:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
-#.stat::before{position:absolute;top:50%;inset-inline-end:14px;transform:translateY(-50%);
-# width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:14px;
-# background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
-#.stat:nth-child(4n+1)::before{content:'●'}.stat:nth-child(4n+2)::before{content:'▲'}
-#.stat:nth-child(4n+3)::before{content:'■'}.stat:nth-child(4n+4)::before{content:'◆'}
-#th{background:transparent;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;
-# color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
-#td{border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
-#tbody tr:hover td,tr:hover>td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
-#.bar{height:6px}
-#.brand .mark{width:28px;height:28px}
-#.brand .name{font-size:20px}
-#@media (min-width:1000px){
-# .wrap{max-width:none;margin:0;padding:64px 28px 40px;padding-inline-start:276px}
-# .brand{position:fixed;top:0;right:0;left:auto;width:248px;height:64px;z-index:7;margin:0;
-#  display:flex;align-items:center;justify-content:center;gap:10px;background:var(--card);
-#  border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
-# html[dir=ltr] .brand{right:auto;left:0;border-left:0;border-right:1px solid var(--line)}
-# header{position:fixed;top:64px;bottom:0;inset-inline-start:0;width:248px;z-index:6;margin:0;
-#  flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:10px;padding:16px 12px;
-#  overflow-y:auto;border:0;border-inline-end:1px solid var(--line);border-radius:0;
-#  background:var(--card);backdrop-filter:none}
-# header h1{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--faint);padding:0 12px;white-space:normal}
-# nav{flex-direction:column;flex:1;gap:2px}
-# nav a{padding:9px 12px;font-size:13.5px;transition:background .2s,color .2s}
-# nav a.out{margin:auto 0 0;border-top:1px solid var(--line);border-radius:0 0 10px 10px;padding-top:14px}
-# button.theme{left:auto;right:auto;inset-inline-end:14px}
-# .accents{left:auto;right:auto;inset-inline-end:62px}
-# button.theme.lang{left:auto;right:auto;inset-inline-end:170px}
-#}
-#@media (max-width:999px){.brand{margin:8px 0}}
-#@media (max-width:700px){header{position:static;border-radius:12px}.card{border-radius:12px}}
+#header{border-radius:26px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(14px);
+# background:color-mix(in srgb,var(--card) 80%,transparent)}
+#header::after{content:'';position:absolute;left:26px;right:26px;bottom:-1px;height:2px;border-radius:2px;
+# background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);
+# background-size:200% 100%;animation:md-flow 5s linear infinite}
+#nav a{border-radius:999px}
+#nav a.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent)}
+#.card{border-radius:22px;animation:md-rise .55s cubic-bezier(.2,.8,.2,1) both}
+#.wrap>.card:nth-child(3){animation-delay:.06s}.wrap>.card:nth-child(4){animation-delay:.12s}
+#.wrap>.card:nth-child(5){animation-delay:.18s}.wrap>.card:nth-child(n+6){animation-delay:.24s}
+#.card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+#.stat{border-radius:16px;transition:transform .2s,border-color .2s}
+#.stat:hover{transform:translateY(-3px);border-color:var(--accent)}
+#input,select,textarea{border-radius:12px}td input,td select{border-radius:10px}
+#code{border-radius:8px}.msg{border-radius:14px}
+#.receipt{border-radius:16px}.thread>div{border-radius:18px}
+#.brand .mark{display:inline-block;width:1em;height:1em;animation:md-float 4s ease-in-out infinite}
+#.brand .mark svg{display:block;width:100%;height:100%}
+#.brand .name{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
+# background-size:200% auto;-webkit-background-clip:text;background-clip:text;
+# -webkit-text-fill-color:transparent;animation:md-flow 6s linear infinite}
+#@media (max-width:700px){header{border-radius:20px;position:static}.card{border-radius:18px}}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#
+#.card h2::before{content:'';display:inline-block;width:4px;height:1.05em;border-radius:4px;
+# margin-inline-end:10px;vertical-align:-3px;background:linear-gradient(var(--accent),var(--accent2))}
+#.stat{position:relative;overflow:hidden;border:0;
+# background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 13%,var(--bg)),var(--bg) 70%)}
+#.stat::before{content:'';position:absolute;top:-26px;inset-inline-end:-26px;width:76px;height:76px;
+# border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,transparent)}
+#.stat .n{position:relative}
+#th{background:var(--row);border-bottom:0}
+#th:first-child{border-radius:0 12px 12px 0}th:last-child{border-radius:12px 0 0 12px}
+#html[dir=ltr] th:first-child{border-radius:12px 0 0 12px}html[dir=ltr] th:last-child{border-radius:0 12px 12px 0}
+#@media (min-width:1000px){
+# .wrap{max-width:none;margin:0;padding-inline-start:290px}
+# header{position:fixed;top:92px;bottom:16px;inset-inline-start:16px;width:244px;z-index:5;
+#  flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:12px;margin:0;
+#  padding:18px 12px;overflow-y:auto;border-radius:26px}
+# header::after{display:none}
+# header h1{padding:0 10px 12px;border-bottom:1px solid var(--line);white-space:normal}
+# nav{flex-direction:column;flex:1;gap:3px}
+# nav a{padding:10px 14px;border-radius:14px;font-size:13.5px;
+#  border-inline-start:3px solid transparent;transition:background .2s,padding .2s}
+# nav a:hover{padding-inline-start:20px}
+# nav a.on{border-inline-start-color:var(--accent);box-shadow:none}
+# nav a.out{margin:auto 0 0;border-top:1px solid var(--line);border-radius:14px}
+#}
 #"""
 #
 #CSS = THEME_CSS + """
@@ -27485,7 +27414,7 @@ exit 0
 #                   " WHERE u.owner_admin = ? AND t.status = 'open'", (sid,))), "تیکت باز"),
 #        (str(one_n("SELECT count(*) FROM plans WHERE owner_admin = ? AND active = 1",
 #                   (sid,))), "پلن فعال"))
-#    out.append("<div class='card'><h2>نمای کلی</h2><div class='grid'>")
+#    out.append("<div class='card'><h2>خلاصه</h2><div class='grid'>")
 #    for v, label in stats:
 #        out.append("<div class='stat'><div class='n'>%s</div><div class='l'>%s</div></div>"
 #                   % (html.escape(v), label))
@@ -27772,13 +27701,13 @@ exit 0
 #def page(title, body, cfg, active="", msg=None, msg_kind="good"):
 #    nav = ""
 #    waiting = tickets_waiting()
-#    for path, label in (("", "داشبورد"), ("users", "کاربران"), ("receipts", "واریزی‌ها"),
-#                        ("tickets", "پشتیبانی (%d)" % waiting if waiting else "پشتیبانی"),
-#                        ("plans", "بسته‌ها"), ("pay", "درگاه‌ها"), ("templates", "الگوها"), ("domains", "مسیریابی"),
-#                        ("bot", "ربات تلگرام"), ("api", "API"), ("nodes", "سرورها"),
+#    for path, label in (("", "خانه"), ("users", "کاربران"), ("receipts", "رسیدها"),
+#                        ("tickets", "تیکت‌ها (%d)" % waiting if waiting else "تیکت‌ها"),
+#                        ("plans", "پلن‌ها"), ("pay", "پرداخت"), ("templates", "قالب‌ها"), ("domains", "دامنه‌ها"),
+#                        ("bot", "ربات"), ("api", "API"), ("nodes", "نود"),
 #                        ("wireguard", "وایرگارد"), ("settings", "تنظیمات"),
-#                        ("logs", "گزارش‌ها"), ("diagnose", "وضعیت سیستم"), ("admins", "مدیران"),
-#                        ("me", "پروفایل")):
+#                        ("logs", "لاگ"), ("diagnose", "عیب‌یابی"), ("admins", "ادمین‌ها"),
+#                        ("me", "حساب من")):
 #        # A single machine has no relays of its own to manage.
 #        if path in ("nodes", "wireguard") and one_server():
 #            continue
@@ -27802,7 +27731,7 @@ exit 0
 #<meta name="viewport" content="width=device-width,initial-scale=1">
 #<link rel="icon" href="data:,">
 #<title>%s</title>%s<style>%s</style></head><body>%s<div class="wrap">%s
-#<header><h1>%s</h1><nav>%s<a class='out' href='/%s/logout'>خروج از پنل</a></nav></header>
+#<header><h1>%s</h1><nav>%s<a class='out' href='/%s/logout'>خروج</a></nav></header>
 #%s%s%s</div></body></html>""" % (html.escape(title), THEME_HEAD,
 #                                 font_face("/" + cfg["ADMIN_PATH"]) + CSS,
 #                                 THEME_BUTTON, brand_html(),
@@ -27820,7 +27749,7 @@ exit 0
 #<link rel="icon" href="data:,">
 #<title>ورود</title>%s<style>%s</style></head><body>%s<div class="wrap">%s
 #<div class="login" style="margin-top:6vh">
-#<div class="card"><h2>مرکز مدیریت</h2>%s
+#<div class="card"><h2>پنل مدیریت</h2>%s
 #<form method="post" action="/%s/"><div class="f"><label>نام کاربری</label>
 #<input name="username" autocomplete="username" dir="ltr" autocapitalize="none"
 #spellcheck="false" autofocus style="width:100%%"></div>
@@ -28809,28 +28738,28 @@ exit 0
 #        msg = msg[0] if msg else None
 #        kind = "err" if (msg or "").startswith("!") else "good"
 #        msg = msg.lstrip("!") if msg else None
-#        pages = {"": ("مرکز مدیریت", self.home), "index": ("مرکز مدیریت", self.home),
+#        pages = {"": ("پنل مدیریت", self.home), "index": ("پنل مدیریت", self.home),
 #                 "users": ("کاربران", self.users),
-#                 "receipts": ("واریزی‌ها", self.receipts),
-#                 "plans": ("بسته‌ها", self.plans),
+#                 "receipts": ("رسیدها", self.receipts),
+#                 "plans": ("پلن‌ها", self.plans),
 #                 "pay": ("اطلاعات پرداخت", self.pay_page),
-#                 "tickets": ("پشتیبانی", self.tickets),
-#                 "templates": ("الگوها", self.templates),
-#                 "domains": ("مسیریابی", self.domains),
+#                 "tickets": ("تیکت‌ها", self.tickets),
+#                 "templates": ("قالب‌ها", self.templates),
+#                 "domains": ("دامنه‌ها", self.domains),
 #                 "api": ("API ربات", self.api_keys),
 #                 "bot": ("ربات تلگرام", self.bot_page),
 #                 "settings": ("تنظیمات", self.settings),
 #                 "restore": ("بازگردانی", self.restore_page),
-#                 "logs": ("گزارش‌ها", self.logs),
-#                 "diagnose": ("وضعیت سیستم", diagnose_page),
-#                 "nodes": ("سرورها", nodes_page),
+#                 "logs": ("لاگ", self.logs),
+#                 "diagnose": ("عیب‌یابی", diagnose_page),
+#                 "nodes": ("نود", nodes_page),
 #                 "server": ("آمار سرور", self.server_page),
 #                 "usage": ("مصرف کاربر", self.user_usage_page),
 #                 "wallet": ("کیف پول کاربر", self.wallet_page),
 #                 "wg": ("وایرگارد کاربر", lambda: wg_page(self.path)),
 #                 "wireguard": ("وایرگارد", lambda: wg_admin_page(CFG["ADMIN_PATH"])),
-#                 "admins": ("مدیران", self.admins_page),
-#                 "me": ("پروفایل", lambda: me_card(CFG["ADMIN_PATH"]))}
+#                 "admins": ("ادمین‌ها", self.admins_page),
+#                 "me": ("حساب من", lambda: me_card(CFG["ADMIN_PATH"]))}
 #        if rest not in pages:
 #            return self.lost()
 #        title, fn = pages[rest]
@@ -28860,7 +28789,7 @@ exit 0
 #        ips = STORE.one("SELECT count(*) c FROM ips i JOIN users u ON u.id = i.user_id"
 #                        " WHERE i.wg = 0" + extra, args)
 #        online = online_rows(extra, args) if may("users") else None
-#        out = ["<div class='card'><h2>نمای کلی</h2><div class='grid'>"]
+#        out = ["<div class='card'><h2>خلاصه</h2><div class='grid'>"]
 #        stats = [(u["c"], "کاربر"), (act["c"], "فعال")]
 #        if online is not None:
 #            stats.append((len(online), "آنلاین"))
@@ -41943,6 +41872,7 @@ exit 0
 #"ادمین متوقفش کرد (": "The admin stopped it (",
 #"ادمین مسدودش کرده": "Blocked by the admin",
 #"ادمینی با این نام کاربری هست": "An admin with this username exists",
+#"ادمین‌ها": "Admins",
 #"ادمین‌ها (": "Admins (",
 #"ارسال آزمایشی": "Send test",
 #"ارسال پیام آزمایشی": "Send a test message",
@@ -42453,6 +42383,7 @@ exit 0
 #"تیکت منتظر جواب:": "Tickets waiting for a reply:",
 #"تیکتی نیامده. مشتری‌ها از پنل خودشان یا از ربات تیکت می‌فرستند.": "No tickets yet. Customers send tickets from their own panel or from the bot.",
 #"تیکت‌ها": "Tickets",
+#"تیکت‌ها (": "Tickets (",
 #"تیکت‌های شما:": "Your tickets:",
 #"تیکِ مسدودها و DNS جداگانه یعنی برای مشتری‌های این قالب. برداشتن تیکِ ردیفی که «همهٔ قالب‌ها» است آن را فقط برای قالب‌های دیگر نگه می‌دارد. اگر دامنه‌ای در این قالب هم مسدود باشد هم DNS جداگانه داشته باشد، مسدود بودن برنده است.": "A tick on a block or a separate DNS means it is for this template’s customers. Unticking a row that is “All templates” keeps it for the other templates only. If a domain in this template is both blocked and has a separate DNS, the block wins.",
 #"ثانیه —": "seconds —",
@@ -42551,6 +42482,7 @@ exit 0
 #"خاموش کردن و پاک کردن": "Turn off and clear",
 #"خاموش — رله مستقیم به سرور خارج وصل شود": "Off — the relay connects straight to the exit server",
 #"خاموش — مستقیم": "Off — direct",
+#"خانه": "Home",
 #"خبر": "Message",
 #"خبر آزمایشی در صف است؛ چند ثانیه دیگر وضعیتش پایین همین صفحه دیده می‌شود": "A test message is queued; its status shows at the bottom of this page in a few seconds",
 #"خبر دادن به این ربات خاموش شد": "Messages to this bot turned off",
@@ -42567,6 +42499,7 @@ exit 0
 #"خطا": "Error",
 #"خطاهای nginx — اگر مشتری به سایتی وصل نمی‌شود، دلیلش معمولاً این‌جاست": "nginx errors — if a customer cannot reach a site, the reason is usually here",
 #"خطاهای nginx — سرور خارج": "nginx errors — exit server",
+#"خلاصه": "Summary",
 #"خوب": "Good",
 #"خودش قالب بسازد، تا": "Makes their own templates, up to",
 #"خودکار": "Automatic",
@@ -42811,6 +42744,7 @@ exit 0
 #"رسید پرداخت شما تأیید شد؛ به‌زودی حسابتان شارژ می‌شود.": "Your payment receipt was approved; your account will be topped up soon.",
 #"رسید پرداخت شما تأیید نشد. اگر فکر می‌کنید اشتباهی شده، با پشتیبانی در تماس باشید.": "Your payment receipt was not approved. If you think this is a mistake, please contact support.",
 #"رسیده به ربات": "Reached the bot",
+#"رسیدها": "Receipts",
 #"رسیدها و کیف پول": "Receipts and wallets",
 #"رسیدهای در انتظار (": "Receipts waiting (",
 #"رسیدی برای این پلن در انتظار است؛ اول آن را بررسی کنید": "A receipt for this plan is waiting; review it first",
@@ -43084,6 +43018,7 @@ exit 0
 #"عکس یا فیلم (اختیاری)": "Photo or video (optional)",
 #"عکس‌ها رمزگذاری نمی‌شوند: کتابخانهٔ OpenSSL روی این سرور پیدا نشد.": "Pictures are not encrypted: the OpenSSL library was not found on this server.",
 #"عکس‌ها و فیلم‌ها روی هم بیشتر از ۵۰ مگابایت است": "The photos and videos come to more than 50 MB together",
+#"عیب‌یابی": "Diagnose",
 #"عیب‌یابی سرویس‌ها": "Service diagnosis",
 #"غیرفعال": "Inactive",
 #"غیرفعال شد": "Disabled",
@@ -43615,6 +43550,7 @@ exit 0
 #"پث آو اگزایل": "Path of Exile",
 #"پر شده است:": "is full:",
 #"پراکسی": "Proxy",
+#"پرداخت": "Payment",
 #"پرسیده می‌شود": "is asked",
 #"پرش به:": "Jump to:",
 #"پرفکت ورلد": "Perfect World",
@@ -43667,6 +43603,7 @@ exit 0
 #"پنل جواب درستی نداد (HTTP": "The panel did not answer properly (HTTP",
 #"پنل را همان‌طور ببینید که او می‌بیند": "See the panel as they see it",
 #"پنل فهرست کامل را از سازنده‌اش می‌گیرد، دامنه‌هایی را که خود سرویس لازم دارد یا از رله می‌روند از آن کنار می‌گذارد، و هر رله فقط یک بار دریافتش می‌کند؛ روشن شدنش چند دقیقه طول می‌کشد. توجه: بعضی بازی‌های موبایل برای دیدن تبلیغ جایزه می‌دهند؛ اگر تبلیغ بسته شود، آن جایزه هم دیگر نمی‌آید.": "The panel takes the full list from its maker, leaves out the domains the service itself needs or that go through the relay, and each relay downloads it once; turning it on takes a few minutes. Note: some mobile games reward watching ads; with ads blocked, that reward stops too.",
+#"پنل مدیریت": "Admin panel",
 #"پنل مشتری": "Customer panel",
 #"پنل مشتری برای کسی که سرویس ندارد": "The customer panel for those without service",
 #"پنل مشتری برای کسی که سرویس ندارد خودش باز می‌شود": "The customer panel opens by itself for those without service",
@@ -44078,26 +44015,7 @@ exit 0
 #"🟢 آنلاین الان (": "🟢 Online now (",
 #"🤖 لینک ربات:": "🤖 Bot link:",
 #"🧾 رسید #": "🧾 Receipt #",
-#"🧾 پرداخت با رسید": "🧾 Pay with a receipt",
-#"نمای کلی": "Overview",
-#"داشبورد": "Dashboard",
-#"واریزی‌ها": "Deposits",
-#"پشتیبانی (": "Support (",
-#"بسته‌ها": "Packages",
-#"درگاه‌ها": "Gateways",
-#"الگوها": "Templates",
-#"مسیریابی": "Routing",
-#"گزارش‌ها": "Logs",
-#"وضعیت سیستم": "System status",
-#"مدیران": "Admins",
-#"پروفایل": "Profile",
-#"خروج از پنل": "Sign out",
-#"مرکز مدیریت": "Control center",
-#"درخواست پذیرفته نشد": "Request not accepted",
-#"صفحه را دوباره باز کنید و دوباره بفرستید": "Open the page again and resubmit",
-#"کمی آهسته‌تر؛ دوباره بفرستید": "A little slower; please submit again",
-#"این صفحه کهنه شده؛ دوباره بازش کنید": "This page has expired; open it again",
-#"تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کنید": "Too many attempts; try again shortly"
+#"🧾 پرداخت با رسید": "🧾 Pay with a receipt"
 #}
 #__END_I18N_EN__
 

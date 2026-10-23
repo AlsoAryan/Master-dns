@@ -3735,7 +3735,6 @@ code{border-radius:8px}.big{border-radius:18px}.msg{border-radius:14px}
 .dns,details.pw{border-radius:18px}
 a.tk,label.plan,.pay{border-radius:14px}.thread>div{border-radius:18px}
 .icon{animation:md-float 3.5s ease-in-out infinite}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 .card{position:relative;overflow:hidden}
@@ -4112,60 +4111,6 @@ def landing(banner=""):
 REF_RE = re.compile(r"[A-Za-z0-9]{6,16}")
 
 
-# ------------------------------------------------------------ anti-spam
-# The public forms are the one place a stranger can make the panel do work:
-# sign up, sign in, ask for a code. Three cheap checks stand in front of them,
-# none of which a person ever sees: a field only a bot fills in, a stamp that
-# proves the form was open for a moment (and not for a day), and a count per
-# address. A real person passes all three without noticing.
-GUARD_KEY = os.urandom(16)          # a restart only means "open the page again"
-GUARD_MIN_AGE, GUARD_MAX_AGE = 2, 2 * 3600
-GUARD_LIMITS = {"signup": (6, 3600), "login": (20, 600), "forgot": (8, 3600)}
-GUARD_HITS = {}
-GUARD_LOCK = threading.Lock()
-
-
-def guard_stamp(now=None):
-    ts = str(int(now if now is not None else time.time()))
-    mac = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
-    return "%s.%s" % (ts, mac)
-
-
-def guard_fields():
-    """The hidden half of a form: the trap field and the stamp."""
-    return ("<input class='hp' name='website' tabindex='-1' autocomplete='off' "
-            "aria-hidden='true'><input type='hidden' name='ft' value='%s'>" % guard_stamp())
-
-
-def guard_check(form, ip, kind, now=None):
-    """None when the submission looks human, otherwise what to tell them."""
-    now = now if now is not None else time.time()
-    if form.get("website"):
-        return "درخواست پذیرفته نشد"
-    ts, _, mac = (form.get("ft") or "").partition(".")
-    good = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
-    if not ts.isdigit() or not hmac.compare_digest(mac, good):
-        return "صفحه را دوباره باز کنید و دوباره بفرستید"
-    age = now - int(ts)
-    if age < GUARD_MIN_AGE:
-        return "کمی آهسته‌تر؛ دوباره بفرستید"
-    if age > GUARD_MAX_AGE:
-        return "این صفحه کهنه شده؛ دوباره بازش کنید"
-    limit, window = GUARD_LIMITS[kind]
-    with GUARD_LOCK:
-        key = (kind, ip)
-        kept = [t for t in GUARD_HITS.get(key, []) if t > now - window]
-        if len(kept) >= limit:
-            GUARD_HITS[key] = kept
-            return "تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کنید"
-        kept.append(now)
-        GUARD_HITS[key] = kept
-        if len(GUARD_HITS) > 5000:      # never grow without bound
-            for k in [k for k, v in GUARD_HITS.items() if not v or v[-1] < now - 3600]:
-                GUARD_HITS.pop(k, None)
-    return None
-
-
 def signup_form(banner="", ref=""):
     # An invitation code, carried on to the panel with the form. Only its own
     # characters, so it goes into the page as it is.
@@ -4174,7 +4119,7 @@ def signup_form(banner="", ref=""):
             ("<div class='msg good'>🎁 با لینک دعوت یکی از دوستانتان آمده‌اید.</div>"
              if ref else "") +
             "<h1>ثبت‌نام</h1><p class='sub'>%s</p>"
-            "<form method='post' action='/signup'>%s%s"
+            "<form method='post' action='/signup'>%s"
             "<label>نام</label>"
             "<input name='name' maxlength='60' autocomplete='name'>"
             "<label>نام کاربری</label>"
@@ -4193,14 +4138,14 @@ def signup_form(banner="", ref=""):
             "حروف انگلیسی، عدد، و . _ - ؛ بزرگ و کوچک فرقی ندارد. اگر قبلاً "
             "کسی گرفته باشدش، پیغام می‌دهد.</p>"
             "<p class='alt'>حساب دارید؟ <a href='/login'>وارد شوید</a></p>"
-            % (html.escape(brand()), guard_fields(),
+            % (html.escape(brand()),
                "<input type='hidden' name='ref' value='%s'>" % ref if ref else ""))
 
 
 def login_form(banner=""):
     return (banner +
             "<h1>ورود</h1><p class='sub'>%s</p>"
-            "<form method='post' action='/login'>%s"
+            "<form method='post' action='/login'>"
             "<label>نام کاربری</label>"
             "<input name='username' required maxlength='32' "
             "autocapitalize='none' spellcheck='false' "
@@ -4210,7 +4155,7 @@ def login_form(banner=""):
             "autocomplete='current-password'>"
             "<button>ورود</button></form>%s"
             "<p class='alt'>حساب ندارید؟ <a href='/signup'>ثبت‌نام کنید</a></p>"
-            % (html.escape(brand()), guard_fields(), forgot_line()))
+            % (html.escape(brand()), forgot_line()))
 
 
 def forgot_line():
@@ -4236,7 +4181,7 @@ def forgot_page(banner=""):
             "<div class='icon'>🔑</div><h1>بازیابی رمز</h1>"
             "<p class='sub'>اگر حسابتان به تلگرام وصل باشد، یک کد شش‌رقمی به تلگرامتان "
             "می‌فرستیم.</p>"
-            "<form method='post' action='/forgot'>" + guard_fields() +
+            "<form method='post' action='/forgot'>"
             "<label>نام کاربری</label>"
             "<input name='username' required maxlength='32' autocapitalize='none' "
             "spellcheck='false' autocomplete='username'>"
@@ -4249,7 +4194,7 @@ def forgot_code_page(username, banner=""):
     return (banner +
             "<div class='icon'>✉️</div><h1>کد را وارد کنید</h1>"
             "<p class='sub'>کد شش‌رقمی‌ای که در تلگرام گرفتید، و رمز تازه.</p>"
-            "<form method='post' action='/forgot-code'>%s"
+            "<form method='post' action='/forgot-code'>"
             "<input type='hidden' name='username' value='%s'>"
             "<label>کد</label>"
             "<input name='code' required maxlength='6' inputmode='numeric' "
@@ -4262,7 +4207,7 @@ def forgot_code_page(username, banner=""):
             "autocomplete='new-password'>"
             "<button>ذخیره و ورود</button></form>"
             "<p class='alt'>کد نرسید؟ <a href='/forgot'>دوباره بفرستید</a></p>"
-            % (guard_fields(), html.escape(username, quote=True)))
+            % html.escape(username, quote=True))
 
 
 def telegram_box(info):
@@ -5738,12 +5683,6 @@ class UserPanel(http.server.BaseHTTPRequestHandler):
         raise ValueError("فایلی انتخاب نشده بود")
 
     def form(self):
-        """The POST body, read once per request however many handlers ask."""
-        if getattr(self, "_form_cache", None) is None:
-            self._form_cache = self._read_form()
-        return self._form_cache
-
-    def _read_form(self):
         """Read the POST body. Bounded, because this is a public port in Iran
         and nothing stops somebody announcing a gigabyte.
 
@@ -5946,19 +5885,12 @@ class UserPanel(http.server.BaseHTTPRequestHandler):
         self.wfile.write(blob)
 
     def do_POST(self):
-        self._form_cache = None      # a connection can carry several requests
         path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
         if self.sent_elsewhere(path):
             return
 
-        if path in ("/signup", "/login", "/forgot", "/forgot-code"):
-            form = self.form()
-            kind = {"/signup": "signup", "/login": "login"}.get(path, "forgot")
-            why = guard_check(form, self.client_ip(), kind)
-            if why:
-                log(WARN, "panel: %s from %s held back: %s" % (path, self.client_ip(), why))
-                return self.redirect(path if path != "/forgot-code" else "/forgot", why, bad=True)
         if path in ("/signup", "/login"):
+            form = self.form()
             endpoint = "/user-signup" if path == "/signup" else "/user-password-login"
             back = path
             payload = {"username": form.get("username", ""),

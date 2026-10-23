@@ -337,7 +337,7 @@ check("and what went wrong, in words", "گواهی نامعتبر" in page
       and "این اسم خودش سایتی ندارد" in page)
 asrc = read("templates/smartdns-admin")
 check("on its own page in the menu, run in a thread of its own",
-      '("diagnose", "وضعیت سیستم")' in asrc and "threading.Thread(target=run_diagnosis, daemon=True)" in asrc)
+      '("diagnose", "عیب‌یابی")' in asrc and "threading.Thread(target=run_diagnosis, daemon=True)" in asrc)
 
 shutil.rmtree(tmp, ignore_errors=True)
 print()

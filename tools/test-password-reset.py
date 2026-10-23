@@ -224,13 +224,11 @@ def request(method, path, cookie="", form=None, answer=None):
     return head.decode("latin-1"), body.decode("utf-8", "replace"), calls
 
 
-head, _, _ = request("POST", "/login", form={"username": "forgetful", "password": "x",
-                                          "ft": sync.guard_stamp(__import__("time").time() - 5)},
+head, _, _ = request("POST", "/login", form={"username": "forgetful", "password": "x"},
                      answer=lambda p, b: {"ok": True, "session": "s1", "must_change": True})
 check("signing in with a temporary password goes to the account page",
       "Location: /\r" in head + "\r", head)
-head, _, _ = request("POST", "/login", form={"username": "forgetful", "password": "x",
-                                          "ft": sync.guard_stamp(__import__("time").time() - 5)},
+head, _, _ = request("POST", "/login", form={"username": "forgetful", "password": "x"},
                      answer=lambda p, b: {"ok": True, "session": "s1"})
 check("an ordinary sign-in still goes to the address page",
       "Location: /register-ip" in head, head)
