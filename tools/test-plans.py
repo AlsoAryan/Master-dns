@@ -127,7 +127,7 @@ def user():
 print("before there are plans, a receipt is what it always was")
 check("accepted with no plan", pay(0).get("ok"))
 check("the admin page still says to set it by hand",
-      "سهمیه و زمان" in Rec().receipts())
+      "حجم و زمان" in Rec().receipts())
 store.run("DELETE FROM transactions")
 
 print("making a plan")

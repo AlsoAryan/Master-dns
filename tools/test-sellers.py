@@ -280,7 +280,7 @@ store.fold_counters("r1", {"10.0.0.1": 100, "10.0.0.3": 100})
 store.fold_counters("r1", {"10.0.0.1": 600, "10.0.0.3": 900})
 check("their customers' traffic adds to theirs, not the owner's customers'",
       store.one("SELECT used_bytes FROM admins WHERE id = ?", (sara["id"],))[0] == 600)
-check("their account page", "حساب فروشنده" in b.get("me")[2]
+check("their account page", "پروفایل فروشنده" in b.get("me")[2]
       and sara["ref_code"] in b.get("me")[2])
 store.run("UPDATE admins SET used_bytes = 5000, warned = 7 WHERE id = ?", (sara["id"],))
 check("the owner's form has a button to reset their usage",
@@ -322,7 +322,7 @@ check("the owner's usage is everybody's = their own customers' + each seller's",
       and total("own") > 0, "%s %s %s" % (total(None), total("own"), total(sara["id"])))
 home = owner.get("")[2]
 check("  the owner's home: everybody's with each one's share, then their own customers'",
-      "مصرف کل — مشتری‌های شما و فروشنده‌ها" in home and "سهم هر کدام" in home
+      "مصرف کل — مشتری‌های شما و فروشنده‌ها" in home and "سهم‌بندی" in home
       and "مصرف مشتری‌های خودم" in home)
 check("the home page's sellers open their page",
       "admins?stats=%d" % sara["id"] in owner.get("")[2])

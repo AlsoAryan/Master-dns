@@ -145,7 +145,7 @@ page = Rec().template_editor(tpl(GAME))
 check("at the foot of a template's own page, both lists, off",
       "مسدودی‌ها" in page and "name='l' value='ads'>" in page
       and "name='l' value='porn'>" in page
-      and page.index("template-blocklists") > page.index("DNS جداگانهٔ این قالب"))
+      and page.index("template-blocklists") > page.index("DNS اختصاصیِ این قالب"))
 check("  the default template's page too",
       "template-blocklists" in Rec().template_editor(tpl(FULL)))
 act("template-blocklists", id=str(FULL), l=["ads"])

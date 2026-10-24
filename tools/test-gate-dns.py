@@ -11,6 +11,7 @@ one the panel names; the redirects and the resolver are set once, not rebuilt
 every sync, and put right on a relay upgraded from before the page; and when
 the door opens, or there is no panel to send anybody to, all of it goes.
 """
+import re
 import http.client
 import threading
 import importlib.machinery
@@ -169,7 +170,7 @@ check("the panel says it to every relay, open unless the admin said no",
 asrc = open(os.path.join(HERE, "..", "templates", "smartdns-admin"), encoding="utf-8").read()
 check("the admin's settings have the tick, on until turned off",
       "action='/%s/portal-open'" in asrc and "باز کردن خودکار پنل مشتری برای کسی که سرویس ندارد"
-      in asrc and 'if rest == "portal-open":' in asrc
+      in re.sub(r'"\s*\n\s*"', "", asrc) and 'if rest == "portal-open":' in asrc
       and '"portal-open": "settings"' in asrc)
 
 print("a relay with no panel of its own")

@@ -120,7 +120,7 @@ check("  the end of the table says how many of how many, and where the rest is",
       "data-total='255' data-next='/p/users-rows?q=&amp;sort=new&amp;from='>100 از 255</div>"
       in body)
 check("  the help is above the table, not after rows still to come",
-      body.index("ثبت‌نام تازه با وضعیت") < body.index("<table class='users'>"))
+      body.index("ثبت‌نام جدید با وضعیت") < body.index("<table class='users'>"))
 shown, fetches = scroll(body)
 check("scrolling fetches the rest, a hundred at a time", fetches == 2 and len(shown) == 255)
 check("  every customer exactly once, in order", sorted(shown) == EVERYBODY

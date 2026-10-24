@@ -126,7 +126,7 @@ admin.DB = os.path.join(tmp, "panel.db")
 admin.CFG = {"ADMIN_PATH": "p"}
 admin.STORE = admin.Store(admin.DB)
 card = admin.upstream_card()
-check("before anything is timed, it says so", "هنوز اندازه گرفته نشده" in card)
+check("before anything is timed, it says so", "هنوز اندازه‌گیری نشده است" in card)
 now = int(time.time())
 store.set_setting("resolver_bench:198.51.100.7", json.dumps(
     {"at": now - 120, "ms": {"1.1.1.1": 38, "9.9.9.9": 21, "8.8.8.8": None, "203.0.113.53": 90}}))

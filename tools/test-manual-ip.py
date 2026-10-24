@@ -56,7 +56,7 @@ admin.VERSION_FILE = sync.VERSION_FILE = vf
 print("the header and the version")
 p = admin.page("کاربران", "<p>x</p>", {"ADMIN_PATH": "p"}, "users")
 check("admin pages carry the name, large", "master dns" in p and "class='brand'" in p)
-check("above the page's own title", p.index("class='brand'") < p.index("<header>"))
+check("above the page's own title", p.index("class='brand'") < p.index("<h1>"))
 check("and the version at the foot", "master dns v0.3.99</footer>" in p, p[-200:])
 login = admin.login_page({"ADMIN_PATH": "p"})
 check("so does the admin login page", "class='brand'" in login and "v0.3.99" in login)

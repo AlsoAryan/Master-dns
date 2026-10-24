@@ -186,11 +186,11 @@ print("the pages' words")
 admin = load("templates/smartdns-admin", "admin")
 admin.tickets_waiting = lambda: 0
 cfg = {"ADMIN_PATH": "p"}
-body = ("<h2>سرورهای ایران</h2><p>سرور ایران 1.2.3.4 — پنل و API — سرور خارج، "
+body = ("<h2>سرورهای داخل ایران</h2><p>سرور ایران 1.2.3.4 — پنل و API — سرور خارج، "
         "هیچ رله‌ای هنوز، به آی‌پی رله، رله‌ها اعمال می‌کنند</p>")
 admin.SYNC_ENV_HERE = os.path.join(tmp, "no-such-file")
 two = admin.page("t", body, cfg, msg="روی رله‌ها اعمال می‌شود")
-check("with two servers, the pages keep naming them", "سرورهای ایران" in two and "رله‌ها" in two)
+check("with two servers, the pages keep naming them", "سرورهای داخل ایران" in two and "رله‌ها" in two)
 admin.SYNC_ENV_HERE = os.path.join(tmp, "sync.env")
 open(admin.SYNC_ENV_HERE, "w").close()
 one = admin.page("t", body, cfg, msg="روی رله‌ها اعمال می‌شود")

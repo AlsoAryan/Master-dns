@@ -306,9 +306,9 @@ admin.DB = os.path.join(tmp, "panel.db")
 admin.STORE = admin.Store(admin.DB)
 card = admin.doh_card()
 check("the home page shows the week: customers, DoH and DoT queries",
-      "DNS امن" in card and ">2<" in card and ">42<" in card and ">6<" in card, card[:300])
+      "DNS رمزگذاری‌شده" in card and ">2<" in card and ">42<" in card and ">6<" in card, card[:300])
 store.run("DELETE FROM doh_daily")
-check("and says so when nobody used it", "کسی از DNS امن استفاده نکرده" in admin.doh_card())
+check("and says so when nobody used it", "هیچ‌کس از DNS رمزگذاری‌شده استفاده نکرده" in admin.doh_card())
 check("the bot has the button", '"callback_data": "dohnew"' in read("examples/telegram-bot/bot.py"))
 
 server.shutdown()

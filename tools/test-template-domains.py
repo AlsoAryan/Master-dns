@@ -276,7 +276,7 @@ store.run("INSERT OR IGNORE INTO template_services"
           (tid2,))
 html_out = Page().templates()
 check("they are not a row among the services any more", "value='custom.main'" not in html_out)
-foot = html_out[html_out.index("دامنه‌های دلخواه، مسدودها"):]
+foot = html_out[html_out.index("دامنه‌های دلخواه، مسدودی‌ها"):]
 check("the template page lists them at its foot, with the blocks and forwards",
       "kmplayer.com" in foot and "example.org" in foot, foot[:400])
 check("ticked, since the template routes them",

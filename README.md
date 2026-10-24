@@ -62,8 +62,10 @@ route to Google over IPv6); **udp** 53, 3478.
   caps, service templates down to single domains.
 - **Selling**: plans, receipts, discount codes, a free trial, a wallet,
   invitation links, extra devices, and resellers with their own plans and bot.
-- **Panels**: an operator panel and a customer panel in Persian or English,
-  light and dark, with a blue, pink, green or red accent.
+- **Panels**: a dashboard-style operator panel and a customer panel in Persian or
+  English, light and dark, with a blue, pink, green or red accent. The public
+  forms are guarded against bots and floods: a hidden trap field, a signed
+  timer and a per-address limit, none of which a person notices.
 - **Encrypted DNS**: DoH and DoT per server, an address per customer, an iPhone
   profile, a Windows 11 command. WireGuard for where DNS alone is not enough.
 - **Scale**: more exits and single servers on one panel, a standby that takes
@@ -148,6 +150,10 @@ for t in tools/test-*.py; do python3 "$t"; done
   is the font of both panels. It is released under the SIL Open Font License 1.1
   and travels inside the installer with its licence. With thanks to him and the
   Vazirmatn project.
+- **[Poppins](https://github.com/itfoundry/Poppins)**, by the Poppins Project Authors,
+  sets the Latin letters and numerals in both panels; a small subset is embedded in
+  the pages. It is released under the SIL Open Font License 1.1, and its licence is
+  in `common/fonts/Poppins-OFL.txt`.
 - The operator shown for each customer in the admin panel comes from
   [RIPEstat](https://stat.ripe.net/), RIPE NCC's public routing data.
 - The services' logos on a template's page are from **[Simple Icons](https://simpleicons.org/)**

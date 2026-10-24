@@ -99,7 +99,7 @@ check("  and whose customer each is, on the owner's",
       "<th>فروشنده</th>" in card and "<td>shop</td>" in card)
 mine = admin.online_rows(" AND u.owner_admin = ?", (shop,))
 check("a seller's lists their own only", [r["username"] for r in mine] == ["sara"])
-check("nobody online says so", "کسی آنلاین نیست" in admin.online_card("p", []))
+check("nobody online says so", "هیچ‌کس آنلاین نیست" in admin.online_card("p", []))
 src = open(os.path.join(HERE, "..", "templates", "smartdns-admin"), encoding="utf-8").read()
 home = src[src.index("    def home(self):"):src.index("    def user_usage_page(self):")]
 check("the home page counts them in the summary and shows the card",

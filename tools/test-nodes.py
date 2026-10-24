@@ -490,11 +490,11 @@ with open(admin.INSTALL_STATE, "w") as fh:
     fh.write("exit-ip %s\n" % main)
 card = admin.servers_card()
 check("  the Node page: every server, what went through it, how it is, and a link to it",
-      "مصرف و آمار هر سرور" in card and "server?k=exit&amp;h=93.184.216.20" in card
-      and "server?k=relay&amp;h=198.51.100.2" in card and "هنوز آماری نرسیده" in card)
+      "ترافیک و آمار سرورها" in card and "server?k=exit&amp;h=93.184.216.20" in card
+      and "server?k=relay&amp;h=198.51.100.2" in card and "هنوز آماری دریافت نشده" in card)
 card = admin.user_servers_card(uid)
 check("  and the customer's page: theirs, by relay and by exit, each a link",
-      "مصرف به تفکیک سرور" in card and "server?k=relay&amp;h=198.51.100.1" in card
+      "ترافیک به تفکیک سرور" in card and "server?k=relay&amp;h=198.51.100.1" in card
       and "server?k=exit&amp;h=%s" % main in card and "۷ روز" in card)
 
 
@@ -565,7 +565,7 @@ check("a relay quiet for minutes is an alert; one never installed is not",
       and not any("198.51.100.77" in t for _, t in events))
 card = admin.alerts_card()
 check("the admin panel shows what is wrong now, and what changed",
-      "هشدارها" in card and "198.51.100.2" in card and "رویدادهای اخیر" in card)
+      "اعلان‌های سیستم" in card and "198.51.100.2" in card and "رویدادهای اخیر" in card)
 store.run("DELETE FROM settings WHERE key LIKE 'alert_state:%'")
 check("  on the home page only when something is wrong",
       admin.alerts_card(always=False) == "" and "همهٔ سرورها سالم‌اند" in admin.alerts_card())

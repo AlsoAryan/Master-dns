@@ -197,8 +197,8 @@ check("a game no brand logo has gets the games' plain icon",
                 html) is not None)
 check("  drawn in lines", "<symbol id='si-gamepad-2' viewBox='0 0 24 24' fill='none' "
       "stroke='currentColor'" in html)
-check("every row has an icon, none a letter", "logo letter" not in html.split("گروه‌های من")[-1]
-      if "گروه‌های من" in html else "logo letter" not in html)
+check("every row has an icon, none a letter", "logo letter" not in html.split("گروه‌های اختصاصی")[-1]
+      if "گروه‌های اختصاصی" in html else "logo letter" not in html)
 saved = dict(admin.ICONS["icons"]["gamepad-2"])
 admin.ICONS["icons"]["gamepad-2"]["line"] = '<path d="M0 0"/><script>x()</script>'
 check("a plain icon that is more than shapes is not drawn",
@@ -256,7 +256,7 @@ check("a group that is not there is refused",
       "m=!" in act("domain-add", domain="x.example", group="999"))
 dom = Rec().domains()
 check("the domains page has the groups, with their icons",
-      "گروه‌های من" in dom and "data:image/png;base64," in dom
+      "گروه‌های اختصاصی" in dom and "data:image/png;base64," in dom
       and "data:image/svg+xml;base64," in dom and "action='/p/group-add'" in dom)
 check("  a group to pick when adding", "<select name='group'>" in dom
       and "<option value='%d'>بانک‌ها</option>" % g2["id"] in dom)
@@ -266,8 +266,8 @@ check("  and each domain's group", re.search(r"uni-a\.example</code></td><td><im
 print("each group, a row of a template")
 html = page(VIP)
 check("under «my groups», first",
-      "<h3 class='sec'>گروه‌های من</h3>" in html
-      and html.index("گروه‌های من") < html.index("#si-playstation"))
+      "<h3 class='sec'>گروه‌های اختصاصی</h3>" in html
+      and html.index("گروه‌های اختصاصی") < html.index("#si-playstation"))
 check("with its own icon", "<img class='logo' src='data:image/png;base64," in html)
 check("  and its letter where it has none",
       "<span class='logo letter' aria-hidden='true'>ب</span>بدون عکس" in html)

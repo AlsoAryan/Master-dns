@@ -254,7 +254,7 @@ check("the operator sees the same, on the customer's page",
       "store.steampowered.com" in card and "روشن تا" in card and "DNS" in card)
 card = admin.qlog_card(admin.STORE.one("SELECT * FROM users WHERE id = ?", (v["id"],)))
 check("and for somebody who did not switch it on, how to ask them to",
-      "خاموش است" in card and "store.steampowered.com" not in card)
+      "غیرفعال است" in card and "store.steampowered.com" not in card)
 psrc = open(os.path.join(ROOT, "templates/smartdns-panel"), encoding="utf-8").read()
 check("the switch is behind the customer's session",
       'if self.path == "/user-qlog":' in psrc and "qlog_on(self.store, user[\"id\"], on)" in psrc)

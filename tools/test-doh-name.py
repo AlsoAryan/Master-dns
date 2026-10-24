@@ -226,7 +226,7 @@ panel.Store(db)
 admin.DB = db
 admin.CFG = {"ADMIN_PATH": "p"}
 admin.STORE = admin.Store(db)
-check("with no relay on DoH, it says so", "هیچ رله‌ای هنوز" in admin.doh_name_card("p"))
+check("with no relay on DoH, it says so", "هنوز هیچ رله‌ای" in admin.doh_name_card("p"))
 admin.STORE.run("INSERT INTO settings (key, value) VALUES ('doh_host', 'users.example.com')")
 
 

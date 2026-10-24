@@ -54,7 +54,7 @@ admin.STORE = admin.Store(db)
 
 print("with nothing yet")
 card = admin.total_usage_card("p")
-check("it says so rather than drawing empty charts", "هنوز مصرفی ثبت نشده" in card and "<svg" not in card)
+check("it says so rather than drawing empty charts", "هنوز ترافیکی ثبت نشده" in card and "<svg" not in card)
 
 print("with three customers")
 a = store.create_user(111, "ali", "علی")

@@ -3597,25 +3597,25 @@ def sync_loop():
 # be left dark in one of them. Until the customer picks, their browser's own
 # setting decides; the button in the corner overrides it for that browser.
 DARK = """color-scheme:dark;
- --bg:#0b1020;--card:#121a2e;--line:#1f2a44;--line2:#2b3a5c;--row:#182340;
- --track:#0b1020;--fg:#e8edf8;--head:#d3dcf0;--muted:#8e9bb8;--dim:#a3aec8;
- --faint:#6c7a99;--accent:#5aa2ff;--accent2:#8ab8ff;--btn:#2563eb;
+ --bg:#050507;--card:#0c0d11;--line:#1a1c23;--line2:#272b36;--row:#12141a;
+ --track:#0a0b0e;--fg:#ececf1;--head:#dcdce6;--muted:#8a8f9e;--dim:#a0a5b3;
+ --faint:#6a6f7d;--accent:#5aa2ff;--accent2:#8ab8ff;--btn:#2563eb;
  --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
  --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
- --err-bg:#2a1219;--warn-bg:#2a2310;--warn-line:#6e5a2c;
+ --err-bg:#1f0f13;--warn-bg:#1f1a0c;--warn-line:#5e4d25;
  --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
- --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.25);
- --pop:0 10px 30px rgba(0,0,0,.5)"""
+ --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 44px -26px rgba(0,0,0,.9);
+ --pop:0 18px 50px rgba(0,0,0,.65)"""
 LIGHT = """color-scheme:light;
- --bg:#f2f5fb;--card:#ffffff;--line:#dde4f0;--line2:#c3cde0;--row:#e8edf7;
- --track:#e8edf7;--fg:#101828;--head:#1b2538;--muted:#5b6780;--dim:#51607a;
- --faint:#6b7893;--accent:#1d5fd6;--accent2:#2563eb;--btn:#1f5fe0;
+ --bg:#f3f5f9;--card:#ffffff;--line:#e7eaf1;--line2:#d4d9e4;--row:#eff1f6;
+ --track:#e9ecf3;--fg:#0f1523;--head:#1a2234;--muted:#5a6578;--dim:#4f5b70;
+ --faint:#68748a;--accent:#1d5fd6;--accent2:#2563eb;--btn:#1f5fe0;
  --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
  --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
  --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
  --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
- --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
- --pop:0 10px 30px rgba(16,24,40,.15)"""
+ --shadow:0 1px 0 rgba(255,255,255,.8) inset,0 16px 40px -28px rgba(30,41,80,.28);
+ --pop:0 16px 44px rgba(30,41,80,.18)"""
 # Blue is the default and lives in DARK / LIGHT above. Each other accent only
 # swaps the four names that carry it, once for each theme.
 ACCENTS = {
@@ -3692,55 +3692,55 @@ def font_bytes():
     return _FONT[0]
 
 
-FX_CSS = """
-/* Master DNS: shape and motion, the same on both panels. */
+LATIN_FACE = "@font-face{font-family:'MD Latin';font-weight:100 550;font-display:swap;unicode-range:U+0020-007E;src:url(data:font/woff;base64,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) format('woff')}\n@font-face{font-family:'MD Latin';font-weight:551 900;font-display:swap;unicode-range:U+0020-007E;src:url(data:font/woff;base64,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) format('woff')}"
+
+FX_CSS = LATIN_FACE + """
+*{scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
+body{font-family:'MD Latin',Vazirmatn,system-ui,-apple-system,'Segoe UI',sans-serif;
+ font-feature-settings:'kern','liga';-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+input,select,textarea,button{font-family:inherit}
 @keyframes md-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes md-flow{to{background-position:200% 0}}
 @keyframes md-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes md-sheen{to{transform:translateX(420%) skewX(-20deg)}}
 @keyframes md-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
 body,.card,input,select,textarea,code{transition:background-color .35s,border-color .35s,color .35s,box-shadow .25s}
 button{border-radius:999px;position:relative;overflow:hidden;transition:background .2s,border-color .2s,transform .15s,box-shadow .2s}
 button:active{transform:scale(.96)}
 button:not(.ghost):not(.del):not(.theme):not(.dot)::after,a.btn:not(.ghost)::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;pointer-events:none;
- background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-120%) skewX(-20deg)}
+ background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transform:translateX(-120%) skewX(-20deg)}
 button:not(.ghost):not(.del):not(.theme):not(.dot):hover::after,a.btn:not(.ghost):hover::after{animation:md-sheen .8s ease}
 .bar,.bar i{border-radius:999px}
 .bar i{transform-origin:right;animation:md-grow .9s .2s cubic-bezier(.2,.8,.2,1) both}
 html[dir=ltr] .bar i{transform-origin:left}
+body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+ background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 13%,transparent),transparent),
+  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 10%,transparent),transparent);
+ animation:md-drift 22s ease-in-out infinite alternate}
 .accents{position:absolute;top:14px;left:62px;height:38px;display:flex;align-items:center;gap:8px}
 .accents button.dot{width:18px;height:18px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;display:block}
 .accents button.dot:hover{transform:scale(1.25)}
-.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}
-:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,
-:root[data-accent=pink] .dot.pink,:root[data-accent=green] .dot.green{
- box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}
+:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,:root[data-accent=pink] .dot.pink,
+:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 
-@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
-body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
- background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 20%,transparent),transparent),
-  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 16%,transparent),transparent);
- animation:md-drift 20s ease-in-out infinite alternate}
-.dot.red{background:var(--c-red)}
-:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
-
-.card{border-radius:28px;padding:30px;box-shadow:var(--shadow);
- animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both}
-input,textarea{border-radius:14px}
-input:focus,textarea:focus{border-color:var(--accent);
- box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.card{border-radius:32px;padding:32px;box-shadow:var(--shadow);animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both}
+input,textarea{border-radius:16px;background:var(--bg);border-color:var(--line2)}
+input:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 button,a.btn{border-radius:999px;position:relative;overflow:hidden}
 a.btn{transition:background .2s,transform .15s}a.btn:active{transform:scale(.97)}
-code{border-radius:8px}.big{border-radius:18px}.msg{border-radius:14px}
-.dns,details.pw{border-radius:18px}
-a.tk,label.plan,.pay{border-radius:14px}.thread>div{border-radius:18px}
+code{border-radius:8px}.big{border-radius:22px}.msg{border-radius:18px}
+.dns,details.pw{border-radius:22px}
+a.tk,label.plan,.pay{border-radius:18px}.thread>div{border-radius:20px}
 .icon{animation:md-float 3.5s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 .card{position:relative;overflow:hidden}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
- background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
- background-size:200% 100%;animation:md-flow 6s linear infinite}
+ background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% 100%;animation:md-flow 6s linear infinite}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 """
 
 USER_CSS = THEME_CSS + FONT_FACE + """
@@ -4111,6 +4111,60 @@ def landing(banner=""):
 REF_RE = re.compile(r"[A-Za-z0-9]{6,16}")
 
 
+# ------------------------------------------------------------ anti-spam
+# The public forms are the one place a stranger can make the panel do work:
+# sign up, sign in, ask for a code. Three cheap checks stand in front of them,
+# none of which a person ever sees: a field only a bot fills in, a stamp that
+# proves the form was open for a moment (and not for a day), and a count per
+# address. A real person passes all three without noticing.
+GUARD_KEY = os.urandom(16)          # a restart only means "open the page again"
+GUARD_MIN_AGE, GUARD_MAX_AGE = 2, 2 * 3600
+GUARD_LIMITS = {"signup": (6, 3600), "login": (20, 600), "forgot": (8, 3600)}
+GUARD_HITS = {}
+GUARD_LOCK = threading.Lock()
+
+
+def guard_stamp(now=None):
+    ts = str(int(now if now is not None else time.time()))
+    mac = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
+    return "%s.%s" % (ts, mac)
+
+
+def guard_fields():
+    """The hidden half of a form: the trap field and the stamp."""
+    return ("<input class='hp' name='website' tabindex='-1' autocomplete='off' "
+            "aria-hidden='true'><input type='hidden' name='ft' value='%s'>" % guard_stamp())
+
+
+def guard_check(form, ip, kind, now=None):
+    """None when the submission looks human, otherwise what to tell them."""
+    now = now if now is not None else time.time()
+    if form.get("website"):
+        return "درخواست پذیرفته نشد"
+    ts, _, mac = (form.get("ft") or "").partition(".")
+    good = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
+    if not ts.isdigit() or not hmac.compare_digest(mac, good):
+        return "صفحه را دوباره باز کنید و دوباره بفرستید"
+    age = now - int(ts)
+    if age < GUARD_MIN_AGE:
+        return "کمی آهسته‌تر؛ دوباره بفرستید"
+    if age > GUARD_MAX_AGE:
+        return "این صفحه کهنه شده؛ دوباره بازش کنید"
+    limit, window = GUARD_LIMITS[kind]
+    with GUARD_LOCK:
+        key = (kind, ip)
+        kept = [t for t in GUARD_HITS.get(key, []) if t > now - window]
+        if len(kept) >= limit:
+            GUARD_HITS[key] = kept
+            return "تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کنید"
+        kept.append(now)
+        GUARD_HITS[key] = kept
+        if len(GUARD_HITS) > 5000:      # never grow without bound
+            for k in [k for k, v in GUARD_HITS.items() if not v or v[-1] < now - 3600]:
+                GUARD_HITS.pop(k, None)
+    return None
+
+
 def signup_form(banner="", ref=""):
     # An invitation code, carried on to the panel with the form. Only its own
     # characters, so it goes into the page as it is.
@@ -4119,7 +4173,7 @@ def signup_form(banner="", ref=""):
             ("<div class='msg good'>🎁 با لینک دعوت یکی از دوستانتان آمده‌اید.</div>"
              if ref else "") +
             "<h1>ثبت‌نام</h1><p class='sub'>%s</p>"
-            "<form method='post' action='/signup'>%s"
+            "<form method='post' action='/signup'>%s%s"
             "<label>نام</label>"
             "<input name='name' maxlength='60' autocomplete='name'>"
             "<label>نام کاربری</label>"
@@ -4138,14 +4192,14 @@ def signup_form(banner="", ref=""):
             "حروف انگلیسی، عدد، و . _ - ؛ بزرگ و کوچک فرقی ندارد. اگر قبلاً "
             "کسی گرفته باشدش، پیغام می‌دهد.</p>"
             "<p class='alt'>حساب دارید؟ <a href='/login'>وارد شوید</a></p>"
-            % (html.escape(brand()),
+            % (html.escape(brand()), guard_fields(),
                "<input type='hidden' name='ref' value='%s'>" % ref if ref else ""))
 
 
 def login_form(banner=""):
     return (banner +
             "<h1>ورود</h1><p class='sub'>%s</p>"
-            "<form method='post' action='/login'>"
+            "<form method='post' action='/login'>%s"
             "<label>نام کاربری</label>"
             "<input name='username' required maxlength='32' "
             "autocapitalize='none' spellcheck='false' "
@@ -4155,7 +4209,7 @@ def login_form(banner=""):
             "autocomplete='current-password'>"
             "<button>ورود</button></form>%s"
             "<p class='alt'>حساب ندارید؟ <a href='/signup'>ثبت‌نام کنید</a></p>"
-            % (html.escape(brand()), forgot_line()))
+            % (html.escape(brand()), guard_fields(), forgot_line()))
 
 
 def forgot_line():
@@ -4181,7 +4235,7 @@ def forgot_page(banner=""):
             "<div class='icon'>🔑</div><h1>بازیابی رمز</h1>"
             "<p class='sub'>اگر حسابتان به تلگرام وصل باشد، یک کد شش‌رقمی به تلگرامتان "
             "می‌فرستیم.</p>"
-            "<form method='post' action='/forgot'>"
+            "<form method='post' action='/forgot'>" + guard_fields() +
             "<label>نام کاربری</label>"
             "<input name='username' required maxlength='32' autocapitalize='none' "
             "spellcheck='false' autocomplete='username'>"
@@ -4194,7 +4248,7 @@ def forgot_code_page(username, banner=""):
     return (banner +
             "<div class='icon'>✉️</div><h1>کد را وارد کنید</h1>"
             "<p class='sub'>کد شش‌رقمی‌ای که در تلگرام گرفتید، و رمز تازه.</p>"
-            "<form method='post' action='/forgot-code'>"
+            "<form method='post' action='/forgot-code'>%s"
             "<input type='hidden' name='username' value='%s'>"
             "<label>کد</label>"
             "<input name='code' required maxlength='6' inputmode='numeric' "
@@ -4207,7 +4261,7 @@ def forgot_code_page(username, banner=""):
             "autocomplete='new-password'>"
             "<button>ذخیره و ورود</button></form>"
             "<p class='alt'>کد نرسید؟ <a href='/forgot'>دوباره بفرستید</a></p>"
-            % html.escape(username, quote=True))
+            % (guard_fields(), html.escape(username, quote=True)))
 
 
 def telegram_box(info):
@@ -5683,6 +5737,12 @@ class UserPanel(http.server.BaseHTTPRequestHandler):
         raise ValueError("فایلی انتخاب نشده بود")
 
     def form(self):
+        """The POST body, read once per request however many handlers ask."""
+        if getattr(self, "_form_cache", None) is None:
+            self._form_cache = self._read_form()
+        return self._form_cache
+
+    def _read_form(self):
         """Read the POST body. Bounded, because this is a public port in Iran
         and nothing stops somebody announcing a gigabyte.
 
@@ -5885,12 +5945,19 @@ class UserPanel(http.server.BaseHTTPRequestHandler):
         self.wfile.write(blob)
 
     def do_POST(self):
+        self._form_cache = None      # a connection can carry several requests
         path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
         if self.sent_elsewhere(path):
             return
 
-        if path in ("/signup", "/login"):
+        if path in ("/signup", "/login", "/forgot", "/forgot-code"):
             form = self.form()
+            kind = {"/signup": "signup", "/login": "login"}.get(path, "forgot")
+            why = guard_check(form, self.client_ip(), kind)
+            if why:
+                log(WARN, "panel: %s from %s held back: %s" % (path, self.client_ip(), why))
+                return self.redirect(path if path != "/forgot-code" else "/forgot", why, bad=True)
+        if path in ("/signup", "/login"):
             endpoint = "/user-signup" if path == "/signup" else "/user-password-login"
             back = path
             payload = {"username": form.get("username", ""),

@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.2"
+VERSION="0.0.4"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -16506,25 +16506,25 @@ exit 0
 ## be left dark in one of them. Until the customer picks, their browser's own
 ## setting decides; the button in the corner overrides it for that browser.
 #DARK = """color-scheme:dark;
-# --bg:#0b1020;--card:#121a2e;--line:#1f2a44;--line2:#2b3a5c;--row:#182340;
-# --track:#0b1020;--fg:#e8edf8;--head:#d3dcf0;--muted:#8e9bb8;--dim:#a3aec8;
-# --faint:#6c7a99;--accent:#5aa2ff;--accent2:#8ab8ff;--btn:#2563eb;
+# --bg:#050507;--card:#0c0d11;--line:#1a1c23;--line2:#272b36;--row:#12141a;
+# --track:#0a0b0e;--fg:#ececf1;--head:#dcdce6;--muted:#8a8f9e;--dim:#a0a5b3;
+# --faint:#6a6f7d;--accent:#5aa2ff;--accent2:#8ab8ff;--btn:#2563eb;
 # --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
 # --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
-# --err-bg:#2a1219;--warn-bg:#2a2310;--warn-line:#6e5a2c;
+# --err-bg:#1f0f13;--warn-bg:#1f1a0c;--warn-line:#5e4d25;
 # --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
-# --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.25);
-# --pop:0 10px 30px rgba(0,0,0,.5)"""
+# --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 44px -26px rgba(0,0,0,.9);
+# --pop:0 18px 50px rgba(0,0,0,.65)"""
 #LIGHT = """color-scheme:light;
-# --bg:#f2f5fb;--card:#ffffff;--line:#dde4f0;--line2:#c3cde0;--row:#e8edf7;
-# --track:#e8edf7;--fg:#101828;--head:#1b2538;--muted:#5b6780;--dim:#51607a;
-# --faint:#6b7893;--accent:#1d5fd6;--accent2:#2563eb;--btn:#1f5fe0;
+# --bg:#f3f5f9;--card:#ffffff;--line:#e7eaf1;--line2:#d4d9e4;--row:#eff1f6;
+# --track:#e9ecf3;--fg:#0f1523;--head:#1a2234;--muted:#5a6578;--dim:#4f5b70;
+# --faint:#68748a;--accent:#1d5fd6;--accent2:#2563eb;--btn:#1f5fe0;
 # --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
 # --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
 # --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
 # --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
-# --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
-# --pop:0 10px 30px rgba(16,24,40,.15)"""
+# --shadow:0 1px 0 rgba(255,255,255,.8) inset,0 16px 40px -28px rgba(30,41,80,.28);
+# --pop:0 16px 44px rgba(30,41,80,.18)"""
 ## Blue is the default and lives in DARK / LIGHT above. Each other accent only
 ## swaps the four names that carry it, once for each theme.
 #ACCENTS = {
@@ -16601,55 +16601,55 @@ exit 0
 #    return _FONT[0]
 #
 #
-#FX_CSS = """
-#/* Master DNS: shape and motion, the same on both panels. */
+#LATIN_FACE = "@font-face{font-family:'MD Latin';font-weight:100 550;font-display:swap;unicode-range:U+0020-007E;src:url(data:font/woff;base64,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) format('woff')}\n@font-face{font-family:'MD Latin';font-weight:551 900;font-display:swap;unicode-range:U+0020-007E;src:url(data:font/woff;base64,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) format('woff')}"
+#
+#FX_CSS = LATIN_FACE + """
+#*{scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+#::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}
+#::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
+#body{font-family:'MD Latin',Vazirmatn,system-ui,-apple-system,'Segoe UI',sans-serif;
+# font-feature-settings:'kern','liga';-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#input,select,textarea,button{font-family:inherit}
 #@keyframes md-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
 #@keyframes md-flow{to{background-position:200% 0}}
 #@keyframes md-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 #@keyframes md-sheen{to{transform:translateX(420%) skewX(-20deg)}}
 #@keyframes md-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+#@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
 #body,.card,input,select,textarea,code{transition:background-color .35s,border-color .35s,color .35s,box-shadow .25s}
 #button{border-radius:999px;position:relative;overflow:hidden;transition:background .2s,border-color .2s,transform .15s,box-shadow .2s}
 #button:active{transform:scale(.96)}
 #button:not(.ghost):not(.del):not(.theme):not(.dot)::after,a.btn:not(.ghost)::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;pointer-events:none;
-# background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-120%) skewX(-20deg)}
+# background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transform:translateX(-120%) skewX(-20deg)}
 #button:not(.ghost):not(.del):not(.theme):not(.dot):hover::after,a.btn:not(.ghost):hover::after{animation:md-sheen .8s ease}
 #.bar,.bar i{border-radius:999px}
 #.bar i{transform-origin:right;animation:md-grow .9s .2s cubic-bezier(.2,.8,.2,1) both}
 #html[dir=ltr] .bar i{transform-origin:left}
+#body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+# background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 13%,transparent),transparent),
+#  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 10%,transparent),transparent);
+# animation:md-drift 22s ease-in-out infinite alternate}
 #.accents{position:absolute;top:14px;left:62px;height:38px;display:flex;align-items:center;gap:8px}
 #.accents button.dot{width:18px;height:18px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;display:block}
 #.accents button.dot:hover{transform:scale(1.25)}
-#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}
-#:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,
-#:root[data-accent=pink] .dot.pink,:root[data-accent=green] .dot.green{
-# box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}
+#:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,:root[data-accent=pink] .dot.pink,
+#:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
-#@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
-#body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
-# background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 20%,transparent),transparent),
-#  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 16%,transparent),transparent);
-# animation:md-drift 20s ease-in-out infinite alternate}
-#.dot.red{background:var(--c-red)}
-#:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
-#
-#.card{border-radius:28px;padding:30px;box-shadow:var(--shadow);
-# animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both}
-#input,textarea{border-radius:14px}
-#input:focus,textarea:focus{border-color:var(--accent);
-# box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+#.card{border-radius:32px;padding:32px;box-shadow:var(--shadow);animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both}
+#input,textarea{border-radius:16px;background:var(--bg);border-color:var(--line2)}
+#input:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 #button,a.btn{border-radius:999px;position:relative;overflow:hidden}
 #a.btn{transition:background .2s,transform .15s}a.btn:active{transform:scale(.97)}
-#code{border-radius:8px}.big{border-radius:18px}.msg{border-radius:14px}
-#.dns,details.pw{border-radius:18px}
-#a.tk,label.plan,.pay{border-radius:14px}.thread>div{border-radius:18px}
+#code{border-radius:8px}.big{border-radius:22px}.msg{border-radius:18px}
+#.dns,details.pw{border-radius:22px}
+#a.tk,label.plan,.pay{border-radius:18px}.thread>div{border-radius:20px}
 #.icon{animation:md-float 3.5s ease-in-out infinite}
-#@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-#
+#.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 #.card{position:relative;overflow:hidden}
 #.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
-# background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
-# background-size:200% 100%;animation:md-flow 6s linear infinite}
+# background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% 100%;animation:md-flow 6s linear infinite}
+#@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 #"""
 #
 #USER_CSS = THEME_CSS + FONT_FACE + """
@@ -17020,6 +17020,60 @@ exit 0
 #REF_RE = re.compile(r"[A-Za-z0-9]{6,16}")
 #
 #
+## ------------------------------------------------------------ anti-spam
+## The public forms are the one place a stranger can make the panel do work:
+## sign up, sign in, ask for a code. Three cheap checks stand in front of them,
+## none of which a person ever sees: a field only a bot fills in, a stamp that
+## proves the form was open for a moment (and not for a day), and a count per
+## address. A real person passes all three without noticing.
+#GUARD_KEY = os.urandom(16)          # a restart only means "open the page again"
+#GUARD_MIN_AGE, GUARD_MAX_AGE = 2, 2 * 3600
+#GUARD_LIMITS = {"signup": (6, 3600), "login": (20, 600), "forgot": (8, 3600)}
+#GUARD_HITS = {}
+#GUARD_LOCK = threading.Lock()
+#
+#
+#def guard_stamp(now=None):
+#    ts = str(int(now if now is not None else time.time()))
+#    mac = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
+#    return "%s.%s" % (ts, mac)
+#
+#
+#def guard_fields():
+#    """The hidden half of a form: the trap field and the stamp."""
+#    return ("<input class='hp' name='website' tabindex='-1' autocomplete='off' "
+#            "aria-hidden='true'><input type='hidden' name='ft' value='%s'>" % guard_stamp())
+#
+#
+#def guard_check(form, ip, kind, now=None):
+#    """None when the submission looks human, otherwise what to tell them."""
+#    now = now if now is not None else time.time()
+#    if form.get("website"):
+#        return "درخواست پذیرفته نشد"
+#    ts, _, mac = (form.get("ft") or "").partition(".")
+#    good = hmac.new(GUARD_KEY, ts.encode(), hashlib.sha256).hexdigest()[:20]
+#    if not ts.isdigit() or not hmac.compare_digest(mac, good):
+#        return "صفحه را دوباره باز کنید و دوباره بفرستید"
+#    age = now - int(ts)
+#    if age < GUARD_MIN_AGE:
+#        return "کمی آهسته‌تر؛ دوباره بفرستید"
+#    if age > GUARD_MAX_AGE:
+#        return "این صفحه کهنه شده؛ دوباره بازش کنید"
+#    limit, window = GUARD_LIMITS[kind]
+#    with GUARD_LOCK:
+#        key = (kind, ip)
+#        kept = [t for t in GUARD_HITS.get(key, []) if t > now - window]
+#        if len(kept) >= limit:
+#            GUARD_HITS[key] = kept
+#            return "تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کنید"
+#        kept.append(now)
+#        GUARD_HITS[key] = kept
+#        if len(GUARD_HITS) > 5000:      # never grow without bound
+#            for k in [k for k, v in GUARD_HITS.items() if not v or v[-1] < now - 3600]:
+#                GUARD_HITS.pop(k, None)
+#    return None
+#
+#
 #def signup_form(banner="", ref=""):
 #    # An invitation code, carried on to the panel with the form. Only its own
 #    # characters, so it goes into the page as it is.
@@ -17028,7 +17082,7 @@ exit 0
 #            ("<div class='msg good'>🎁 با لینک دعوت یکی از دوستانتان آمده‌اید.</div>"
 #             if ref else "") +
 #            "<h1>ثبت‌نام</h1><p class='sub'>%s</p>"
-#            "<form method='post' action='/signup'>%s"
+#            "<form method='post' action='/signup'>%s%s"
 #            "<label>نام</label>"
 #            "<input name='name' maxlength='60' autocomplete='name'>"
 #            "<label>نام کاربری</label>"
@@ -17047,14 +17101,14 @@ exit 0
 #            "حروف انگلیسی، عدد، و . _ - ؛ بزرگ و کوچک فرقی ندارد. اگر قبلاً "
 #            "کسی گرفته باشدش، پیغام می‌دهد.</p>"
 #            "<p class='alt'>حساب دارید؟ <a href='/login'>وارد شوید</a></p>"
-#            % (html.escape(brand()),
+#            % (html.escape(brand()), guard_fields(),
 #               "<input type='hidden' name='ref' value='%s'>" % ref if ref else ""))
 #
 #
 #def login_form(banner=""):
 #    return (banner +
 #            "<h1>ورود</h1><p class='sub'>%s</p>"
-#            "<form method='post' action='/login'>"
+#            "<form method='post' action='/login'>%s"
 #            "<label>نام کاربری</label>"
 #            "<input name='username' required maxlength='32' "
 #            "autocapitalize='none' spellcheck='false' "
@@ -17064,7 +17118,7 @@ exit 0
 #            "autocomplete='current-password'>"
 #            "<button>ورود</button></form>%s"
 #            "<p class='alt'>حساب ندارید؟ <a href='/signup'>ثبت‌نام کنید</a></p>"
-#            % (html.escape(brand()), forgot_line()))
+#            % (html.escape(brand()), guard_fields(), forgot_line()))
 #
 #
 #def forgot_line():
@@ -17090,7 +17144,7 @@ exit 0
 #            "<div class='icon'>🔑</div><h1>بازیابی رمز</h1>"
 #            "<p class='sub'>اگر حسابتان به تلگرام وصل باشد، یک کد شش‌رقمی به تلگرامتان "
 #            "می‌فرستیم.</p>"
-#            "<form method='post' action='/forgot'>"
+#            "<form method='post' action='/forgot'>" + guard_fields() +
 #            "<label>نام کاربری</label>"
 #            "<input name='username' required maxlength='32' autocapitalize='none' "
 #            "spellcheck='false' autocomplete='username'>"
@@ -17103,7 +17157,7 @@ exit 0
 #    return (banner +
 #            "<div class='icon'>✉️</div><h1>کد را وارد کنید</h1>"
 #            "<p class='sub'>کد شش‌رقمی‌ای که در تلگرام گرفتید، و رمز تازه.</p>"
-#            "<form method='post' action='/forgot-code'>"
+#            "<form method='post' action='/forgot-code'>%s"
 #            "<input type='hidden' name='username' value='%s'>"
 #            "<label>کد</label>"
 #            "<input name='code' required maxlength='6' inputmode='numeric' "
@@ -17116,7 +17170,7 @@ exit 0
 #            "autocomplete='new-password'>"
 #            "<button>ذخیره و ورود</button></form>"
 #            "<p class='alt'>کد نرسید؟ <a href='/forgot'>دوباره بفرستید</a></p>"
-#            % html.escape(username, quote=True))
+#            % (guard_fields(), html.escape(username, quote=True)))
 #
 #
 #def telegram_box(info):
@@ -18592,6 +18646,12 @@ exit 0
 #        raise ValueError("فایلی انتخاب نشده بود")
 #
 #    def form(self):
+#        """The POST body, read once per request however many handlers ask."""
+#        if getattr(self, "_form_cache", None) is None:
+#            self._form_cache = self._read_form()
+#        return self._form_cache
+#
+#    def _read_form(self):
 #        """Read the POST body. Bounded, because this is a public port in Iran
 #        and nothing stops somebody announcing a gigabyte.
 #
@@ -18794,12 +18854,19 @@ exit 0
 #        self.wfile.write(blob)
 #
 #    def do_POST(self):
+#        self._form_cache = None      # a connection can carry several requests
 #        path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
 #        if self.sent_elsewhere(path):
 #            return
 #
-#        if path in ("/signup", "/login"):
+#        if path in ("/signup", "/login", "/forgot", "/forgot-code"):
 #            form = self.form()
+#            kind = {"/signup": "signup", "/login": "login"}.get(path, "forgot")
+#            why = guard_check(form, self.client_ip(), kind)
+#            if why:
+#                log(WARN, "panel: %s from %s held back: %s" % (path, self.client_ip(), why))
+#                return self.redirect(path if path != "/forgot-code" else "/forgot", why, bad=True)
+#        if path in ("/signup", "/login"):
 #            endpoint = "/user-signup" if path == "/signup" else "/user-password-login"
 #            back = path
 #            payload = {"username": form.get("username", ""),
@@ -21410,10 +21477,10 @@ exit 0
 #        last = json.loads(row["value"]) if row and row["value"] else {}
 #    except ValueError:
 #        last = {}
-#    out = ["<div class='card'><h2>بکاپ خودکار در تلگرام</h2>"]
+#    out = ["<div class='card'><h2>ارسال خودکار نسخهٔ پشتیبان به تلگرام</h2>"]
 #    if not ready:
-#        out.append("<p class='muted'>اول ربات را در صفحهٔ «ربات» راه بیندازید و آی‌دی تلگرام "
-#                   "ادمین را تعیین کنید؛ بکاپ برای ادمین‌های ربات فرستاده می‌شود.</p></div>")
+#        out.append("<p class='muted'>نخست ربات را از صفحهٔ «ربات» فعال کنید و شناسهٔ تلگرام ادمین را بدهید؛ "
+#                   "نسخهٔ پشتیبان برای ادمین‌های ربات ارسال می‌شود.</p></div>")
 #        return "".join(out)
 #    if last:
 #        out.append("<p>%s — %s</p>" % (
@@ -21422,21 +21489,15 @@ exit 0
 #            if last.get("ok") else "<span class='warn'>نشد: %s</span>" % html.escape(
 #                last.get("error") or "")))
 #    out.append(
-#        "<form method='post' action='/%s/backup-auto'>"
-#        "<label style='display:block'><input type='checkbox' name='on' value='1'%s> هر "
-#        "<input name='days' value='%s' dir='ltr' style='width:50px'> روز یک بار، برای "
-#        "ادمین‌های ربات بفرست</label>"
-#        "<label style='display:block'>رمز بکاپ: <input name='password' type='password' "
-#        "autocomplete='new-password' dir='ltr' placeholder='%s'></label>"
-#        "<button class='ghost'>ذخیره</button></form>"
-#        "<form method='post' action='/%s/backup-now' style='margin-top:8px'>"
-#        "<button class='ghost'>همین حالا بفرست</button></form>"
-#        "<p class='muted'>یک فایل، رمزگذاری‌شده با همین رمز: دیتابیس، کلید عکس‌ها، و آنچه "
-#        "برای بالا آوردن همین پنل روی سرور دیگری لازم است. رمز را جایی جدا نگه دارید؛ "
-#        "بدون آن فایل باز نمی‌شود و این‌جا هم نشان داده نمی‌شود. برای بازگردانی، فایل را "
-#        "با همین رمز در کارت «نسخهٔ پشتیبان» بفرستید؛ یا روی هر سیستمی با openssl:</p>"
-#        "<pre dir='ltr' style='white-space:pre-wrap'>openssl enc -d -aes-256-cbc -pbkdf2 "
-#        "-iter 200000 -in FILE.enc -out backup.tar.gz</pre></div>"
+#        "<form method='post' action='/%s/backup-auto'><label style='display:block'><input type='checkbox' name='on' value='1'%s> هر <input name='days' value='%s' dir='ltr' style='width:50px'> روز "
+#        "یک بار، برای ادمین‌های ربات بفرست</label><label style='display:block'>رمز "
+#        "بکاپ: <input name='password' type='password' autocomplete='new-password' dir='ltr' placeholder='%s'></label><button class='ghost'>ذخیره</button></form><form method='post' action='/%s/backup-now' style='margin-top:8px'><button class='ghost'>همین "
+#        "حالا بفرست</button></form><p class='muted'>یک فایل واحد که با همین رمز قفل شده و "
+#        "دیتابیس، کلید عکس‌ها و هر چه برای راه‌اندازی دوبارهٔ پنل روی سروری دیگر لازم است را در "
+#        "خود دارد. رمز را جایی جدا نگه دارید؛ بدون آن فایل باز نمی‌شود و این‌جا هم نشان داده "
+#        "نمی‌شود. برای بازگردانی، فایل را با همین رمز در کارت «نسخهٔ پشتیبان» بفرستید؛ یا روی هر "
+#        "سیستمی "
+#        "با openssl:</p><pre dir='ltr' style='white-space:pre-wrap'>openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in FILE.enc -out backup.tar.gz</pre></div>"
 #        % (p, " checked" if every else "", every or 3,
 #           "رمز گذاشته شده؛ خالی بگذارید تا بماند" if backup_password() else "دست‌کم ۸ نویسه",
 #           p))
@@ -21586,8 +21647,7 @@ exit 0
 #
 #    for idx, colour in ((2, DOWN), (1, UP)):
 #        line = " ".join("%.1f,%.1f" % xy(i, p[idx]) for i, p in enumerate(pts))
-#        out.append("<polyline points='%s' fill='none' stroke='%s' stroke-width='2'"
-#                   " stroke-linejoin='round'/>" % (line, colour))
+#        out.append("<polyline points='%s' fill='none' stroke='%s' stroke-width='2' stroke-linejoin='round'/>" % (line, colour))
 #    # One hit target per half hour, with both numbers, so the hover reads the
 #    # pair at once instead of making the reader find the other line.
 #    step = 6
@@ -21631,8 +21691,8 @@ exit 0
 #            key = "%sT%02d:00" % (day.strftime("%Y-%m-%d"), h)
 #            v = by.get(key, 0)
 #            level = 0 if not v else 0.18 + 0.82 * (v / float(peak))
-#            out.append("<rect x='%.1f' y='%d' width='%.1f' height='18' rx='3' fill='%s'"
-#                       " fill-opacity='%.2f'><title>%s ساعت %02d — %s</title></rect>"
+#            out.append("<rect x='%.1f' y='%d' width='%.1f' height='18' rx='3' fill='%s' fill-opacity='%.2f'><title>%s "
+#                       "ساعت %02d — %s</title></rect>"
 #                       % (L + h * cw + 1, y, cw - 2, DOWN if v else "var(--line)",
 #                          level if v else 1, month_day(day), h, human(v)))
 #    for h in (0, 6, 12, 18, 23):
@@ -21666,16 +21726,15 @@ exit 0
 #    on = bool(user["qlog_until"]) and user["qlog_until"] > now() \
 #        if "qlog_until" in user.keys() else False
 #    if not rows and not on:
-#        return ("<div class='card'><h2>گزارش DNS</h2><p class='muted'>خاموش است. اگر "
-#                "مشتری مشکلی دارد، از او بخواهید در پنل خودش «گزارش DNS برای "
-#                "پشتیبانی» را روشن کند و همان سرویس را دوباره باز کند؛ بعد این‌جا دیده "
-#                "می‌شود. زنده دیدن در همان لحظه: <code>smartdns-watch</code> روی رله."
-#                "</p></div>")
+#        return ("<div class='card'><h2>دفتر پرسش‌های DNS</h2><p class='muted'>فعلاً غیرفعال است. برای "
+#                "بررسی مشکل یک مشتری، از او بخواهید در پنل خودش گزینهٔ «گزارش DNS برای پشتیبانی» را روشن "
+#                "کند و سرویس را دوباره باز کند؛ نتیجه همین‌جا نمایش داده می‌شود. برای تماشای "
+#                "زنده: <code>smartdns-watch</code> روی رله.</p></div>")
 #    out = ["<div class='card'><h2>گزارش DNS — %s</h2>" % (
 #        "روشن تا %s" % show_date(user["qlog_until"], True) if on else "خاموش"),
-#        "<p class='muted'>با اجازهٔ خود مشتری؛ هر اسم یک ساعت بعد از آخرین بار پاک "
-#        "می‌شود. «مستقیم» یعنی از رله رد نشد؛ ستون «چرا» می‌گوید به خاطر قالبش است یا "
-#        "اسم در فهرست نیست.</p>",
+#        "<p class='muted'>فقط با رضایت خود مشتری ثبت می‌شود و هر نام یک ساعت پس از آخرین پرسش "
+#        "پاک می‌شود. «مستقیم» یعنی از رله عبور نکرد؛ ستون «چرا» مشخص می‌کند دلیلش قالب مشتری "
+#        "بوده یا نام در فهرست نیست.</p>",
 #        "<table><tr><th>اسم</th><th>کجا رفت</th><th>چرا</th><th>راه</th><th>بار</th>"
 #        "<th>آخرین (UTC)</th></tr>"]
 #    for r in rows:
@@ -21708,15 +21767,15 @@ exit 0
 #    except sqlite3.OperationalError:
 #        return ""          # a panel that has not made the tables yet
 #    if not rows:
-#        return ("<div class='card'><h2>DNS امن (DoH و DoT)</h2><p class='muted'>در ۷ روز "
-#                "اخیر کسی از DNS امن استفاده نکرده.</p></div>")
+#        return ("<div class='card'><h2>DNS رمزگذاری‌شده (DoH و DoT)</h2><p class='muted'>در هفتهٔ اخیر "
+#                "هیچ‌کس از DNS رمزگذاری‌شده استفاده نکرده است.</p></div>")
 #    by = {}
 #    for r in rows:
 #        by.setdefault(r["day"], {})[r["kind"]] = r["queries"]
 #    users = {r["day"]: r["c"] for r in people}
 #    doh = sum(v.get("doh", 0) for v in by.values())
 #    dot = sum(v.get("dot", 0) for v in by.values())
-#    out = ["<div class='card'><h2>DNS امن (DoH و DoT) — ۷ روز اخیر</h2><div class='grid'>"]
+#    out = ["<div class='card'><h2>DNS رمزگذاری‌شده — هفتهٔ اخیر</h2><div class='grid'>"]
 #    for n, l in ((week, "مشتری"), (format(doh, ","), "کوئری DoH"),
 #                 (format(dot, ","), "کوئری DoT")):
 #        out.append("<div class='stat'><div class='n'>%s</div><div class='l'>%s</div></div>"
@@ -21726,8 +21785,8 @@ exit 0
 #        out.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td></tr>"
 #                   % (day, format(by[day].get("doh", 0), ","),
 #                      format(by[day].get("dot", 0), ","), users.get(day, 0)))
-#    out.append("</table><p class='muted'>فقط تعداد؛ اینکه چه اسمی پرسیده شد جایی نگه "
-#               "داشته نمی‌شود. روز به وقت تهران.</p></div>")
+#    out.append("</table><p class='muted'>فقط شمارش می‌شود و اینکه چه نامی پرسیده شده هیچ‌جا ذخیره "
+#               "نمی‌شود. روزها به وقت تهران‌اند.</p></div>")
 #    return "".join(out)
 #
 #
@@ -21737,10 +21796,10 @@ exit 0
 #    want = row["value"] if row and row["value"] else ""
 #    row = STORE.one("SELECT value FROM settings WHERE key = 'doh_host'")
 #    given = row["value"] if row and row["value"] else ""
-#    out = ["<div class='card'><h2>نام DNS امن (DoH و DoT)</h2>"]
+#    out = ["<div class='card'><h2>نام DNS رمزگذاری‌شده (DoH و DoT)</h2>"]
 #    if not given:
-#        out.append("<p class='muted'>هیچ رله‌ای هنوز DNS امن را روشن نکرده؛ رله برای این کار "
-#                   "به دامنه و گواهی نیاز دارد.</p></div>")
+#        out.append("<p class='muted'>هنوز هیچ رله‌ای DNS رمزگذاری‌شده را فعال نکرده است؛ برای این کار رله "
+#                   "به یک دامنه و گواهی نیاز دارد.</p></div>")
 #        return "".join(out)
 #    out.append("<p>نامی که الان به مشتری‌ها داده می‌شود: <code dir='ltr'>%s</code></p>"
 #               % html.escape(given))
@@ -21765,19 +21824,17 @@ exit 0
 #            out.append("<tr><td dir='ltr'>%s</td><td>%s</td></tr>"
 #                       % (html.escape(r["key"].split(":", 1)[1]), what))
 #        out.append("</table>")
-#    out.append("<form method='post' action='/%s/doh-name' class='row'>"
-#               "<input name='name' dir='ltr' placeholder='dns.example.com' value='%s' "
-#               "style='min-width:240px'><button>ذخیره</button></form>"
+#    out.append("<form method='post' action='/%s/doh-name' class='row'><input name='name' dir='ltr' placeholder='dns.example.com' value='%s' style='min-width:240px'><button>ذخیره</button></form>"
 #               % (p, html.escape(want)))
 #    if want:
-#        out.append("<form method='post' action='/%s/doh-name'><input type='hidden' name='name' "
-#                   "value=''><button class='ghost'>برگشت به نام خود رله</button></form>" % p)
-#    out.append("<p class='muted'>برای روزی که نام فعلی در ایران فیلتر شود. اول یک رکورد A برای "
-#               "نام تازه بسازید که به آی‌پی رله اشاره کند؛ بعد اینجا ذخیره کنید. رله برای نام تازه "
-#               "گواهی می‌گیرد (حدود بیست ثانیه پورت ۸۰ به Let's Encrypt داده می‌شود و دانلود "
-#               "کنسول‌ها همان مدت مکث می‌کند) و از آن به بعد آدرس DoH و DoT مشتری‌ها با نام تازه "
-#               "نشان داده می‌شود. تا وقتی نام قبلی هنوز به رله اشاره کند، در همان گواهی می‌ماند و "
-#               "دستگاه‌هایی که با آن تنظیم شده‌اند از کار نمی‌افتند.</p></div>")
+#        out.append("<form method='post' action='/%s/doh-name'><input type='hidden' name='name' value=''><button class='ghost'>برگشت "
+#                   "به نام خود رله</button></form>" % p)
+#    out.append("<p class='muted'>برای روزی که نام فعلی در ایران مسدود شود. اول یک رکورد A برای نام تازه "
+#               "بسازید که به آی‌پی رله اشاره کند؛ بعد اینجا ذخیره کنید. رله برای نام تازه گواهی "
+#               "می‌گیرد (حدود بیست ثانیه پورت ۸۰ به Let's Encrypt داده می‌شود و دانلود کنسول‌ها همان "
+#               "مدت مکث می‌کند) و از آن به بعد آدرس DoH و DoT مشتری‌ها با نام تازه نشان داده می‌شود. تا "
+#               "وقتی نام قبلی هنوز به رله اشاره کند، در همان گواهی می‌ماند و دستگاه‌هایی که با آن تنظیم "
+#               "شده‌اند از کار نمی‌افتند.</p></div>")
 #    return "".join(out)
 #
 #
@@ -21822,7 +21879,7 @@ exit 0
 #    sellers = STORE.q("SELECT id, username FROM admins WHERE own_only = 1 ORDER BY id")
 #    whole = sum(v.get(spans[2][0], 0) for v in figures.values()) or 1
 #    rows = [(0, "مشتری‌های خودم", None)] + [(s["id"], s["username"], s["id"]) for s in sellers]
-#    out = ["<h3 class='chart-h'>سهم هر کدام</h3><table><tr><th></th>%s<th>سهم ۳۰ روز</th></tr>"
+#    out = ["<h3 class='chart-h'>سهم‌بندی</h3><table><tr><th></th>%s<th>سهم ۳۰ روز</th></tr>"
 #           % "".join("<th>%s</th>" % label for _, label in spans)]
 #    for key, name, sid in rows:
 #        f = figures.get(key, {})
@@ -21877,9 +21934,8 @@ exit 0
 #    except sqlite3.OperationalError:
 #        return ""          # a panel that has not made the table yet
 #    if not view["days"] and not view["five"]:
-#        return ("<div class='card'><h2>" + html.escape(title) + "</h2><p class='muted'>"
-#                "هنوز مصرفی ثبت نشده. "
-#                "نمودارها از اولین همگام‌سازی رله بعد از این نسخه پر می‌شوند.</p></div>")
+#        return ("<div class='card'><h2>" + html.escape(title) + "</h2><p class='muted'>هنوز ترافیکی ثبت نشده است. نمودارها پس از نخستین همگام‌سازی رله "
+#                                                                "با این نسخه پر می‌شوند.</p></div>")
 #    since = (datetime.now(TEHRAN) - timedelta(days=6)).strftime("%Y-%m-%d")
 #    mine_only = (" AND u.owner_admin IS NULL" if owner == "own" else
 #                 " AND u.owner_admin = ?" if owner else "")
@@ -21931,13 +21987,13 @@ exit 0
 #                   "<div class='l'>%s</div></div>" % (html.escape(n), l, html.escape(note)))
 #    out.append("</div>")
 #    days_svg, _ = days_chart(view["days"])
-#    out.append("<h3 class='chart-h'>روزانه</h3>" + legend() + days_svg)
-#    out.append("<h3 class='chart-h'>سرعت کل ۲۴ ساعت اخیر</h3>" + legend() + speed_chart(view["five"]))
-#    out.append("<h3 class='chart-h'>ساعت‌های پرمصرف — ۷ روز اخیر</h3>" + heat_chart(view["hours"]))
+#    out.append("<h3 class='chart-h'>روند روزانه</h3>" + legend() + days_svg)
+#    out.append("<h3 class='chart-h'>سرعت کل در ۲۴ ساعت گذشته</h3>" + legend() + speed_chart(view["five"]))
+#    out.append("<h3 class='chart-h'>ساعات اوج مصرف — هفتهٔ اخیر</h3>" + heat_chart(view["hours"]))
 #    if top:
 #        total = sum(week) or 1
-#        out.append("<h3 class='chart-h'>پرمصرف‌ترین‌ها — ۷ روز اخیر</h3><table><tr><th>مشتری</th>"
-#                   "<th>دانلود</th><th>آپلود</th><th>سهم</th></tr>")
+#        out.append("<h3 class='chart-h'>پرمصرف‌ترین‌ها — هفتهٔ "
+#                   "اخیر</h3><table><tr><th>مشتری</th><th>دانلود</th><th>آپلود</th><th>سهم</th></tr>")
 #        for r in top:
 #            who = str(r["username"] or r["phone"] or r["telegram_id"] or "#%d" % r["id"])
 #            out.append("<tr><td><a href='/%s/usage?u=%d'>%s</a> <span class='muted'>%s</span>"
@@ -21946,8 +22002,8 @@ exit 0
 #                          human(r["down"]), human(r["up"]),
 #                          round(100.0 * (r["down"] + r["up"]) / total)))
 #        out.append("</table>")
-#    out.append("<p class='muted'>روز و ساعت به وقت تهران. روی نام هر مشتری بزنید تا نمودار "
-#               "خودش را ببینید.</p></div>")
+#    out.append("<p class='muted'>روز و ساعت بر پایهٔ وقت تهران است. با کلیک روی نام هر مشتری، نمودار "
+#               "اختصاصی‌اش باز می‌شود.</p></div>")
 #    return "".join(out)
 #
 #
@@ -22340,12 +22396,8 @@ exit 0
 #    summary = ("همه (%d)" % len(ips) if every else
 #               "<span dir='ltr'>%s</span>" % shown[0] if len(shown) == 1
 #               else "%d رله" % len(shown))
-#    return ("<details><summary title='%s'>%s</summary>"
-#            "<form method='post' action='/%s/user-relays'>"
-#            "<input type='hidden' name='id' value='%d'>"
-#            "<label><input type='checkbox'%s onchange=\"for (const b of "
-#            "this.form.querySelectorAll('input[name=ip]')) b.checked = this.checked\"> همه</label>"
-#            "%s<button class='ghost'>ذخیره</button></form></details>"
+#    return ("<details><summary title='%s'>%s</summary><form method='post' action='/%s/user-relays'><input type='hidden' name='id' value='%d'><label><input type='checkbox'%s onchange=\"for (const b of this.form.querySelectorAll('input[name=ip]')) b.checked = this.checked\"> "
+#            "همه</label>%s<button class='ghost'>ذخیره</button></form></details>"
 #            % ("، ".join(shown), summary, p, user["id"], " checked" if every else "", boxes))
 #
 #
@@ -22820,30 +22872,23 @@ exit 0
 #           " selected" if k == spec.get("preset", "") else "", PRESET_WORDS[k])
 #        for k in ("",) + TUNNEL_PRESETS)
 #    return (
-#        "<details><summary>%s%s</summary>"
-#        "<form method='post' action='/%s/relay-tunnel' style='margin-top:8px' "
-#        "onchange='tunnelPick(this)'>"
-#        "<input type='hidden' name='ip' value='%s'><input type='hidden' name='exit' value='%s'>"
-#        "<label style='display:block'><input type='radio' name='on' value='0'%s> خاموش — رله "
-#        "مستقیم به سرور خارج وصل شود</label>"
-#        "<label style='display:block'><input type='radio' name='on' value='1'%s> تونل BackPack</label>"
-#        "<label style='display:block'>کدام سر وصل شود: <select name='direction'>"
-#        "<option value='reverse'%s>معکوس — سرور خارج به رله وصل می‌شود</option>"
-#        "%s%s</select></label>"
-#        "<label style='display:block'>ترنسپورت: <select name='transport'>%s</select></label>"
-#        "<label style='display:block'>درگاه: <input name='port' value='%s' dir='ltr' "
-#        "style='width:90px'></label>"
-#        "<label style='display:block'>پروفایل سرعت: <select name='preset'>%s</select></label>"
-#        "<p class='muted'>پروفایل‌ها همان‌های خود BackPack‌اند و روی هر دو سر تونل نوشته "
-#        "می‌شوند؛ «پیش‌فرض» یعنی تونل همان‌طور که تا حالا بود. مستقیم throughput ندارد و "
-#        "در حالت معکوس throughput فقط روی kcp است. با عوض کردن پروفایل، تونل یک بار "
-#        "ری‌استارت می‌شود.</p>"
-#        "<p class='muted'>مستقیم همان Direct منوی خود BackPack است: رله به سرور خارج وصل "
-#        "می‌شود، دو سرور یک شبکهٔ کوچک مشترک می‌گیرند، و فقط xdi، pck، sni، udp و quic را "
-#        "دارد؛ xdi درگاه باز نمی‌خواهد، فقط پینگ در دو جهت. در حالت معکوس این درگاه روی "
-#        "رله باز می‌شود و در حالت مستقیم روی سرور خارج؛ اگر فایروالی جلویش هست، بازش "
-#        "کنید. تا وقتی تونل چیزی رد نمی‌کند، رله مستقیم به سرور خارج می‌رود.</p>"
-#        "<button class='ghost'>ذخیرهٔ تونل</button></form>%s</details>"
+#        "<details><summary>%s%s</summary><form method='post' action='/%s/relay-tunnel' style='margin-top:8px' onchange='tunnelPick(this)'><input type='hidden' name='ip' value='%s'><input type='hidden' name='exit' value='%s'><label style='display:block'><input type='radio' name='on' value='0'%s> "
+#        "خاموش — رله مستقیم به سرور خارج وصل "
+#        "شود</label><label style='display:block'><input type='radio' name='on' value='1'%s> تونل "
+#        "BackPack</label><label style='display:block'>کدام سر وصل شود: "
+#        "<select name='direction'><option value='reverse'%s>معکوس — سرور خارج به رله وصل "
+#        "می‌شود</option>%s%s</select></label><label style='display:block'>ترنسپورت: "
+#        "<select name='transport'>%s</select></label><label style='display:block'>درگاه: "
+#        "<input name='port' value='%s' dir='ltr' style='width:90px'></label><label style='display:block'>پروفایل "
+#        "سرعت: <select name='preset'>%s</select></label><p class='muted'>پروفایل‌ها همان‌های خود "
+#        "BackPack‌اند و روی هر دو سر تونل نوشته می‌شوند؛ «پیش‌فرض» یعنی تونل همان‌طور که تا حالا "
+#        "بود. مستقیم throughput ندارد و در حالت معکوس throughput فقط روی kcp است. با عوض کردن "
+#        "پروفایل، تونل یک بار ری‌استارت می‌شود.</p><p class='muted'>مستقیم همان Direct منوی خود "
+#        "BackPack است: رله به سرور خارج وصل می‌شود، دو سرور یک شبکهٔ کوچک مشترک می‌گیرند، و فقط "
+#        "xdi، pck، sni، udp و quic را دارد؛ xdi درگاه باز نمی‌خواهد، فقط پینگ در دو جهت. در حالت "
+#        "معکوس این درگاه روی رله باز می‌شود و در حالت مستقیم روی سرور خارج؛ اگر فایروالی جلویش "
+#        "هست، بازش کنید. تا وقتی تونل چیزی رد نمی‌کند، رله مستقیم به سرور خارج "
+#        "می‌رود.</p><button class='ghost'>ذخیرهٔ تونل</button></form>%s</details>"
 #        % (label, summary, p, ip, html.escape(to), "" if spec else " checked",
 #           " checked" if spec else "",
 #           " selected" if direction == "reverse" else "",
@@ -22932,7 +22977,7 @@ exit 0
 #    """A server's last health sample, as table cells: CPU, memory, disk, network."""
 #    m = STORE.one("SELECT * FROM metrics WHERE host = ? ORDER BY at DESC LIMIT 1", (host,))
 #    if not m:
-#        return "<td colspan='4' class='muted'>هنوز آماری نرسیده</td>"
+#        return "<td colspan='4' class='muted'>هنوز آماری دریافت نشده</td>"
 #    seen = parse_ts(m["at"])
 #    gone = seen and (datetime.now(timezone.utc) - seen).total_seconds() > 120
 #    return ("<td>%s%%%s</td><td>%s</td><td>%s</td><td class='muted' dir='ltr'>"
@@ -22948,9 +22993,9 @@ exit 0
 #    each name a link to its own page."""
 #    here, nodes, relays = exit_address(), node_list(), relay_list()
 #    exits, via = server_totals("exit"), server_totals("relay")
-#    out = ["<div class='card'><h2>مصرف و آمار هر سرور</h2>"
-#           "<table><tr><th>سرور</th><th></th><th>مصرف امروز</th><th>۳۰ روز</th>"
-#           "<th>CPU</th><th>RAM</th><th>دیسک</th><th>شبکه</th><th>ترافیک این ماه</th></tr>"]
+#    out = ["<div class='card'><h2>ترافیک و آمار "
+#           "سرورها</h2><table><tr><th>سرور</th><th></th><th>مصرف امروز</th><th>۳۰ "
+#           "روز</th><th>CPU</th><th>RAM</th><th>دیسک</th><th>شبکه</th><th>ترافیک این ماه</th></tr>"]
 #    rows = ([("exit", ip, "exit" if ip == here else ip,
 #              "سرور خارج — پنل" if ip == here else "نود", exits.get(ip))
 #             for ip in [here] + nodes]
@@ -22963,13 +23008,13 @@ exit 0
 #                   % (server_link(kind, ip) if ip else "?", label, human(today),
 #                      human(month), health_cells(host),
 #                      cap_cell(CFG["ADMIN_PATH"], host, kind == "exit")))
-#    out.append("</table><p class='muted'>«ترافیک این ماه» از شمارندهٔ کارت شبکهٔ خود سرور "
-#               "است، همان چیزی که سرویس‌دهنده حساب می‌کند؛ رویش بزنید تا سقف ماهانه، روز شروع "
-#               "دوره و کاری که با رسیدن به سقف بشود را تعیین کنید. هشدار در ۸۰ و ۹۵ و ۱۰۰ درصد "
-#               "می‌آید.</p><p class='muted'>روی نام هر سرور بزنید تا نمودارها و مشتری‌هایش را "
-#               "ببینید. مصرف مشتری‌های ثبت‌شده: روی رله از شمارندهٔ خود رله (همانی که حجم "
-#               "مشتری از آن کم می‌شود)، و روی سرور خارج از روی اینکه رله‌ها هر اتصال را از "
-#               "کدام سرور فرستاده‌اند. روز به وقت تهران.</p></div>")
+#    out.append("</table><p class='muted'>«ترافیک این ماه» از شمارندهٔ کارت شبکهٔ خود سرور است، همان "
+#               "چیزی که سرویس‌دهنده حساب می‌کند؛ رویش بزنید تا سقف ماهانه، روز شروع دوره و کاری که با "
+#               "رسیدن به سقف بشود را تعیین کنید. هشدار در ۸۰ و ۹۵ و ۱۰۰ درصد "
+#               "می‌آید.</p><p class='muted'>با کلیک روی نام هر سرور، نمودارها و مشتری‌های آن را "
+#               "می‌بینید. مصرف مشتری‌های ثبت‌شده: روی رله از شمارندهٔ خود رله (همانی که حجم مشتری از آن "
+#               "کم می‌شود)، و روی سرور خارج از روی اینکه رله‌ها هر اتصال را از کدام سرور "
+#               "فرستاده‌اند. روز به وقت تهران.</p></div>")
 #    return "".join(out)
 #
 #
@@ -22997,16 +23042,14 @@ exit 0
 #              % ("" if cap.get("action") == "move" else " selected",
 #                 " selected" if cap.get("action") == "move" else "")) if exit_kind else ""
 #    return (
-#        "<details><summary>%s</summary><form method='post' action='/%s/cap-save'>"
-#        "<input type='hidden' name='host' value='%s'>"
-#        "<label style='display:block'>سقف ماهانه (گیگ): <input name='gb' value='%s' dir='ltr' "
-#        "style='width:80px' placeholder='خالی = بی‌سقف'></label>"
-#        "<label style='display:block'>دوره از روز <input name='day' value='%s' dir='ltr' "
-#        "style='width:50px'> هر ماه شروع می‌شود</label>"
-#        "<label style='display:block'>شمرده می‌شود: <select name='count'>"
-#        "<option value='both'%s>دانلود و آپلود</option>"
-#        "<option value='out'%s>فقط خروجی</option></select></label>%s"
-#        "<button class='ghost'>ذخیره</button></form></details>"
+#        "<details><summary>%s</summary><form method='post' action='/%s/cap-save'><input type='hidden' name='host' value='%s'><label style='display:block'>سقف "
+#        "ماهانه (گیگ): "
+#        "<input name='gb' value='%s' dir='ltr' style='width:80px' placeholder='خالی = بی‌سقف'></label><label style='display:block'>دوره "
+#        "از روز <input name='day' value='%s' dir='ltr' style='width:50px'> هر ماه شروع "
+#        "می‌شود</label><label style='display:block'>شمرده می‌شود: "
+#        "<select name='count'><option value='both'%s>دانلود و "
+#        "آپلود</option><option value='out'%s>فقط "
+#        "خروجی</option></select></label>%s<button class='ghost'>ذخیره</button></form></details>"
 #        % (shown, p, html.escape(host), cap.get("gb") or "", cap.get("day") or 1,
 #           "" if cap.get("count") == "out" else " selected",
 #           " selected" if cap.get("count") == "out" else "", action))
@@ -23051,8 +23094,8 @@ exit 0
 #                              for r in rows)))
 #    if not parts:
 #        return ""
-#    return ("<div class='card'><h2>مصرف به تفکیک سرور</h2>%s<p class='muted'>روی هر سرور "
-#            "بزنید تا نمودارهای خودش را ببینید. روز به وقت تهران.</p></div>" % "".join(parts))
+#    return ("<div class='card'><h2>ترافیک به تفکیک سرور</h2>%s<p class='muted'>روی هر سرور کلیک کنید "
+#            "تا نمودارهای همان سرور باز شود. روزها به وقت تهران‌اند.</p></div>" % "".join(parts))
 #
 #
 #def alerts_card(always=True):
@@ -23069,7 +23112,7 @@ exit 0
 #        recent = []         # a panel that has not made the table yet
 #    if not open_ and not always:
 #        return ""
-#    out = ["<div class='card'><h2>هشدارها</h2>"]
+#    out = ["<div class='card'><h2>اعلان‌های سیستم</h2>"]
 #    if open_:
 #        for key in open_:
 #            row = STORE.one("SELECT text, at FROM alerts WHERE key = ? ORDER BY id DESC LIMIT 1",
@@ -23301,28 +23344,24 @@ exit 0
 #    domains = not one_server()
 #    for n, ip in enumerate(servers, 1):
 #        rows.append(
-#            "<tr%s><td><input form='srvlist' name='order_%s' value='%d' size='2' dir='ltr' "
-#            "inputmode='numeric'></td><td dir='ltr'><code>%s</code></td><td>%s</td>"
-#            "%s<td><input form='srvlist' name='note_%s' value='%s' maxlength='%d' "
-#            "style='width:100%%' placeholder='مثلاً مخصوص ایرانسل'></td>"
-#            "<td><label style='display:inline'><input form='srvlist' type='checkbox' "
-#            "name='hide_%s' value='1'%s> پنهان</label></td>%s</tr>"
+#            "<tr%s><td><input form='srvlist' name='order_%s' value='%d' size='2' dir='ltr' inputmode='numeric'></td><td dir='ltr'><code>%s</code></td><td>%s</td>%s<td><input form='srvlist' name='note_%s' value='%s' maxlength='%d' style='width:100%%' placeholder='مثلاً مخصوص ایرانسل'></td><td><label style='display:inline'><input form='srvlist' type='checkbox' name='hide_%s' value='1'%s> "
+#            "پنهان</label></td>%s</tr>"
 #            % (" class='off'" if ip in hidden else "", ip, n, ip,
 #               "تک‌سرور" if setting("single:" + ip) == "1" else "رله",
 #               domain_cell(ip) if domains else "",
 #               ip, html.escape(setting("server_note:" + ip) or "", quote=True),
 #               SERVER_NOTE_MAX, ip, " checked" if ip in hidden else "",
 #               panel_cell(ip) if domains else ""))
-#    return ("<div class='card'><h2>سرورها برای مشتری</h2>"
-#            "<form id='srvlist' method='post' action='/%s/server-list-save'></form>"
-#            "<table><tr><th>ترتیب</th><th>سرور</th><th></th>%s<th>توضیح برای مشتری</th>"
-#            "<th></th>%s</tr>%s</table><button form='srvlist'>ذخیره</button>"
-#            "<p class='muted'>مشتری سرورها را به همین ترتیب می‌بیند، با شماره و توضیح هر کدام "
-#            "(در ربات و پنل خودش، کنار DNS، DoT و DoH آن سرور)؛ اولی را معمولاً برمی‌دارد. "
-#            "«پنهان» سرور را از فهرست همهٔ مشتری‌ها برمی‌دارد، مثلاً وقتی در حال تعمیر است، "
-#            "بدون اینکه تیک مشتری‌ها عوض شود. سرور پنهان هنوز کار می‌کند؛ فقط نشان داده "
-#            "نمی‌شود. فروشنده‌ای که اجازهٔ انتخاب رله دارد، می‌تواند برای مشتری‌های خودش "
-#            "توضیح خودش را بنویسد.</p>%s</div>"
+#    return ("<div class='card'><h2>سرورهایی که مشتری "
+#            "می‌بیند</h2><form id='srvlist' method='post' action='/%s/server-list-save'></form><table><tr><th>ترتیب</th><th>سرور</th><th></th>%s<th>توضیح "
+#            "برای "
+#            "مشتری</th><th></th>%s</tr>%s</table><button form='srvlist'>ذخیره</button><p class='muted'>مشتری "
+#            "سرورها را با همین ترتیب، همراه با شماره و یادداشت هرکدام می‌بیند (در ربات و پنل خودش، "
+#            "کنار DNS، DoT و DoH آن سرور)؛ اولی را معمولاً برمی‌دارد. گزینهٔ «پنهان» سرور را از "
+#            "فهرست همهٔ مشتری‌ها کنار می‌گذارد، مثلاً هنگام تعمیر، بی‌آنکه انتخاب‌های مشتری‌ها "
+#            "دستکاری شود. سرور پنهان همچنان کار می‌کند و فقط به مشتری نمایش داده نمی‌شود. فروشنده‌ای "
+#            "که اجازهٔ انتخاب رله دارد، می‌تواند برای مشتری‌های خودش توضیح خودش را "
+#            "بنویسد.</p>%s</div>"
 #            % (p, "<th>دامنه (DoH و DoT)</th>" if domains else "",
 #               "<th>پنل مشتری</th>" if domains else "", "".join(rows),
 #               "<p class='muted'>دامنه: اول یک رکورد A بسازید که به آی‌پی همان سرور اشاره کند و "
@@ -23343,8 +23382,8 @@ exit 0
 #    for one that has a panel to show."""
 #    if not setting("panel_url:" + ip):
 #        return "<td class='muted'>—</td>"
-#    return ("<td><label style='display:inline'><input form='srvlist' type='checkbox' "
-#            "name='panel_%s' value='1'%s> روشن</label></td>"
+#    return ("<td><label style='display:inline'><input form='srvlist' type='checkbox' name='panel_%s' value='1'%s> "
+#            "روشن</label></td>"
 #            % (ip, "" if setting("panel_off:" + ip) == "1" else " checked"))
 #
 #
@@ -23362,8 +23401,7 @@ exit 0
 #    elif want and state.get("name") == want and not state.get("ok"):
 #        note = ("<span class='bad'>نشد: %s</span>%s" % (
 #            html.escape(state.get("error") or ""),
-#            "<details><summary>لاگ</summary><pre dir='ltr' style='white-space:pre-wrap;"
-#            "max-height:40vh;overflow:auto'>%s</pre></details>" % html.escape(state["log"])
+#            "<details><summary>لاگ</summary><pre dir='ltr' style='white-space:pre-wrap;max-height:40vh;overflow:auto'>%s</pre></details>" % html.escape(state["log"])
 #            if state.get("log") else ""))
 #    elif want:
 #        note = "<span class='warn'>در حال گرفتن گواهی…</span>"
@@ -23371,9 +23409,7 @@ exit 0
 #        note = "<span class='ok'>✓ DoH و DoT روشن</span>"
 #    else:
 #        note = "<span class='muted'>بدون دامنه: فقط DNS معمولی</span>"
-#    return ("<td><input form='srvlist' name='domain_%s' value='%s' dir='ltr' "
-#            "style='width:100%%;min-width:160px' placeholder='dns1.example.com'><br>"
-#            "<small>%s</small></td>" % (ip, html.escape(want or have, quote=True), note))
+#    return ("<td><input form='srvlist' name='domain_%s' value='%s' dir='ltr' style='width:100%%;min-width:160px' placeholder='dns1.example.com'><br><small>%s</small></td>" % (ip, html.escape(want or have, quote=True), note))
 #
 #
 #def seller_notes_card(p, s):
@@ -23386,25 +23422,23 @@ exit 0
 #    if not servers:
 #        return ""
 #    rows = "".join(
-#        "<tr><td dir='ltr'><code>%s</code></td><td><input name='note_%s' value='%s' "
-#        "maxlength='%d' style='width:100%%' placeholder='%s'></td></tr>"
+#        "<tr><td dir='ltr'><code>%s</code></td><td><input name='note_%s' value='%s' maxlength='%d' style='width:100%%' placeholder='%s'></td></tr>"
 #        % (ip, ip, html.escape(setting("server_note:%d:%s" % (s["id"], ip)) or "", quote=True),
 #           SERVER_NOTE_MAX, html.escape(setting("server_note:" + ip) or "توضیح مالک پنل",
 #                                        quote=True))
 #        for ip in servers)
-#    return ("<div class='card'><h2>توضیح سرورها برای مشتری‌های شما</h2>"
-#            "<form method='post' action='/%s/seller-server-notes'><table><tr><th>سرور</th>"
-#            "<th>توضیح</th></tr>%s</table><button>ذخیره</button></form>"
-#            "<p class='muted'>فقط مشتری‌های شما این‌ها را می‌بینند. خالی بگذارید تا توضیح "
-#            "مالک پنل (خاکستری) نشان داده شود.</p></div>" % (p, rows))
+#    return ("<div class='card'><h2>یادداشت سرورها برای مشتری‌های "
+#            "شما</h2><form method='post' action='/%s/seller-server-notes'><table><tr><th>سرور</th><th>توضیح</th></tr>%s</table><button>ذخیره</button></form><p class='muted'>این "
+#            "یادداشت‌ها فقط به مشتری‌های خود شما نشان داده می‌شود. اگر خالی بماند، یادداشت مالک "
+#            "پنل (به رنگ خاکستری) دیده می‌شود.</p></div>" % (p, rows))
 #
 #
 #def public_dns_card(p):
 #    """Public DNS: a button that opens every relay to everyone."""
 #    on = setting("public_dns") == "1"
 #    if on:
-#        form = ("<form method='post' action='/%s/public-dns'><input type='hidden' name='to' "
-#                "value='0'><button>خاموش کردن DNS عمومی</button></form>" % p)
+#        form = ("<form method='post' action='/%s/public-dns'><input type='hidden' name='to' value='0'><button>خاموش "
+#                "کردن DNS عمومی</button></form>" % p)
 #        state = ("<p class='warn'>🌍 DNS عمومی روشن است: هر کسی آدرس رله را بگذارد، بدون "
 #                 "ثبت‌نام و ثبت آی‌پی سرویس می‌گیرد.</p>")
 #    else:
@@ -23414,13 +23448,12 @@ exit 0
 #                "<input type='hidden' name='to' value='1'><button class='ghost'>روشن کردن DNS "
 #                "عمومی</button></form>"
 #                % (p, html.escape(json.dumps(ask, ensure_ascii=False), quote=True)))
-#        state = ("<p class='muted'>خاموش است: فقط آی‌پی‌هایی که مشتری‌ها ثبت کرده‌اند سرویس "
-#                 "می‌گیرند.</p>")
-#    return ("<div class='card'><h2>DNS عمومی</h2>%s%s<p class='muted'>وقتی روشن باشد، DNS "
-#            "برای همه باز است: کسی لازم نیست ثبت‌نام کند یا آی‌پی ثبت کند، و سهمیه، تاریخ پایان "
-#            "و مسدود بودن مشتری‌ها هم جلوی کسی را نمی‌گیرد. مصرف کسانی که آی‌پی ثبت نکرده‌اند "
-#            "جایی شمرده نمی‌شود. تا یک دقیقه روی همهٔ رله‌ها و تک‌سرورها اعمال می‌شود؛ با "
-#            "خاموش کردنش همه‌چیز مثل قبل می‌شود. DoH و DoT همچنان فقط برای مشتری‌ها کار "
+#        state = ("<p class='muted'>خاموش: فقط آی‌پی‌هایی که مشتری‌ها ثبت کرده‌اند به سرویس می‌رسند.</p>")
+#    return ("<div class='card'><h2>دسترسی آزاد به DNS</h2>%s%s<p class='muted'>با روشن بودن این "
+#            "گزینه DNS روی همه باز است: نیازی به ثبت‌نام یا ثبت آی‌پی نیست، و سهمیه، تاریخ پایان و "
+#            "مسدود بودن مشتری‌ها هم جلوی کسی را نمی‌گیرد. ترافیک کسانی که آی‌پی ثبت نکرده‌اند در "
+#            "هیچ‌جا حساب نمی‌شود. تا یک دقیقه روی همهٔ رله‌ها و تک‌سرورها اعمال می‌شود؛ با خاموش "
+#            "کردن، همه‌چیز به حالت قبل برمی‌گردد. DoH و DoT همچنان فقط برای مشتری‌ها کار "
 #            "می‌کنند.</p></div>" % (state, form))
 #
 #
@@ -23430,8 +23463,7 @@ exit 0
 #    mine = app_version()
 #    rc, text = self_upgrade_state()
 #    waiting = setting("upgrade_others_after")
-#    out = ["<div class='card'><h2>🆕 نسخهٔ تازه از گیت‌هاب</h2>"
-#           "<p>این سرور: <b dir='ltr'>%s</b>" % html.escape(mine or "?")]
+#    out = ["<div class='card'><h2>🆕 به‌روزرسانی تازه در گیت‌هاب</h2><p>این سرور: <b dir='ltr'>%s</b>" % html.escape(mine or "?")]
 #    if state.get("version"):
 #        out.append(" · آخرین نسخه در گیت‌هاب: <b dir='ltr'>%s</b>%s"
 #                   % (html.escape(state["version"]),
@@ -23446,32 +23478,28 @@ exit 0
 #                   "بعد خودش بقیهٔ سرورها را آپدیت می‌کند.</p><script>setTimeout(function(){"
 #                   "location.reload()},15000)</script>" % html.escape(waiting))
 #    elif rc not in (None, 0):
-#        out.append("<p class='bad'>آپدیت همین سرور نشد (کد %d).</p><details><summary>لاگ"
-#                   "</summary><pre dir='ltr' style='white-space:pre-wrap;max-height:40vh;"
-#                   "overflow:auto'>%s</pre></details>" % (rc, html.escape(text)))
+#        out.append("<p class='bad'>آپدیت همین سرور نشد (کد "
+#                   "%d).</p><details><summary>لاگ</summary><pre dir='ltr' style='white-space:pre-wrap;max-height:40vh;overflow:auto'>%s</pre></details>" % (rc, html.escape(text)))
 #    newer = state.get("version") and version_key(state["version"]) > version_key(mine)
 #    table, behind, running = servers_versions(p)
 #    if newer and not (waiting and rc is None) and not running:
-#        out.append("<form method='post' action='/%s/self-upgrade' onsubmit=\"return confirm("
-#                   "'این سرور و بعد همهٔ رله‌ها، نودها و تک‌سرورها به نسخهٔ %s آپدیت شوند؟')\">"
-#                   "<button>آپدیت همه به %s</button></form>"
+#        out.append("<form method='post' action='/%s/self-upgrade' onsubmit=\"return confirm('این سرور و بعد همهٔ رله‌ها، نودها و تک‌سرورها به نسخهٔ %s آپدیت شوند؟')\"><button>آپدیت "
+#                   "همه به %s</button></form>"
 #                   % (p, html.escape(state["version"]), html.escape(state["version"])))
 #    elif behind and not running and not (waiting and rc is None):
 #        # This server has it already; the others that do not are brought up
 #        # to it by the same button.
-#        out.append("<form method='post' action='/%s/self-upgrade' onsubmit=\"return confirm("
-#                   "'%d سرور دیگر به نسخهٔ %s آپدیت شوند؟')\"><button>آپدیت همه به %s</button>"
-#                   "</form>" % (p, len(behind), html.escape(mine), html.escape(mine)))
+#        out.append("<form method='post' action='/%s/self-upgrade' onsubmit=\"return confirm('%d سرور دیگر به نسخهٔ %s آپدیت شوند؟')\"><button>آپدیت "
+#                   "همه به %s</button></form>" % (p, len(behind), html.escape(mine), html.escape(mine)))
 #    elif not newer and state.get("version") and not running:
 #        out.append("<p class='ok'>همهٔ سرورها آخرین نسخه را دارند.</p>" if not behind
 #                   else "")
 #    out.append(table)
-#    out.append("<form method='post' action='/%s/update-check' style='margin-top:8px'>"
-#               "<button class='ghost'>بررسی دوباره</button></form>"
-#               "<p class='muted'>پنل هر %d ساعت یک بار گیت‌هاب master-dns را چک می‌کند. با زدن "
-#               "دکمه، نصب‌کننده از خود ریلیز دانلود می‌شود و فقط وقتی نصب می‌شود که هشش با هشی "
-#               "که گیت‌هاب منتشر کرده یکی باشد. اول همین سرور آپدیت می‌شود و بعد بقیهٔ سرورها "
-#               "یکی‌یکی. نسخهٔ قدیمی‌تر هیچ‌وقت نصب نمی‌شود.</p></div>"
+#    out.append("<form method='post' action='/%s/update-check' style='margin-top:8px'><button class='ghost'>بررسی "
+#               "دوباره</button></form><p class='muted'>پنل هر %d ساعت یک بار گیت‌هاب master-dns را چک "
+#               "می‌کند. با زدن دکمه، نصب‌کننده از خود ریلیز دانلود می‌شود و فقط وقتی نصب می‌شود که هشش "
+#               "با هشی که گیت‌هاب منتشر کرده یکی باشد. اول همین سرور آپدیت می‌شود و بعد بقیهٔ سرورها "
+#               "یکی‌یکی. نسخهٔ قدیمی‌تر هرگز نصب نمی‌شود.</p></div>"
 #               % (p, UPDATE_CHECK_HOURS))
 #    return "".join(out)
 #
@@ -23507,10 +23535,9 @@ exit 0
 #        rows.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td><td dir='ltr'>%s</td>"
 #                    "<td>%s%s</td></tr>" % (
 #                        h, server_word(h), html.escape(v or "?"), state,
-#                        "<details><summary>لاگ</summary><pre dir='ltr' style='white-space:"
-#                        "pre-wrap;max-height:40vh;overflow:auto'>%s</pre></details>"
+#                        "<details><summary>لاگ</summary><pre dir='ltr' style='white-space:pre-wrap;max-height:40vh;overflow:auto'>%s</pre></details>"
 #                        % html.escape(log_text) if log_text else ""))
-#    out.append("<h3 class='chart-h'>سرورهای دیگر</h3>")
+#    out.append("<h3 class='chart-h'>سایر سرورها</h3>")
 #    out.append("<table><tr><th>سرور</th><th></th><th>نسخه</th><th></th></tr>%s</table>"
 #               % "".join(rows))
 #    running = job.get("current") and not job.get("stopped")
@@ -23533,9 +23560,9 @@ exit 0
 #    nodes = node_list()
 #    row = STORE.one("SELECT value FROM settings WHERE key = 'standby'")
 #    standby = (row["value"] if row else "") or ""
-#    out = ["<div class='card'><h2>انتقال پنل — سرور پشتیبان</h2>"]
+#    out = ["<div class='card'><h2>جابه‌جایی پنل — سرور آماده‌باش</h2>"]
 #    if not nodes:
-#        out.append("<p class='muted'>سرور پشتیبان یکی از نودهاست؛ اول یک نود اضافه کنید.</p></div>")
+#        out.append("<p class='muted'>سرور آماده‌باش یکی از نودهاست؛ ابتدا یک نود اضافه کنید.</p></div>")
 #        return "".join(out)
 #    options = "<option value=''%s>هیچ‌کدام</option>" % ("" if standby else " selected")
 #    options += "".join("<option value='%s'%s>%s</option>" % (n, " selected" if n == standby
@@ -23586,8 +23613,8 @@ exit 0
 #    """The relays this exit serves and their tunnels - a page of its own, not
 #    part of the settings."""
 #    if one_server():
-#        return ("<div class='card'><h2>نود</h2><p class='muted'>این سرور تک‌سرور است و رلهٔ "
-#                "جدایی ندارد.</p></div>")
+#        return ("<div class='card'><h2>نودها</h2><p class='muted'>این سرور به‌صورت تک‌سرور کار می‌کند و "
+#                "رلهٔ جداگانه‌ای ندارد.</p></div>")
 #    return (alerts_card() + servers_card() + nodes_card(CFG["ADMIN_PATH"])
 #            + singles_card(CFG["ADMIN_PATH"]) + relays_card(CFG["ADMIN_PATH"])
 #            + customer_servers_card(CFG["ADMIN_PATH"])
@@ -23686,7 +23713,7 @@ exit 0
 #    """The home page's customers online now."""
 #    out = ["<div class='card' id='online'><h2>🟢 آنلاین الان (%d)</h2>" % len(rows)]
 #    if not rows:
-#        out.append("<p class='muted'>الان کسی آنلاین نیست.</p>")
+#        out.append("<p class='muted'>در این لحظه هیچ‌کس آنلاین نیست.</p>")
 #    else:
 #        sellers = {}
 #        if show_seller:
@@ -23711,9 +23738,9 @@ exit 0
 #        out.append("</table>")
 #        if len(rows) > most:
 #            out.append("<p class='muted'>و %d نفر دیگر.</p>" % (len(rows) - most))
-#    out.append("<p class='muted'>آنلاین یعنی در ۳ دقیقهٔ اخیر از راه رله ترافیک داشته. فقط "
-#               "سرویس‌هایی که قالبش از رله می‌برد شمرده می‌شوند؛ کسی که فقط چیزهای دیگر را "
-#               "باز کرده این‌جا نمی‌آید.</p></div>")
+#    out.append("<p class='muted'>«آنلاین» یعنی در ۳ دقیقهٔ گذشته از مسیر رله ترافیک داشته است. فقط "
+#               "سرویس‌هایی که قالبش از رله می‌برد شمرده می‌شوند؛ کسی که فقط چیزهای دیگر را باز کرده "
+#               "این‌جا نمی‌آید.</p></div>")
 #    return "".join(out)
 #
 #
@@ -23835,9 +23862,7 @@ exit 0
 #    options = "".join("<option value='%s'%s>%s</option>" % (
 #        x, " selected" if x == now else "", "%s — این سرور" % x if x == here else x)
 #        for x in [here] + nodes)
-#    return ("<form method='post' action='/%s/relay-exit'><input type='hidden' name='ip' "
-#            "value='%s'><select name='exit' dir='ltr' onchange='this.form.submit()'>%s</select>"
-#            "</form>" % (p, ip, options))
+#    return ("<form method='post' action='/%s/relay-exit'><input type='hidden' name='ip' value='%s'><select name='exit' dir='ltr' onchange='this.form.submit()'>%s</select></form>" % (p, ip, options))
 #
 #
 #def user_exits(user, relays):
@@ -23909,29 +23934,23 @@ exit 0
 #            kind = "نود" + (" <span class='warn'>(DNS: %s)</span>" % html.escape(res["error"])
 #                            if res.get("error") else "")
 #            seen = seen_cell(ip)
-#            remove = ("<form method='post' action='/%s/node-del' onsubmit=\"return confirm("
-#                      "'این سرور از پنل جدا می‌شود و رله‌هایی که از آن می‌روند به این سرور "
-#                      "برمی‌گردند. ادامه؟')\"><input type='hidden' name='ip' value='%s'>"
-#                      "<button class='danger'>برداشتن</button></form>" % (p, ip))
+#            remove = ("<form method='post' action='/%s/node-del' onsubmit=\"return confirm('این سرور از پنل جدا می‌شود و رله‌هایی که از آن می‌روند به این سرور برمی‌گردند. ادامه؟')\"><input type='hidden' name='ip' value='%s'><button class='danger'>برداشتن</button></form>" % (p, ip))
 #        out.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td><td>%s</td>"
 #                   "<td dir='ltr'>%s</td><td>%s</td></tr>"
 #                   % (html.escape(ip or "?"), kind, seen,
 #                      html.escape(", ".join(users)) or "<span class='muted'>-</span>", remove))
 #    out.append("</table>")
-#    out.append("<form method='post' action='/%s/node-add' class='row' style='margin-top:12px'>"
-#               "<input name='ip' dir='ltr' placeholder='آی‌پی سرور خارج تازه' "
-#               "style='min-width:200px'><button>افزودن سرور</button></form>" % p)
+#    out.append("<form method='post' action='/%s/node-add' class='row' style='margin-top:12px'><input name='ip' dir='ltr' placeholder='آی‌پی سرور خارج تازه' style='min-width:200px'><button>افزودن "
+#               "سرور</button></form>" % p)
 #    token = pairing_token()
 #    if token:
 #        out.append(
-#            "<details style='margin-top:12px'><summary>نصب یک سرور خارج تازه</summary>"
-#            "<ol class='muted'><li>آی‌پی سرور تازه را این بالا اضافه کنید.</li>"
-#            "<li>روی آن سرور، با فایل نصب‌کنندهٔ همین نسخه، این را اجرا کنید:</li></ol>"
-#            "<pre dir='ltr' style='white-space:pre-wrap;word-break:break-all'>"
-#            "sudo env ROLE=node PANEL_IP=%s SYNC_TOKEN=%s bash master-dns.sh</pre>"
-#            "<p class='muted'>وقتی در این جدول «وصل» شد، از ستون «سرور خارج» جدول رله‌ها "
-#            "رله‌هایی را که باید از آن بروند انتخاب کنید. توکن را فقط به خودتان بدهید.</p>"
-#            "</details>" % (html.escape(here or "آی‌پی-همین-سرور"), html.escape(token)))
+#            "<details style='margin-top:12px'><summary>نصب یک سرور خارج "
+#            "تازه</summary><ol class='muted'><li>آی‌پی سرور تازه را این بالا اضافه کنید.</li><li>روی "
+#            "آن سرور، با فایل نصب‌کنندهٔ همین نسخه، این را اجرا "
+#            "کنید:</li></ol><pre dir='ltr' style='white-space:pre-wrap;word-break:break-all'>sudo env ROLE=node PANEL_IP=%s SYNC_TOKEN=%s bash master-dns.sh</pre><p class='muted'>وقتی "
+#            "در این جدول «وصل» شد، از ستون «سرور خارج» جدول رله‌ها رله‌هایی را که باید از آن بروند "
+#            "انتخاب کنید. توکن را فقط خودتان نگه دارید.</p></details>" % (html.escape(here or "آی‌پی-همین-سرور"), html.escape(token)))
 #    out.append("<p class='muted'>هر رله از سرور خارجی که برایش انتخاب شده می‌رود؛ اگر آن "
 #               "سرور در دسترس نباشد، خودکار از بقیه می‌رود. مشتری‌ها و حجمشان بین همه "
 #               "مشترک است.</p></div>")
@@ -23947,25 +23966,20 @@ exit 0
 #        out.append("<table><tr><th>تک‌سرور</th><th>آخرین گزارش</th><th></th></tr>")
 #        for ip in ips:
 #            remove = ("" if len(relay_list()) < 2 else
-#                      "<form method='post' action='/%s/relay-del' onsubmit=\"return confirm("
-#                      "'این تک‌سرور از پنل جدا می‌شود و مشتری‌هایی که DNS را رویش گذاشته‌اند "
-#                      "قطع می‌شوند. ادامه؟')\"><input type='hidden' name='ip' value='%s'>"
-#                      "<button class='danger'>برداشتن</button></form>" % (p, ip))
+#                      "<form method='post' action='/%s/relay-del' onsubmit=\"return confirm('این تک‌سرور از پنل جدا می‌شود و مشتری‌هایی که DNS را رویش گذاشته‌اند قطع می‌شوند. ادامه؟')\"><input type='hidden' name='ip' value='%s'><button class='danger'>برداشتن</button></form>" % (p, ip))
 #            out.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td><td>%s</td></tr>"
 #                       % (ip, seen_cell(ip), remove))
 #        out.append("</table>")
-#    out.append("<form method='post' action='/%s/single-add' class='row' style='margin-top:12px'>"
-#               "<input name='ip' dir='ltr' placeholder='آی‌پی تک‌سرور تازه' "
-#               "style='min-width:200px'><button>افزودن تک‌سرور</button></form>" % p)
+#    out.append("<form method='post' action='/%s/single-add' class='row' style='margin-top:12px'><input name='ip' dir='ltr' placeholder='آی‌پی تک‌سرور تازه' style='min-width:200px'><button>افزودن "
+#               "تک‌سرور</button></form>" % p)
 #    token, here = pairing_token(), exit_address()
 #    if token:
 #        out.append(
-#            "<details style='margin-top:12px'><summary>نصب یک تک‌سرور تازه</summary>"
-#            "<ol class='muted'><li>آی‌پی آن را این بالا اضافه کنید.</li>"
-#            "<li>روی آن سرور، با فایل نصب‌کنندهٔ همین نسخه، این را اجرا کنید:</li></ol>"
-#            "<pre dir='ltr' style='white-space:pre-wrap;word-break:break-all'>sudo env ROLE=single "
-#            "PANEL_IP=%s SYNC_TOKEN=%s bash master-dns.sh</pre>"
-#            "<p class='muted'>توکن را فقط به خودتان بدهید.</p></details>"
+#            "<details style='margin-top:12px'><summary>نصب یک تک‌سرور "
+#            "تازه</summary><ol class='muted'><li>آی‌پی آن را این بالا اضافه کنید.</li><li>روی آن "
+#            "سرور، با فایل نصب‌کنندهٔ همین نسخه، این را اجرا "
+#            "کنید:</li></ol><pre dir='ltr' style='white-space:pre-wrap;word-break:break-all'>sudo env ROLE=single PANEL_IP=%s SYNC_TOKEN=%s bash master-dns.sh</pre><p class='muted'>توکن "
+#            "را فقط خودتان نگه دارید.</p></details>"
 #            % (html.escape(here or "آی‌پی-همین-سرور"), html.escape(token)))
 #    out.append("<p class='muted'>تک‌سرور یک سرور در کشوری دیگر است که هم ورودی است و هم "
 #               "خروجی: مشتری DNS را مستقیم روی خودش می‌گذارد و رله لازم ندارد. مشتری‌ها، حجمشان "
@@ -23985,10 +23999,7 @@ exit 0
 #        for ip in ips:
 #            state = seen_cell(ip)
 #            remove = ("" if len(relay_list()) < 2 else
-#                      "<form method='post' action='/%s/relay-del' onsubmit=\"return confirm("
-#                      "'این رله دیگر به این سرور راه ندارد و مشتری‌هایی که DNS را رویش گذاشته‌اند "
-#                      "قطع می‌شوند. ادامه؟')\"><input type='hidden' name='ip' value='%s'>"
-#                      "<button class='danger'>برداشتن</button></form>" % (p, ip))
+#                      "<form method='post' action='/%s/relay-del' onsubmit=\"return confirm('این رله دیگر به این سرور راه ندارد و مشتری‌هایی که DNS را رویش گذاشته‌اند قطع می‌شوند. ادامه؟')\"><input type='hidden' name='ip' value='%s'><button class='danger'>برداشتن</button></form>" % (p, ip))
 #            out.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td>%s<td>%s</td>"
 #                       "<td>%s</td></tr>" % (
 #                           ip, state, "<td>%s</td>" % exit_cell(p, ip) if exits else "",
@@ -24060,8 +24071,8 @@ exit 0
 #                "از نسخهٔ پشتیبانش برگردانید. تا آن موقع عکس‌های تازه بدون رمز نگه "
 #                "داشته می‌شوند.</div>" % (KEY_FILE, sealed_count()))
 #    if key is None:
-#        return ("<p class='muted'>عکس‌ها رمزگذاری نمی‌شوند: کتابخانهٔ OpenSSL روی این "
-#                "سرور پیدا نشد.</p>")
+#        return ("<p class='muted'>عکس‌ها رمزگذاری نمی‌شوند: کتابخانهٔ OpenSSL روی چنین سروری پیدا "
+#                "نشد.</p>")
 #    return ("<h2 style='margin-top:22px'>کلید رمزگذاری عکس‌ها</h2>"
 #            "<p class='muted'>عکس رسیدها و تیکت‌ها رمزگذاری شده نگه داشته می‌شوند و "
 #            "کلیدشان در <code>%s</code> است، نه در دیتابیس — پس نسخهٔ پشتیبان هم "
@@ -24093,8 +24104,8 @@ exit 0
 #    if EXIT_BENCH["ms"] and not (one_server() and cols):
 #        cols.append(("این سرور", EXIT_BENCH["ms"], int(EXIT_BENCH["at"])))
 #    if not cols:
-#        return ("<p class='muted'>زمان جواب هنوز اندازه گرفته نشده؛ رله‌ها چند دقیقه بعد از "
-#                "این نسخه اولین اندازه‌گیری را می‌فرستند.</p>"), {}
+#        return ("<p class='muted'>تأخیر پاسخ هنوز اندازه‌گیری نشده است؛ رله‌ها چند دقیقه پس از ارتقا به "
+#                "این نسخه نخستین اندازه را می‌فرستند.</p>"), {}
 #    rows = [(prov, ip) for prov, a, b, _ in RESOLVERS for ip in (a, b)]
 #    for ip in picks:
 #        if ip and ip not in [x for _, x in rows]:
@@ -24148,12 +24159,12 @@ exit 0
 #                   " — " + ms_text(label_ms[ip]) if ip in label_ms else "")
 #                for ip in (a, b))))
 #        custom = current if current and current not in known else ""
-#        return ("<select name='%s' dir='ltr'>%s</select> <input name='%s_custom'"
-#                " value='%s' placeholder='یا آی‌پی دلخواه' dir='ltr' size='15'>"
+#        return ("<select name='%s' dir='ltr'>%s</select> "
+#                "<input name='%s_custom' value='%s' placeholder='یا آی‌پی دلخواه' dir='ltr' size='15'>"
 #                % (name, "".join(opts), name, html.escape(custom)))
 #
 #    bad = [ip for ip in picks if ip in ECS_RESOLVERS]
-#    out = ["<div class='card'><h2>DNS بالادستی</h2>",
+#    out = ["<div class='card'><h2>DNS مرجع (بالادستی)</h2>",
 #           "<div class='msg err'>⚠️ %s زیرشبکهٔ ایرانی رله را به سرویس‌ها می‌گوید: PUBG "
 #           "Mobile و بقیهٔ بازی‌های Tencent برای مشتری‌ها باز نمی‌شوند. Cloudflare یا "
 #           "Quad9 را بگذارید.</div>" % html.escape("، ".join(bad)) if bad else "",
@@ -24169,7 +24180,7 @@ exit 0
 #    notes = ["<li><b>%s</b> (%s، %s): %s</li>" % (html.escape(n), a, b, html.escape(w))
 #             for n, a, b, w in RESOLVERS if w]
 #    out.append("<ul class='muted'>%s</ul>" % "".join(notes))
-#    out.append("<h3 class='chart-h'>زمان جواب</h3>" + timings)
+#    out.append("<h3 class='chart-h'>تأخیر پاسخ</h3>" + timings)
 #    out.append("<form method='post' action='/%s/dns-bench'><button class='ghost'>"
 #               "اندازه‌گیری دوباره</button></form>" % p)
 #
@@ -24370,12 +24381,9 @@ exit 0
 #            # draws nothing rather than something.
 #            if not LINE_ICON.fullmatch(icon["line"]):
 #                continue
-#            out.append("<symbol id='si-%s' viewBox='0 0 24 24' fill='none' "
-#                       "stroke='currentColor' stroke-width='2' stroke-linecap='round' "
-#                       "stroke-linejoin='round'>%s</symbol>" % (slug, icon["line"]))
+#            out.append("<symbol id='si-%s' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>%s</symbol>" % (slug, icon["line"]))
 #        else:
-#            out.append("<symbol id='si-%s' viewBox='0 0 24 24'><path fill='currentColor' "
-#                       "d='%s'/></symbol>" % (slug, html.escape(icon.get("path") or "")))
+#            out.append("<symbol id='si-%s' viewBox='0 0 24 24'><path fill='currentColor' d='%s'/></symbol>" % (slug, html.escape(icon.get("path") or "")))
 #    return ("<svg width='0' height='0' style='position:absolute' aria-hidden='true'>%s</svg>"
 #            % "".join(out))
 #
@@ -24423,25 +24431,25 @@ exit 0
 ## somebody picks, the browser's own setting decides; the button in the corner
 ## overrides it, and the choice is kept in that browser.
 #DARK = """color-scheme:dark;
-# --bg:#0b1020;--card:#121a2e;--line:#1f2a44;--line2:#2b3a5c;--row:#182340;
-# --track:#0b1020;--fg:#e8edf8;--head:#d3dcf0;--muted:#8e9bb8;--dim:#a3aec8;
-# --faint:#6c7a99;--accent:#5aa2ff;--accent2:#8ab8ff;--btn:#2563eb;
+# --bg:#050507;--card:#0c0d11;--line:#1a1c23;--line2:#272b36;--row:#12141a;
+# --track:#0a0b0e;--fg:#ececf1;--head:#dcdce6;--muted:#8a8f9e;--dim:#a0a5b3;
+# --faint:#6a6f7d;--accent:#5aa2ff;--accent2:#8ab8ff;--btn:#2563eb;
 # --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
 # --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
-# --err-bg:#2a1219;--warn-bg:#2a2310;--warn-line:#6e5a2c;
+# --err-bg:#1f0f13;--warn-bg:#1f1a0c;--warn-line:#5e4d25;
 # --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
-# --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.25);
-# --pop:0 10px 30px rgba(0,0,0,.5)"""
+# --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 44px -26px rgba(0,0,0,.9);
+# --pop:0 18px 50px rgba(0,0,0,.65)"""
 #LIGHT = """color-scheme:light;
-# --bg:#f2f5fb;--card:#ffffff;--line:#dde4f0;--line2:#c3cde0;--row:#e8edf7;
-# --track:#e8edf7;--fg:#101828;--head:#1b2538;--muted:#5b6780;--dim:#51607a;
-# --faint:#6b7893;--accent:#1d5fd6;--accent2:#2563eb;--btn:#1f5fe0;
+# --bg:#f3f5f9;--card:#ffffff;--line:#e7eaf1;--line2:#d4d9e4;--row:#eff1f6;
+# --track:#e9ecf3;--fg:#0f1523;--head:#1a2234;--muted:#5a6578;--dim:#4f5b70;
+# --faint:#68748a;--accent:#1d5fd6;--accent2:#2563eb;--btn:#1f5fe0;
 # --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
 # --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
 # --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
 # --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
-# --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
-# --pop:0 10px 30px rgba(16,24,40,.15)"""
+# --shadow:0 1px 0 rgba(255,255,255,.8) inset,0 16px 40px -28px rgba(30,41,80,.28);
+# --pop:0 16px 44px rgba(30,41,80,.18)"""
 ## Blue is the default and lives in DARK / LIGHT above. Each other accent only
 ## swaps the four names that carry it, once for each theme.
 #ACCENTS = {
@@ -24477,104 +24485,143 @@ exit 0
 #              "if(a=='blue'||a=='pink'||a=='green'||a=='red')d.setAttribute('data-accent',a)"
 #              "}catch(e){}</script>")
 #_DOTS = "".join(
-#    "<button type='button' class='dot %s' title='%s' aria-label='%s'"
-#    " onclick=\"(function(r){r.setAttribute('data-accent','%s');"
-#    "try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
+#    "<button type='button' class='dot %s' title='%s' aria-label='%s' onclick=\"(function(r){r.setAttribute('data-accent','%s');try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
 #    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز")))
 #THEME_BUTTON = (
-#    "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره'"
-#    " onclick=\"(function(r){var c=r.getAttribute('data-theme')||"
-#    "(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'),"
-#    "n=c=='light'?'dark':'light';r.setAttribute('data-theme',n);"
-#    "try{localStorage.setItem('theme',n)}catch(e){}})(document.documentElement)\">"
-#    "<span class='sun'>☀️</span><span class='moon'>🌙</span></button>"
-#    "<span class='accents' role='group' aria-label='رنگ تاکیدی'>" + _DOTS + "</span>"
-#    "<button type='button' class='theme lang' title='English / فارسی'"
-#    " aria-label='English / فارسی' onclick=\"document.cookie='lang='+"
-#    "(document.documentElement.lang=='en'?'fa':'en')+"
-#    "'; path=/; max-age=31536000; samesite=lax';location.reload()\">"
-#    "<span class='fa-only'>EN</span><span class='en-only'>فا</span></button>")
+#    "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره' onclick=\"(function(r){var c=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'),n=c=='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('theme',n)}catch(e){}})(document.documentElement)\"><span class='sun'>☀️</span><span class='moon'>🌙</span></button><span class='accents' role='group' aria-label='رنگ تاکیدی'>" + _DOTS + "</span><button type='button' class='theme lang' title='English / فارسی' aria-label='English / فارسی' onclick=\"document.cookie='lang='+(document.documentElement.lang=='en'?'fa':'en')+'; path=/; max-age=31536000; samesite=lax';location.reload()\"><span class='fa-only'>EN</span><span class='en-only'>فا</span></button>")
 #
-#FX_CSS = """
-#/* Master DNS: shape and motion, the same on both panels. */
+#LATIN_FACE = "@font-face{font-family:'MD Latin';font-weight:100 550;font-display:swap;unicode-range:U+0020-007E;src:url(data:font/woff;base64,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) format('woff')}\n@font-face{font-family:'MD Latin';font-weight:551 900;font-display:swap;unicode-range:U+0020-007E;src:url(data:font/woff;base64,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) format('woff')}"
+#
+#FX_CSS = LATIN_FACE + """
+#*{scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+#::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}
+#::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
+#body{font-family:'MD Latin',Vazirmatn,system-ui,-apple-system,'Segoe UI',sans-serif;
+# font-feature-settings:'kern','liga';-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#input,select,textarea,button{font-family:inherit}
 #@keyframes md-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
 #@keyframes md-flow{to{background-position:200% 0}}
 #@keyframes md-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 #@keyframes md-sheen{to{transform:translateX(420%) skewX(-20deg)}}
 #@keyframes md-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+#@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
 #body,.card,input,select,textarea,code{transition:background-color .35s,border-color .35s,color .35s,box-shadow .25s}
 #button{border-radius:999px;position:relative;overflow:hidden;transition:background .2s,border-color .2s,transform .15s,box-shadow .2s}
 #button:active{transform:scale(.96)}
 #button:not(.ghost):not(.del):not(.theme):not(.dot)::after,a.btn:not(.ghost)::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;pointer-events:none;
-# background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-120%) skewX(-20deg)}
+# background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transform:translateX(-120%) skewX(-20deg)}
 #button:not(.ghost):not(.del):not(.theme):not(.dot):hover::after,a.btn:not(.ghost):hover::after{animation:md-sheen .8s ease}
 #.bar,.bar i{border-radius:999px}
 #.bar i{transform-origin:right;animation:md-grow .9s .2s cubic-bezier(.2,.8,.2,1) both}
 #html[dir=ltr] .bar i{transform-origin:left}
+#body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+# background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 13%,transparent),transparent),
+#  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 10%,transparent),transparent);
+# animation:md-drift 22s ease-in-out infinite alternate}
 #.accents{position:absolute;top:14px;left:62px;height:38px;display:flex;align-items:center;gap:8px}
 #.accents button.dot{width:18px;height:18px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;display:block}
 #.accents button.dot:hover{transform:scale(1.25)}
-#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}
-#:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,
-#:root[data-accent=pink] .dot.pink,:root[data-accent=green] .dot.green{
-# box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}
+#:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,:root[data-accent=pink] .dot.pink,
+#:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
-#@keyframes md-drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
-#body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
-# background:radial-gradient(38% 38% at 18% 12%,color-mix(in srgb,var(--accent) 20%,transparent),transparent),
-#  radial-gradient(34% 34% at 86% 82%,color-mix(in srgb,var(--accent2) 16%,transparent),transparent);
-# animation:md-drift 20s ease-in-out infinite alternate}
-#.dot.red{background:var(--c-red)}
-#:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
-#
-#header{border-radius:26px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(14px);
-# background:color-mix(in srgb,var(--card) 80%,transparent)}
-#header::after{content:'';position:absolute;left:26px;right:26px;bottom:-1px;height:2px;border-radius:2px;
-# background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);
-# background-size:200% 100%;animation:md-flow 5s linear infinite}
-#nav a{border-radius:999px}
-#nav a.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent)}
-#.card{border-radius:22px;animation:md-rise .55s cubic-bezier(.2,.8,.2,1) both}
-#.wrap>.card:nth-child(3){animation-delay:.06s}.wrap>.card:nth-child(4){animation-delay:.12s}
-#.wrap>.card:nth-child(5){animation-delay:.18s}.wrap>.card:nth-child(n+6){animation-delay:.24s}
-#.card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
-#.stat{border-radius:16px;transition:transform .2s,border-color .2s}
-#.stat:hover{transform:translateY(-3px);border-color:var(--accent)}
-#input,select,textarea{border-radius:12px}td input,td select{border-radius:10px}
-#code{border-radius:8px}.msg{border-radius:14px}
-#.receipt{border-radius:16px}.thread>div{border-radius:18px}
-#.brand .mark{display:inline-block;width:1em;height:1em;animation:md-float 4s ease-in-out infinite}
+#/* ---- shell: a floating sidebar and a glass top bar ---- */
+#@keyframes md-side-in{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+#html[dir=ltr] .side{animation-name:md-side-in-l}
+#@keyframes md-side-in-l{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+#@keyframes md-nav-in{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+#@keyframes md-breathe{0%,100%{opacity:.35}50%{opacity:.9}}
+#.side{position:fixed;top:16px;bottom:16px;inset-inline-start:16px;width:248px;z-index:20;display:flex;
+# flex-direction:column;gap:8px;padding:16px 12px 12px;border-radius:30px;
+# background:color-mix(in srgb,var(--card) 74%,transparent);backdrop-filter:blur(24px) saturate(1.5);
+# border:1px solid color-mix(in srgb,var(--line2) 65%,transparent);
+# box-shadow:var(--pop);animation:md-side-in .7s cubic-bezier(.2,.8,.2,1) both}
+#.side::before{content:'';position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;padding:1px;
+# background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 55%,transparent),transparent 38%,transparent 70%,color-mix(in srgb,var(--accent2) 40%,transparent));
+# -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+# animation:md-breathe 6s ease-in-out infinite}
+#.side .brand{position:static;display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:0;padding:4px 10px 14px;
+# border:0;background:none;font-size:19px;width:auto;height:auto}
+#.brand .mark{display:inline-block;flex:none;width:1em;height:1em;animation:md-float 4s ease-in-out infinite}
 #.brand .mark svg{display:block;width:100%;height:100%}
-#.brand .name{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));
-# background-size:200% auto;-webkit-background-clip:text;background-clip:text;
-# -webkit-text-fill-color:transparent;animation:md-flow 6s linear infinite}
-#@media (max-width:700px){header{border-radius:20px;position:static}.card{border-radius:18px}}
-#@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-#
-#.card h2::before{content:'';display:inline-block;width:4px;height:1.05em;border-radius:4px;
-# margin-inline-end:10px;vertical-align:-3px;background:linear-gradient(var(--accent),var(--accent2))}
-#.stat{position:relative;overflow:hidden;border:0;
-# background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 13%,var(--bg)),var(--bg) 70%)}
-#.stat::before{content:'';position:absolute;top:-26px;inset-inline-end:-26px;width:76px;height:76px;
-# border-radius:50%;background:color-mix(in srgb,var(--accent) 18%,transparent)}
-#.stat .n{position:relative}
-#th{background:var(--row);border-bottom:0}
-#th:first-child{border-radius:0 12px 12px 0}th:last-child{border-radius:12px 0 0 12px}
-#html[dir=ltr] th:first-child{border-radius:12px 0 0 12px}html[dir=ltr] th:last-child{border-radius:0 12px 12px 0}
-#@media (min-width:1000px){
-# .wrap{max-width:none;margin:0;padding-inline-start:290px}
-# header{position:fixed;top:92px;bottom:16px;inset-inline-start:16px;width:244px;z-index:5;
-#  flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:12px;margin:0;
-#  padding:18px 12px;overflow-y:auto;border-radius:26px}
-# header::after{display:none}
-# header h1{padding:0 10px 12px;border-bottom:1px solid var(--line);white-space:normal}
-# nav{flex-direction:column;flex:1;gap:3px}
-# nav a{padding:10px 14px;border-radius:14px;font-size:13.5px;
-#  border-inline-start:3px solid transparent;transition:background .2s,padding .2s}
-# nav a:hover{padding-inline-start:20px}
-# nav a.on{border-inline-start-color:var(--accent);box-shadow:none}
-# nav a.out{margin:auto 0 0;border-top:1px solid var(--line);border-radius:14px}
+#.brand .name{background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% auto;
+# -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:md-flow 6s linear infinite}
+#.side .brand .mark{width:30px;height:30px}
+#.side .brand .name{font-size:19px;letter-spacing:.01em}
+#.side nav{display:flex;flex-direction:column;flex-wrap:nowrap;gap:2px;flex:1;min-height:0;overflow-y:auto;margin:0 -4px;padding:2px 4px;
+# scrollbar-width:none;-ms-overflow-style:none}
+#.side nav::-webkit-scrollbar{display:none}
+#.side nav a{display:block;flex:none;padding:8px 14px;border-radius:14px;font-size:13.5px;color:var(--muted);white-space:nowrap;
+# animation:md-nav-in .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 38ms + .18s);
+# transition:background .25s,color .25s,transform .25s}
+#.side nav a:nth-child(1){--i:1}.side nav a:nth-child(2){--i:2}.side nav a:nth-child(3){--i:3}.side nav a:nth-child(4){--i:4}.side nav a:nth-child(5){--i:5}.side nav a:nth-child(6){--i:6}.side nav a:nth-child(7){--i:7}.side nav a:nth-child(8){--i:8}.side nav a:nth-child(9){--i:9}.side nav a:nth-child(10){--i:10}.side nav a:nth-child(11){--i:11}.side nav a:nth-child(12){--i:12}.side nav a:nth-child(13){--i:13}.side nav a:nth-child(14){--i:14}.side nav a:nth-child(15){--i:15}.side nav a:nth-child(16){--i:16}.side nav a:nth-child(17){--i:17}.side nav a:nth-child(18){--i:18}.side nav a:nth-child(19){--i:19}.side nav a:nth-child(20){--i:20}
+#.side nav a:hover{background:var(--row);color:var(--fg);transform:translateX(-4px)}
+#html[dir=ltr] .side nav a:hover{transform:translateX(4px)}
+#.side nav a.on{color:var(--accent);font-weight:600;
+# background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 20%,transparent),color-mix(in srgb,var(--accent) 6%,transparent));
+# box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 26%,transparent)}
+#.side nav a.out{margin-top:auto;border-radius:16px;color:var(--bad)}
+#.side nav a.out:hover{background:var(--err-bg);color:var(--bad)}
+#.wrap{max-width:none;margin:0;padding:22px 30px 56px;padding-inline-start:calc(248px + 16px + 30px)}
+#.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 4px 22px;
+# animation:md-rise .5s cubic-bezier(.2,.8,.2,1) both}
+#.topbar h1{margin:0;font-size:23px;font-weight:700;letter-spacing:-.01em;color:var(--head)}
+#.tools{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;
+# background:color-mix(in srgb,var(--card) 70%,transparent);backdrop-filter:blur(14px);border:1px solid var(--line)}
+#.tools button.theme{position:static;width:34px;height:34px;margin:0;top:auto;left:auto;right:auto}
+#.tools .accents{position:static;height:auto}
+#/* ---- surfaces ---- */
+#.card{border-radius:26px;box-shadow:var(--shadow);padding:24px;animation:md-rise .55s cubic-bezier(.2,.8,.2,1) both;
+# background:color-mix(in srgb,var(--card) 94%,transparent)}
+#.wrap>.card:nth-of-type(2){animation-delay:.05s}.wrap>.card:nth-of-type(3){animation-delay:.1s}
+#.wrap>.card:nth-of-type(4){animation-delay:.15s}.wrap>.card:nth-of-type(n+5){animation-delay:.2s}
+#.card:hover{border-color:color-mix(in srgb,var(--accent) 26%,var(--line))}
+#.card h2{font-size:16px;font-weight:700;letter-spacing:.005em;margin-bottom:14px}
+#.stat{position:relative;border-radius:20px;padding-inline-end:64px;border:1px solid var(--line);
+# background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 9%,var(--bg)),var(--bg) 72%);
+# transition:transform .25s,border-color .25s,box-shadow .25s}
+#.stat:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+# box-shadow:0 14px 30px -18px color-mix(in srgb,var(--accent) 55%,transparent)}
+#.stat::before{position:absolute;top:50%;inset-inline-end:16px;transform:translateY(-50%);width:38px;height:38px;
+# border-radius:14px;display:grid;place-items:center;font-size:14px;color:var(--on-btn);
+# background:linear-gradient(135deg,var(--accent),var(--accent2))}
+#.stat:nth-child(4n+1)::before{content:'●'}.stat:nth-child(4n+2)::before{content:'▲'}
+#.stat:nth-child(4n+3)::before{content:'■'}.stat:nth-child(4n+4)::before{content:'◆'}
+#.stat .n{font-family:'MD Latin',Vazirmatn,sans-serif;font-weight:700;letter-spacing:-.01em}
+#th{background:transparent;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;
+# color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+#td{border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+#tbody tr:hover>td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+#tbody tr:hover>td:first-child{border-start-start-radius:14px;border-end-start-radius:14px}
+#tbody tr:hover>td:last-child{border-start-end-radius:14px;border-end-end-radius:14px}
+#.bar{height:7px}
+#input,select,textarea{border-radius:14px;background:var(--bg);border-color:var(--line2)}
+#td input,td select{border-radius:12px}
+#input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
+# box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+#code{border-radius:8px}.msg{border-radius:18px}.receipt{border-radius:18px}.thread>div{border-radius:18px}
+#footer{opacity:.7}
+#/* ---- sign-in: one box in the middle of the page ---- */
+#body.solo .wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:28px 18px}
+#body.solo .brand{position:static;margin:0 0 22px;display:flex;justify-content:center;align-items:center;gap:12px;font-size:30px}
+#body.solo .brand .name{font-size:30px}
+#body.solo .login{width:min(410px,100%);max-width:none;margin:0}
+#body.solo .login .card{padding:32px 30px;border-radius:32px}
+#body.solo .login h2{font-size:19px;margin-bottom:6px}
+#body.solo .login .sub{margin:0 0 20px;color:var(--muted);font-size:13px}
+#body.solo footer{margin-top:22px}
+#/* ---- narrow screens: the sidebar becomes a floating bar on top ---- */
+#@media (max-width:999px){
+# .side nav{flex-wrap:nowrap}
+# .side{position:sticky;top:8px;inset-inline-start:auto;width:auto;margin:8px 10px 0;bottom:auto;flex-direction:row;
+#  align-items:center;gap:6px;padding:8px 10px;border-radius:22px;animation-name:md-rise}
+# .side .brand{padding:2px 6px;font-size:16px}.side .brand .name{display:none}.side .brand .mark{width:28px;height:28px}
+# .side nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;margin:0;padding:0}
+# .side nav a{padding:8px 12px;border-radius:14px}.side nav a.out{margin:0}
+# .wrap{padding:14px 12px 40px}.topbar{padding-bottom:14px}.topbar h1{font-size:19px}
 #}
+#@media (max-width:700px){.card{border-radius:20px;padding:18px}.tools{padding:4px 8px}}
+#@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 #"""
 #
 #CSS = THEME_CSS + """
@@ -24838,13 +24885,7 @@ exit 0
 #
 #
 ## The mark: a rounded tile in the accent colours with an M cut through it.
-#LOGO_SVG = ("<svg viewBox='0 0 32 32' aria-hidden='true'><defs>"
-#            "<linearGradient id='mg' x1='0' y1='0' x2='1' y2='1'>"
-#            "<stop offset='0' stop-color='var(--accent)'/>"
-#            "<stop offset='1' stop-color='var(--accent2)'/></linearGradient></defs>"
-#            "<rect width='32' height='32' rx='10' fill='url(#mg)'/>"
-#            "<path d='M8 23V9.5l8 8 8-8V23' fill='none' stroke='#fff' stroke-width='3'"
-#            " stroke-linecap='round' stroke-linejoin='round'/></svg>")
+#LOGO_SVG = ("<svg viewBox='0 0 32 32' aria-hidden='true'><defs><linearGradient id='mg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='var(--accent)'/><stop offset='1' stop-color='var(--accent2)'/></linearGradient></defs><rect width='32' height='32' rx='10' fill='url(#mg)'/><path d='M8 23V9.5l8 8 8-8V23' fill='none' stroke='#fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
 #
 #
 #def brand_html():
@@ -25057,20 +25098,19 @@ exit 0
 #    price = setting("device_price")
 #    limit = setting("ip_changes_per_day")
 #    return (
-#        "<div class='card'><h2>📱 دستگاه‌ها و تغییر آی‌پی</h2>"
-#        "<form method='post' action='/%s/devices-settings'><div class='row'>"
-#        "<div class='f'><label>قیمت هر دستگاه اضافه (تومان)</label>"
-#        "<input name='price' value='%s' size='10' dir='ltr' placeholder='خالی = فروخته نمی‌شود'>"
-#        "</div><div class='f'><label>حداکثر آی‌پی تازه در ۲۴ ساعت</label>"
-#        "<input name='limit' value='%s' size='6' dir='ltr' placeholder='خالی = بی‌نهایت'></div>"
-#        "<button class='ghost'>ذخیره</button></div></form>"
-#        "<p class='muted'>هر پلن تعداد دستگاه خودش را دارد (ستون «دستگاه»)، یعنی چند آی‌پی "
-#        "هم‌زمان می‌توانند وصل باشند. اگر آی‌پی تازه‌ای بیاید و جا نباشد، قدیمی‌ترین آی‌پی "
-#        "حذف می‌شود. مشتری روی پلن فعالش می‌تواند از پنل یا ربات دستگاه اضافه بخرد، با رسید "
-#        "یا از کیف پول. دستگاه اضافه تا وقتی همان پلن را تمدید کند می‌ماند و با خرید پلن "
-#        "دیگر از بین می‌رود. حداکثر %d دستگاه. تعداد دستگاه هر کاربر را در صفحهٔ کاربران "
-#        "(روی آی‌پی‌اش) دستی هم می‌توانید عوض کنید. سقف آی‌پی تازه فقط برای خود مشتری است؛ "
-#        "آی‌پی‌هایی که شما ثبت می‌کنید شمرده نمی‌شوند.</p></div>"
+#        "<div class='card'><h2>📱 دستگاه‌ها و آی‌پی‌های "
+#        "مشتری</h2><form method='post' action='/%s/devices-settings'><div class='row'><div class='f'><label>قیمت "
+#        "هر دستگاه "
+#        "اضافه (تومان)</label><input name='price' value='%s' size='10' dir='ltr' placeholder='خالی = فروخته "
+#        "نمی‌شود'></div><div class='f'><label>حداکثر آی‌پی تازه در ۲۴ "
+#        "ساعت</label><input name='limit' value='%s' size='6' dir='ltr' placeholder='خالی = بی‌نهایت'></div><button class='ghost'>ذخیره</button></div></form><p class='muted'>هر "
+#        "پلن تعداد دستگاه خودش را دارد (ستون «دستگاه»)، یعنی چند آی‌پی هم‌زمان می‌توانند وصل "
+#        "باشند. اگر آی‌پی تازه‌ای بیاید و جا نباشد، قدیمی‌ترین آی‌پی حذف می‌شود. مشتری روی پلن "
+#        "فعالش می‌تواند از پنل یا ربات دستگاه اضافه بخرد، با رسید یا از کیف پول. دستگاه اضافه تا "
+#        "وقتی همان پلن را تمدید کند می‌ماند و با خرید پلن دیگر از بین "
+#        "می‌رود. حداکثر %d دستگاه. تعداد دستگاه هر کاربر را در صفحهٔ کاربران (روی آی‌پی‌اش) دستی "
+#        "هم می‌توانید عوض کنید. سقف آی‌پی تازه فقط برای خود مشتری است؛ آی‌پی‌هایی که شما ثبت "
+#        "می‌کنید شمرده نمی‌شوند.</p></div>"
 #        % (p, html.escape(price, quote=True), html.escape(limit, quote=True), MAX_DEVICES))
 #
 #
@@ -25285,7 +25325,7 @@ exit 0
 #    n_users = STORE.one("SELECT count(DISTINCT user_id) c FROM wg_devices")["c"]
 #    n_blocked = STORE.one("SELECT count(*) c FROM wg_devices WHERE blocked_day = ?",
 #                          (stamp.astimezone(TEHRAN).strftime("%Y-%m-%d"),))["c"]
-#    out = ["<div class='card'><h2>🛡 وایرگارد</h2><div class='grid'>%s</div></div>" % "".join(
+#    out = ["<div class='card'><h2>🛡 تونل وایرگارد</h2><div class='grid'>%s</div></div>" % "".join(
 #        "<div class='stat'><div class='n'>%s</div><div class='l'>%s</div></div>" % (v, l)
 #        for v, l in (
 #            ("روشن" if on else "خاموش", "وایرگارد"), (n_all, "کانفیگ"),
@@ -25293,8 +25333,8 @@ exit 0
 #            (n_blocked, "قطع تا فردا (سقف آی‌پی)")))]
 #
 #    def tick(name, value, checked, label):
-#        return ("<label style='display:inline-block;margin-inline-end:14px'><input "
-#                "type='checkbox' name='%s' value='%s'%s> %s</label>"
+#        return ("<label style='display:inline-block;margin-inline-end:14px'><input type='checkbox' name='%s' value='%s'%s> "
+#                "%s</label>"
 #                % (name, html.escape(value, quote=True), " checked" if checked else "", label))
 #
 #    relay_rows = []
@@ -25313,53 +25353,38 @@ exit 0
 #                        for x in plans) or "<span class='muted'>هنوز پلنی نیست</span>"
 #    endpoint = wg_setting("wg_endpoint") or "ip"
 #    out.append(
-#        "<div class='card'><h2>🛡 تنظیمات وایرگارد</h2>"
-#        "<form method='post' action='/%s/wg-save'>"
-#        "<label style='display:inline'><input type='checkbox' name='on' value='1'%s> "
-#        "<b>روشن</b></label> <label style='display:inline;margin-inline-start:14px'>"
-#        "<input type='checkbox' name='self' value='1'%s> مشتری خودش در پنل و ربات کانفیگ "
-#        "بسازد و حذف کند</label> <label style='display:inline;margin-inline-start:14px'>"
-#        "<input type='checkbox' name='bind' value='1'%s> کانفیگ فقط روی آی‌پی‌های "
-#        "ثبت‌شدهٔ مشتری کار کند</label>"
-#        "<h3>رله‌هایی که وایرگارد دارند</h3><div>%s</div>"
-#        "<h3>پلن‌هایی که وایرگارد دارند</h3>"
-#        "<label style='display:inline'><input type='radio' name='plans_mode' value='all'%s> "
-#        "همهٔ پلن‌ها</label> <label style='display:inline'><input type='radio' "
-#        "name='plans_mode' value='some'%s> فقط این‌ها:</label><div>%s</div>"
-#        "<h3>کانفیگ</h3>"
-#        "<label>اسم تونل در اپ وایرگارد <input name='name' value='%s' size='16' dir='ltr' "
-#        "maxlength='15'></label>"
-#        "<label>آدرس سرور در کانفیگ "
-#        "<label style='display:inline'><input type='radio' name='endpoint' value='ip'%s> "
-#        "آی‌پی رله</label> <label style='display:inline'><input type='radio' name='endpoint' "
-#        "value='domain'%s> دامنهٔ رله</label></label>"
-#        "<label>پورت UDP <input name='port' value='%d' size='6' dir='ltr'></label>"
-#        "<label>MTU <input name='mtu' value='%s' size='6' dir='ltr' placeholder='پیش‌فرض'>"
-#        "</label>"
-#        "<label>Keepalive (ثانیه) <input name='keepalive' value='%d' size='4' dir='ltr'>"
-#        "</label>"
-#        "<h3>محدودیت‌ها</h3>"
-#        "<label>هر کانفیگ از چند آی‌پی در روز <input name='ips' value='%s' size='4' "
-#        "dir='ltr' placeholder='بی‌حد'></label>"
-#        "<label>حذف کانفیگی که چند روز وصل نشده <input name='unused' value='%s' size='4' "
-#        "dir='ltr' placeholder='هرگز'></label>"
-#        "<button>ذخیره</button></form>"
-#        "<p class='muted'>گوشی مشتری با وایرگارد فقط به رلهٔ ایران وصل می‌شود و از راه "
-#        "آن فقط DNS و سرویس‌هایی که این سرویس باز می‌کند؛ بقیهٔ اینترنتش مستقیم است و "
-#        "رله چیزی را فوروارد نمی‌کند، پس VPN نیست. هر مشتری برای هر رله یک کانفیگ "
-#        "می‌گیرد، مثل یک آدرس DNS برای هر رله. کانفیگ‌ها را از «کاربران ← 📱 دستگاه‌ها» "
-#        "بسازید.</p>"
-#        "<p class='muted'>با «دامنهٔ رله»، اگر آی‌پی رله عوض شود کانفیگ مشتری‌ها کار "
-#        "می‌کند - فقط رکورد دامنه را عوض کنید؛ رله‌ای که دامنه ندارد با آی‌پی می‌ماند. "
-#        "پورت و آدرس در کانفیگ‌های ساخته‌شده هم هست: بعد از عوض کردنشان، مشتری‌ها باید "
-#        "کانفیگ را دوباره بگیرند. MTU خالی یعنی پیش‌فرض اپ (۱۴۲۰)؛ اگر روی بعضی "
-#        "اینترنت‌ها سایت‌ها نیمه باز می‌شوند ۱۲۸۰ را امتحان کنید. Keepalive صفر یعنی "
-#        "خاموش. اینترنت موبایل گاهی آی‌پی را عوض می‌کند، پس سقف آی‌پی روزانه را کم "
-#        "نگیرید. کانفیگی که حذف خودکار شود، مشتری می‌تواند دوباره بگیرد. با «فقط روی "
-#        "آی‌پی‌های ثبت‌شده»، کانفیگ مثل DNS فقط از اینترنتی کار می‌کند که مشتری آی‌پی‌اش "
-#        "را ثبت کرده؛ کسی که کانفیگ را از کس دیگری گرفته وصل نمی‌شود، و آی‌پی مشتری‌ای "
-#        "که با کانفیگ دیگری وصل شود ۱۰ دقیقه از وایرگارد بسته می‌شود. خاموشش کنید تا "
-#        "کانفیگ روی هر اینترنتی و بدون ثبت آی‌پی کار کند.</p></div>"
+#        "<div class='card'><h2>🛡 پیکربندی "
+#        "وایرگارد</h2><form method='post' action='/%s/wg-save'><label style='display:inline'><input type='checkbox' name='on' value='1'%s> <b>روشن</b></label> <label style='display:inline;margin-inline-start:14px'><input type='checkbox' name='self' value='1'%s> مشتری "
+#        "خودش در پنل و ربات کانفیگ بسازد و حذف "
+#        "کند</label> <label style='display:inline;margin-inline-start:14px'><input type='checkbox' name='bind' value='1'%s> کانفیگ "
+#        "فقط روی آی‌پی‌های ثبت‌شدهٔ مشتری کار کند</label><h3>رله‌های دارای "
+#        "وایرگارد</h3><div>%s</div><h3>پلن‌های دارای "
+#        "وایرگارد</h3><label style='display:inline'><input type='radio' name='plans_mode' value='all'%s> همهٔ "
+#        "پلن‌ها</label> <label style='display:inline'><input type='radio' name='plans_mode' value='some'%s> فقط "
+#        "این‌ها:</label><div>%s</div><h3>پیکربندی</h3><label>اسم تونل در اپ "
+#        "وایرگارد <input name='name' value='%s' size='16' dir='ltr' maxlength='15'></label><label>آدرس "
+#        "سرور در "
+#        "کانفیگ <label style='display:inline'><input type='radio' name='endpoint' value='ip'%s> آی‌پی "
+#        "رله</label> <label style='display:inline'><input type='radio' name='endpoint' value='domain'%s> دامنهٔ "
+#        "رله</label></label><label>پورت UDP <input name='port' value='%d' size='6' dir='ltr'></label><label>MTU <input name='mtu' value='%s' size='6' dir='ltr' placeholder='پیش‌فرض'></label><label>Keepalive (ثانیه) <input name='keepalive' value='%d' size='4' dir='ltr'></label><h3>سقف‌ها</h3><label>هر "
+#        "کانفیگ از چند آی‌پی در "
+#        "روز <input name='ips' value='%s' size='4' dir='ltr' placeholder='بی‌حد'></label><label>حذف "
+#        "کانفیگی که چند روز وصل "
+#        "نشده <input name='unused' value='%s' size='4' dir='ltr' placeholder='هرگز'></label><button>ذخیره</button></form><p class='muted'>گوشی "
+#        "مشتری با وایرگارد فقط به رلهٔ ایران وصل می‌شود و از راه آن فقط DNS و سرویس‌هایی که این "
+#        "سرویس باز می‌کند؛ بقیهٔ اینترنتش مستقیم است و رله چیزی را فوروارد نمی‌کند، "
+#        "پس VPN نیست. هر مشتری برای هر رله یک کانفیگ می‌گیرد، مثل یک آدرس DNS برای هر "
+#        "رله. کانفیگ‌ها را از «کاربران ← 📱 دستگاه‌ها» بسازید.</p><p class='muted'>با «دامنهٔ "
+#        "رله»، اگر آی‌پی رله عوض شود کانفیگ مشتری‌ها کار می‌کند - فقط رکورد دامنه را عوض کنید؛ "
+#        "رله‌ای که دامنه ندارد با آی‌پی می‌ماند. پورت و آدرس در کانفیگ‌های ساخته‌شده هم هست: بعد "
+#        "از عوض کردنشان، مشتری‌ها باید کانفیگ را دوباره بگیرند. MTU خالی یعنی پیش‌فرض اپ (۱۴۲۰)؛ "
+#        "اگر روی بعضی اینترنت‌ها سایت‌ها نیمه باز می‌شوند ۱۲۸۰ را امتحان کنید. Keepalive صفر "
+#        "یعنی خاموش. اینترنت موبایل گاهی آی‌پی را عوض می‌کند، پس سقف آی‌پی روزانه را کم "
+#        "نگیرید. کانفیگی که حذف خودکار شود، مشتری می‌تواند دوباره بگیرد. با «فقط روی آی‌پی‌های "
+#        "ثبت‌شده»، کانفیگ مثل DNS فقط از اینترنتی کار می‌کند که مشتری آی‌پی‌اش را ثبت کرده؛ کسی "
+#        "که کانفیگ را از کس دیگری گرفته وصل نمی‌شود، و آی‌پی مشتری‌ای که با کانفیگ دیگری وصل شود "
+#        "۱۰ دقیقه از وایرگارد بسته می‌شود. خاموشش کنید تا کانفیگ روی هر اینترنتی و بدون ثبت "
+#        "آی‌پی کار کند.</p></div>"
 #        % (p, " checked" if on else "", " checked" if wg_setting("wg_self") != "0" else "",
 #           " checked" if wg_setting("wg_bind_ip") != "0" else "",
 #           "<br>".join(relay_rows) or
@@ -25408,15 +25433,14 @@ exit 0
 #    user = STORE.one("SELECT * FROM users u WHERE id = ?" + extra, (uid,) + args)
 #    p = CFG["ADMIN_PATH"]
 #    if not user:
-#        return "<div class='card'><p class='muted'>این کاربر پیدا نشد.</p></div>"
+#        return "<div class='card'><p class='muted'>چنین مشتری‌ای پیدا نشد.</p></div>"
 #    who = user["username"] or user["phone"] or user["telegram_id"] or "#%d" % uid
 #    devs = STORE.q("SELECT * FROM wg_devices WHERE user_id = ? ORDER BY id", (uid,))
-#    out = ["<div class='card'><h2>🛡 کانفیگ‌های وایرگارد %s</h2>"
-#           "<p class='muted'><a href='/%s/users'>‹ برگشت به کاربران</a> — برای هر رله یک "
-#           "کانفیگ، مثل یک آدرس DNS برای هر رله؛ روی %d دستگاه (آی‌پی ثبت‌شده) کار می‌کند."
-#           "</p>"
-#           "<form method='post' action='/%s/user-wg-new'><input type='hidden' name='id' "
-#           "value='%d'>%s<button>+ کانفیگ تازه</button></form></div>"
+#    out = ["<div class='card'><h2>🛡 کانفیگ‌های وایرگارد "
+#           "%s</h2><p class='muted'><a href='/%s/users'>‹ برگشت به کاربران</a> — برای هر رله یک "
+#           "کانفیگ، مثل یک آدرس DNS برای هر رله؛ روی %d دستگاه (آی‌پی ثبت‌شده) کار "
+#           "می‌کند.</p><form method='post' action='/%s/user-wg-new'><input type='hidden' name='id' value='%d'>%s<button>+ "
+#           "کانفیگ تازه</button></form></div>"
 #           % (html.escape(str(who)), p, user["max_ips"] or 1, p, uid,
 #              "<label>رله <select name='relay'>%s</select></label>" % "".join(
 #                  "<option value='%s'>%s</option>" % (html.escape(r, quote=True), html.escape(r))
@@ -25426,20 +25450,18 @@ exit 0
 #        seen = (show_date(d["last_handshake"], True) if d["last_handshake"]
 #                else "هنوز وصل نشده")
 #        out.append(
-#            "<div class='card'><h2 dir='ltr' style='text-align:right'>%s</h2>"
-#            "<p class='muted'>رله <code dir='ltr'>%s</code> — آخرین اتصال: %s%s%s</p>%s"
-#            "<form method='post' action='/%s/user-wg-del' onsubmit='return confirm(%s)'>"
-#            "<input type='hidden' name='id' value='%d'><input type='hidden' name='dev' "
-#            "value='%d'><button class='del'>حذف این کانفیگ</button></form></div>"
+#            "<div class='card'><h2 dir='ltr' style='text-align:right'>%s</h2><p class='muted'>رله "
+#            "<code dir='ltr'>%s</code> — آخرین اتصال: "
+#            "%s%s%s</p>%s<form method='post' action='/%s/user-wg-del' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><input type='hidden' name='dev' value='%d'><button class='del'>حذف "
+#            "این کانفیگ</button></form></div>"
 #            % (html.escape(d["address"]), html.escape(d["relay"]), html.escape(seen),
 #               " از <code dir='ltr'>%s</code>" % html.escape(d["last_endpoint"])
 #               if d["last_endpoint"] else "",
 #               " — <span class='bad'>امروز بیش از سقف آی‌پی وصل شده و تا فردا قطع است</span>"
 #               if d["blocked_day"] else "",
-#               ("<textarea readonly dir='ltr' rows='10' style='width:100%%;font-family:"
-#                "monospace'>%s</textarea><p><a href='/%s/wg-conf/%d' download>دانلود فایل "
-#                "کانفیگ</a></p>" % (html.escape(text), p, d["id"])) if text
-#               else "<p class='muted'>کلید رله هنوز نرسیده؛ یک دقیقه بعد صفحه را تازه کنید.</p>",
+#               ("<textarea readonly dir='ltr' rows='10' style='width:100%%;font-family:monospace'>%s</textarea><p><a href='/%s/wg-conf/%d' download>دانلود "
+#                "فایل کانفیگ</a></p>" % (html.escape(text), p, d["id"])) if text
+#               else "<p class='muted'>کلید رله هنوز نرسیده؛ یک دقیقه دیگر صفحه را تازه کنید.</p>",
 #               p, html.escape(json.dumps("این کانفیگ حذف شود؟ گوشی‌ای که با آن وصل است "
 #                                         "قطع می‌شود.", ensure_ascii=False), quote=True),
 #               uid, d["id"]))
@@ -25464,14 +25486,7 @@ exit 0
 #            except ValueError:
 #                only = None
 #            out.append(
-#                "<tr%s><td><code dir='ltr'>%s</code></td><td>%s</td><td>%s</td>"
-#                "<td>%d%s</td><td>%s</td><td>%s</td><td class='acts'>"
-#                "<form method='post' action='/%s/discount-active'>"
-#                "<input type='hidden' name='id' value='%d'><input type='hidden' name='to' "
-#                "value='%d'><button class='ghost'>%s</button></form>"
-#                "<form method='post' action='/%s/discount-delete' onsubmit=\"return confirm("
-#                "'این کد حذف شود؟')\"><input type='hidden' name='id' value='%d'>"
-#                "<button class='del'>حذف</button></form></td></tr>"
+#                "<tr%s><td><code dir='ltr'>%s</code></td><td>%s</td><td>%s</td><td>%d%s</td><td>%s</td><td>%s</td><td class='acts'><form method='post' action='/%s/discount-active'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='%d'><button class='ghost'>%s</button></form><form method='post' action='/%s/discount-delete' onsubmit=\"return confirm('این کد حذف شود؟')\"><input type='hidden' name='id' value='%d'><button class='del'>حذف</button></form></td></tr>"
 #                % ("" if r["active"] else " class='off'", html.escape(r["code"]),
 #                   "%d٪" % r["value"] if r["kind"] == "percent"
 #                   else "%s تومان" % format(r["value"], ","),
@@ -25483,29 +25498,21 @@ exit 0
 #                   p, r["id"], 0 if r["active"] else 1, "خاموش" if r["active"] else "روشن",
 #                   p, r["id"]))
 #        out.append("</table>")
-#    boxes = "".join("<label style='display:inline;margin-left:10px'><input type='checkbox' "
-#                    "name='plan' value='%d'> %s</label>" % (i, html.escape(n))
+#    boxes = "".join("<label style='display:inline;margin-left:10px'><input type='checkbox' name='plan' value='%d'> "
+#                    "%s</label>" % (i, html.escape(n))
 #                    for i, n in sorted(plans.items()))
 #    out.append(
-#        "<h3 class='chart-h'>کد تازه</h3>"
-#        "<form method='post' action='/%s/discount-save'><div class='row'>"
-#        "<div class='f'><label>کد</label><input name='code' dir='ltr' required "
-#        "placeholder='NOROOZ30' size='14'></div>"
-#        "<div class='f'><label>تخفیف</label><input name='value' dir='ltr' required size='8'>"
-#        " <select name='kind'><option value='percent'>درصد</option>"
-#        "<option value='amount'>تومان</option></select></div>"
-#        "<div class='f'><label>چند روز اعتبار</label><input name='days' dir='ltr' size='5' "
-#        "placeholder='خالی = بی‌مهلت'></div>"
-#        "<div class='f'><label>سقف استفادهٔ کل</label><input name='max_uses' dir='ltr' "
-#        "size='5' placeholder='خالی = بی‌حد'></div></div>"
-#        "<p><label style='display:inline'><input type='checkbox' name='once' value='1' "
-#        "checked> هر مشتری فقط یک بار</label></p>"
-#        "<p class='muted' style='margin:6px 0'>فقط برای این پلن‌ها (هیچ‌کدام = همه): %s</p>"
-#        "<button>ساختن کد</button></form>"
-#        "<p class='muted'>مشتری کد را موقع خرید (در پنل خودش یا ربات) وارد می‌کند و قیمت "
-#        "تخفیف‌خورده را می‌بیند؛ همان مبلغ را واریز می‌کند یا از کیف پول می‌پردازد. هر "
-#        "استفاده فقط وقتی شمرده می‌شود که خرید تأیید شود. پورسانت دعوت هم از مبلغی حساب "
-#        "می‌شود که واقعاً پرداخت شده.</p></div>" % (p, boxes or "<span class='muted'>هنوز پلنی نیست</span>"))
+#        "<h3 class='chart-h'>ساخت کد "
+#        "تخفیف</h3><form method='post' action='/%s/discount-save'><div class='row'><div class='f'><label>کد</label><input name='code' dir='ltr' required placeholder='NOROOZ30' size='14'></div><div class='f'><label>تخفیف</label><input name='value' dir='ltr' required size='8'> <select name='kind'><option value='percent'>درصد</option><option value='amount'>تومان</option></select></div><div class='f'><label>چند "
+#        "روز "
+#        "اعتبار</label><input name='days' dir='ltr' size='5' placeholder='خالی = بی‌مهلت'></div><div class='f'><label>سقف "
+#        "استفادهٔ "
+#        "کل</label><input name='max_uses' dir='ltr' size='5' placeholder='خالی = بی‌حد'></div></div><p><label style='display:inline'><input type='checkbox' name='once' value='1' checked> هر "
+#        "مشتری فقط یک بار</label></p><p class='muted' style='margin:6px 0'>فقط برای این "
+#        "پلن‌ها (هیچ‌کدام = همه): %s</p><button>ساختن کد</button></form><p class='muted'>مشتری "
+#        "کد را موقع خرید (در پنل خودش یا ربات) وارد می‌کند و قیمت تخفیف‌خورده را می‌بیند؛ همان "
+#        "مبلغ را واریز می‌کند یا از کیف پول می‌پردازد. هر استفاده فقط وقتی شمرده می‌شود که خرید "
+#        "تأیید شود. پورسانت دعوت هم از مبلغی حساب می‌شود که واقعاً پرداخت شده.</p></div>" % (p, boxes or "<span class='muted'>هنوز پلنی نیست</span>"))
 #    return "".join(out)
 #
 #
@@ -25612,33 +25619,28 @@ exit 0
 #    pct = setting("ref_percent") or "10"
 #    mode = setting("ref_mode") or "every"
 #    return (
-#        "<div class='card'><h2>💰 کیف پول</h2>"
-#        "<form method='post' action='/%s/wallet-settings'>"
-#        "<label style='display:inline'><input type='checkbox' name='on' value='1'%s>"
-#        " مشتری بتواند کیف پولش را شارژ کند</label> <button class='ghost'>ذخیره</button>"
-#        "</form>"
-#        "<p class='muted'>مشتری مبلغی را که می‌خواهد می‌نویسد و عکس رسید واریز را می‌فرستد. "
-#        "این رسید در صفحهٔ رسیدها با برچسب «شارژ کیف پول» می‌آید و با تأیید شما، همان مبلغ به "
-#        "کیف پولش اضافه می‌شود (اگر مبلغ رسید فرق داشت، همان‌جا درستش کنید). بعد مشتری با "
-#        "موجودی کیف پول، پلن را بدون رسید و فوری می‌خرد. خرید از کیف پول همیشه باز است، حتی "
-#        "وقتی شارژ بسته باشد؛ چون پورسانت دعوت و پولی که خودتان به کیف پول کسی اضافه "
-#        "کرده‌اید هم قابل خرج است.</p></div>"
-#        "<div class='card'><h2>🎁 دعوت از دوستان</h2>"
-#        "<form method='post' action='/%s/ref-settings'>"
-#        "<p><label style='display:inline'><input type='checkbox' name='on' value='1'%s>"
-#        " هر مشتری لینک دعوت خودش را بگیرد</label></p>"
-#        "<div class='row'><div class='f'><label>درصد از مبلغ خرید</label>"
-#        "<input name='percent' value='%s' size='4' dir='ltr'></div>"
-#        "<div class='f'><label>برای کدام خریدها</label><select name='mode'>"
-#        "<option value='every'%s>همهٔ خریدها و تمدیدها</option>"
-#        "<option value='first'%s>فقط اولین خرید</option></select></div>"
-#        "<button class='ghost'>ذخیره</button></div></form>"
-#        "<p class='muted'>وقتی کسی با لینک دعوت یک مشتری (لینک ربات یا لینک ثبت‌نام) حساب "
-#        "بسازد و پلن بخرد، این درصد از قیمت پلن به کیف پول همان مشتری اضافه می‌شود؛ فرقی "
-#        "نمی‌کند با رسید خریده باشد یا از کیف پول. شارژ کیف پول پورسانت ندارد، تا یک پول دو "
-#        "بار حساب نشود. دعوت‌کننده فقط موقع ساختن حساب ثبت می‌شود و بعداً عوض نمی‌شود، و "
-#        "هیچ‌کس نمی‌تواند خودش را دعوت کند. هر مشتری لینک دعوتش را در ربات (بخش کیف پول) و "
-#        "در پنل خودش می‌بیند.</p></div>"
+#        "<div class='card'><h2>💰 موجودی و کیف "
+#        "پول</h2><form method='post' action='/%s/wallet-settings'><label style='display:inline'><input type='checkbox' name='on' value='1'%s> مشتری "
+#        "بتواند کیف پولش را شارژ "
+#        "کند</label> <button class='ghost'>ذخیره</button></form><p class='muted'>مشتری مبلغ "
+#        "دلخواه را می‌نویسد و تصویر رسید واریز را می‌فرستد. این رسید در صفحهٔ رسیدها با برچسب "
+#        "«شارژ کیف پول» می‌آید و با تأیید شما، همان مبلغ به کیف پولش اضافه می‌شود (اگر مبلغ رسید "
+#        "فرق داشت، همان‌جا درستش کنید). سپس مشتری با موجودی کیف پول، بدون رسید و فوری پلن "
+#        "می‌خرد. خرید از کیف پول همیشه باز است، حتی وقتی شارژ بسته باشد؛ چون پورسانت دعوت و پولی "
+#        "که خودتان به کیف پول کسی اضافه کرده‌اید هم قابل خرج "
+#        "است.</p></div><div class='card'><h2>🎁 پاداش "
+#        "دعوت</h2><form method='post' action='/%s/ref-settings'><p><label style='display:inline'><input type='checkbox' name='on' value='1'%s> هر "
+#        "مشتری لینک دعوت خودش را بگیرد</label></p><div class='row'><div class='f'><label>درصد از "
+#        "مبلغ "
+#        "خرید</label><input name='percent' value='%s' size='4' dir='ltr'></div><div class='f'><label>برای "
+#        "کدام خریدها</label><select name='mode'><option value='every'%s>همهٔ خریدها و "
+#        "تمدیدها</option><option value='first'%s>فقط اولین "
+#        "خرید</option></select></div><button class='ghost'>ذخیره</button></div></form><p class='muted'>وقتی "
+#        "کسی از پیوند دعوت یک مشتری (پیوند ربات یا ثبت‌نام) حساب بسازد و پلن بخرد، این درصد از "
+#        "قیمت پلن به کیف پول همان مشتری افزوده می‌شود؛ فرقی نمی‌کند با رسید خریده باشد یا از کیف "
+#        "پول. شارژ کیف پول پورسانت ندارد، تا یک پول دو بار حساب نشود. دعوت‌کننده فقط موقع ساختن "
+#        "حساب ثبت می‌شود و بعداً عوض نمی‌شود، و هیچ‌کس نمی‌تواند خودش را دعوت کند. هر مشتری لینک "
+#        "دعوتش را در ربات (بخش کیف پول) و در پنل خودش می‌بیند.</p></div>"
 #        % (p, " checked" if wallet else "", p, " checked" if ref else "",
 #           html.escape(pct, quote=True), " selected" if mode != "first" else "",
 #           " selected" if mode == "first" else ""))
@@ -25758,37 +25760,24 @@ exit 0
 #        options.append("<option value='%s'>%s — %d نفر%s</option>"
 #                       % (key, html.escape(label), len(reach),
 #                          " (%d نفر دیگر تلگرام ندارند)" % without if without else ""))
-#    out = ["<div class='card'><h2>📣 پیام همگانی</h2>"
-#           "<form method='post' action='/%s/broadcast-send' enctype='multipart/form-data'"
-#           " onsubmit=\"return confirm("
-#           "'این پیام برای همه‌ی کسانی که انتخاب کرده‌اید فرستاده شود؟')\">"
-#           "<div class='f'><label>متن پیام</label><textarea name='text' rows='5' "
-#           "maxlength='%d' style='width:100%%'></textarea></div>"
-#           "<div class='f'><label>عکس یا فیلم (اختیاری)</label>"
-#           "<div id='bc-media'>%s</div></div>"
-#           "<div class='f'><label>برای</label><select name='target'>%s</select></div>"
-#           "<button>فرستادن</button></form>"
+#    out = ["<div class='card'><h2>📣 ارسال پیام به "
+#           "همه</h2><form method='post' action='/%s/broadcast-send' enctype='multipart/form-data' onsubmit=\"return confirm('این "
+#           "پیام برای همه‌ی کسانی که انتخاب کرده‌اید فرستاده شود؟')\"><div class='f'><label>متن "
+#           "پیام</label><textarea name='text' rows='5' maxlength='%d' style='width:100%%'></textarea></div><div class='f'><label>عکس "
+#           "یا "
+#           "فیلم (اختیاری)</label><div id='bc-media'>%s</div></div><div class='f'><label>برای</label><select name='target'>%s</select></div><button>فرستادن</button></form>"
 #           # A box for each file: choosing one opens the next, up to the
 #           # most an album holds; emptying one takes it away.
-#           "<script>(function(){var box=document.getElementById('bc-media'),"
-#           "most=%d,first=box.firstChild.cloneNode(true);"
-#           "box.addEventListener('change',function(){"
-#           "var ins=box.querySelectorAll('input');"
-#           "for(var i=0;i<ins.length-1;i++)if(!ins[i].value)box.removeChild(ins[i].parentNode);"
-#           "ins=box.querySelectorAll('input');"
-#           "if(ins[ins.length-1].value&&ins.length<most)box.appendChild(first.cloneNode(true));"
-#           "});})();</script>"
-#           "<p class='muted'>پیام فقط به مشتری‌هایی می‌رسد که تلگرامشان به ربات وصل است. ربات "
-#           "پیام‌ها را یکی‌یکی و با فاصله می‌فرستد تا تلگرام محدودش نکند؛ برای همین اگر مشتری "
-#           "زیاد باشد، چند دقیقه طول می‌کشد. عدد کنار هر گزینه، تعداد همین لحظه است.</p>"
-#           "<p class='muted'>عکس JPG، PNG یا WEBP تا ۱۰ مگابایت، فیلم MP4 تا ۲۰ مگابایت؛ "
-#           "با انتخاب هر فایل، جای فایل بعدی باز می‌شود. تا %d فایل، روی هم تا ۵۰ مگابایت؛ "
-#           "چند فایل با هم به شکل یک آلبوم می‌رسند. متن زیر عکس یا فیلم می‌آید؛ اگر بیشتر "
-#           "از %d نویسه باشد، جدا و بعد از آن فرستاده می‌شود. پیام می‌تواند فقط عکس یا "
-#           "فقط فیلم هم باشد.</p>"
+#           "<script>(function(){var box=document.getElementById('bc-media'),most=%d,first=box.firstChild.cloneNode(true);box.addEventListener('change',function(){var ins=box.querySelectorAll('input');for(var i=0;i<ins.length-1;i++)if(!ins[i].value)box.removeChild(ins[i].parentNode);ins=box.querySelectorAll('input');if(ins[ins.length-1].value&&ins.length<most)box.appendChild(first.cloneNode(true));});})();</script><p class='muted'>پیام "
+#           "فقط به مشتری‌هایی می‌رسد که تلگرامشان به ربات متصل است. ربات پیام‌ها را یکی‌یکی و با "
+#           "وقفه می‌فرستد تا تلگرام محدودیتی نگذارد؛ برای همین اگر مشتری زیاد باشد، چند دقیقه طول "
+#           "می‌کشد. عدد کنار هر گزینه، تعداد مخاطبان در همین لحظه "
+#           "است.</p><p class='muted'>عکس JPG، PNG یا WEBP تا ۱۰ مگابایت، فیلم MP4 تا ۲۰ مگابایت؛ با "
+#           "انتخاب هر فایل، جای فایل بعدی باز می‌شود. تا %d فایل، روی هم تا ۵۰ مگابایت؛ چند فایل با "
+#           "هم به شکل یک آلبوم می‌رسند. متن زیر عکس یا فیلم می‌آید؛ اگر بیشتر از %d نویسه باشد، جدا "
+#           "و بعد از آن فرستاده می‌شود. پیام می‌تواند فقط عکس یا فقط فیلم هم باشد.</p>"
 #           % (p, BROADCAST_MAX,
-#              "<div style='margin-bottom:6px'><input type='file' name='media' "
-#              "accept='image/jpeg,image/png,image/webp,video/mp4,video/quicktime'></div>",
+#              "<div style='margin-bottom:6px'><input type='file' name='media' accept='image/jpeg,image/png,image/webp,video/mp4,video/quicktime'></div>",
 #              "".join(options), BROADCAST_FILES_MAX, BROADCAST_FILES_MAX, CAPTION_MAX)]
 #    try:
 #        rows = STORE.q("SELECT * FROM broadcasts WHERE COALESCE(admin_id, 0) = ?"
@@ -25796,8 +25785,8 @@ exit 0
 #    except sqlite3.OperationalError:
 #        rows = []
 #    if rows:
-#        out.append("<h3 class='chart-h'>فرستاده‌شده‌ها</h3><table><tr><th>زمان</th><th>برای</th>"
-#                   "<th>متن</th><th>رسیده به ربات</th></tr>")
+#        out.append("<h3 class='chart-h'>ارسال‌شده‌ها</h3><table><tr><th>زمان</th><th>برای</th><th>متن</th><th>رسیده "
+#                   "به ربات</th></tr>")
 #        labels = {k: l for k, l, _c, _a in broadcast_targets()}
 #        for r in rows:
 #            done = STORE.one("SELECT count(*) c FROM webhook_outbox WHERE id BETWEEN ? AND ?"
@@ -26237,15 +26226,14 @@ exit 0
 #                         ["value"] or "null")
 #    except (TypeError, ValueError):
 #        job = None
-#    out = ["<div class='card'><h2>عیب‌یابی سرویس‌ها</h2>"
-#           "<p class='muted'>برای هر سرویسی که از سرور می‌رود، چند دامنه‌اش امتحان می‌شود: یک "
-#           "اتصال امن روی ۴۴۳ با گواهی خود سرویس. دو جا: <b>از سرور خارج</b> — خود سرور به آن "
-#           "سرویس می‌رسد یا نه — و <b>از مسیر مشتری</b>، از هر رله و از همان راهی که ترافیک "
-#           "مشتری می‌رود. اگر از سرور خارج نشود، آن سرویس آن سرور را قبول نمی‌کند و از دست ما "
-#           "کاری برنمی‌آید؛ اگر از سرور خارج بشود و از مسیر مشتری نه، مشکل از راه ایران تا "
-#           "خارج است. فقط ۴۴۳ آزموده می‌شود؛ بازی‌هایی که روی پورت‌های دیگر یا UDP بازی می‌کنند "
-#           "این‌جا نیستند.</p>"
-#           "<form method='post' action='/%s/diagnose-start'><button>%s</button></form>"
+#    out = ["<div class='card'><h2>سنجش سلامت سرویس‌ها</h2><p class='muted'>برای هر سرویسی که از "
+#           "سرور عبور می‌کند، چند دامنه‌اش آزمایش می‌شود: یک اتصال امن روی ۴۴۳ که گواهی خود سرویس "
+#           "را نشان بدهد. دو جا: <b>از سرور خارج</b> — خود سرور به آن سرویس می‌رسد یا نه — و <b>از "
+#           "مسیر مشتری</b>، از هر رله و از همان راهی که ترافیک مشتری می‌رود. اگر از سرور خارج نشود، "
+#           "آن سرویس آن سرور را قبول نمی‌کند و از دست ما کاری برنمی‌آید؛ اگر از سرور خارج بشود و از "
+#           "مسیر مشتری نه، مشکل از راه ایران تا خارج است. فقط پورت ۴۴۳ آزموده می‌شود؛ بازی‌هایی که "
+#           "از پورت‌های دیگر یا UDP استفاده می‌کنند در این تست "
+#           "نیستند.</p><form method='post' action='/%s/diagnose-start'><button>%s</button></form>"
 #           % (p, "در حال تست…" if DIAG["running"] else "شروع تست")]
 #    if not job:
 #        out.append("</div>")
@@ -26256,7 +26244,7 @@ exit 0
 #    asked = parse_ts(job.get("asked_at"))
 #    age = (datetime.now(timezone.utc) - asked).total_seconds() if asked else 1e9
 #    waiting = DIAG["running"] or (age < 600 and len(sources) < 2)
-#    out.append("<p class='muted'>آخرین تست: %s%s</p>" % (
+#    out.append("<p class='muted'>آخرین آزمون: %s%s</p>" % (
 #        html.escape(ago(job.get("asked_at"))),
 #        " · <span class='warn'>منتظر نتیجه%s؛ این صفحه خودش تازه می‌شود</span>"
 #        % ("ٔ سرور خارج" if DIAG["running"] else "ٔ رله‌ها") if waiting else ""))
@@ -26326,13 +26314,13 @@ exit 0
 #        summary.append((-bad, name, "<tr><td><b>%s</b>%s</td>%s</tr>"
 #                        % (html.escape(name), "".join(detail), "".join(chips))))
 #    summary.sort(key=lambda x: (x[0], x[1]))
-#    out.append("<div class='card'><h2>نتیجه</h2><div style='overflow-x:auto'><table><tr>"
-#               "<th>سرویس</th>%s</tr>%s</table></div><p class='muted'>سرویس‌هایی که مشکل دارند "
-#               "بالاترند. «گواهی نامعتبر» یعنی جواب از جایی جز خود سرویس آمد — مثلاً صفحهٔ "
-#               "فیلتر. هر اسمی که خراب شد یک بار دیگر آرام‌تر آزموده می‌شود، و فقط اگر بار دوم "
-#               "هم خراب بود این‌جا می‌آید. گروه‌های «پیش‌فرض خاموش» فقط وقتی آزموده می‌شوند که "
-#               "در قالبی روشن باشند. یک دامنهٔ خراب در سرویسی بزرگ همیشه یعنی خرابی نیست؛ جزئیات هر سرویس را "
-#               "باز کنید.</p></div>"
+#    out.append("<div class='card'><h2>خروجی "
+#               "تست</h2><div style='overflow-x:auto'><table><tr><th>سرویس</th>%s</tr>%s</table></div><p class='muted'>سرویس‌های "
+#               "دچار مشکل در بالای فهرست‌اند. «گواهی نامعتبر» یعنی پاسخ از جایی جز خود سرویس رسیده "
+#               "است — مثلاً صفحهٔ فیلترینگ. هر اسمی که خراب شد یک بار دیگر آرام‌تر آزموده می‌شود، و فقط "
+#               "اگر بار دوم هم خراب بود این‌جا می‌آید. گروه‌های «پیش‌فرض خاموش» فقط وقتی آزموده می‌شوند "
+#               "که در قالبی روشن باشند. خراب بودن یک دامنه در سرویسی بزرگ لزوماً به معنای اختلال نیست؛ "
+#               "جزئیات هر سرویس را باز کنید.</p></div>"
 #               % ("".join("<th>%s</th>" % html.escape(label[s]) for s in sources),
 #                  "".join(r for _, _, r in summary)))
 #    return "".join(out)
@@ -26346,21 +26334,17 @@ exit 0
 #                         ["value"] or "null")
 #    except (TypeError, ValueError):
 #        job = None
-#    out = ["<div id='watch'></div><div class='card'><h2>دامنه‌هایی که مشتری باز می‌کند "
-#           "<span class='muted'>(smartdns-watch)</span></h2>"
-#           "<p class='muted'>برای پیدا کردن اینکه یک سرویس چه دامنه‌ای لازم دارد: مشتری را "
-#           "انتخاب کنید، دکمه را بزنید و از او بخواهید در همین مدت سرویسی را که کار "
-#           "نمی‌کند باز کند. «via relay» یعنی از سرور رد شد، «direct» یعنی مستقیم رفت "
-#           "(اگر سرویس ایران را قبول نمی‌کند، همین دامنه‌ها را در صفحهٔ دامنه‌ها اضافه "
-#           "کنید)، «filtered» یعنی فیلتر خود ایران است. کوئری‌های DoH و DoT هم دیده می‌شوند، با علامت "
-#           "(DOH) یا (DOT) جلویشان.</p>"
-#           "<form method='post' action='/%s/watch-start' class='row'>"
-#           "<input name='target' dir='ltr' placeholder='نام کاربری یا آی‌پی (خالی = همه)'"
-#           " maxlength='40' style='min-width:220px'>"
-#           "<select name='seconds'><option value='60'>۱ دقیقه</option>"
-#           "<option value='120' selected>۲ دقیقه</option>"
-#           "<option value='300'>۵ دقیقه</option></select>"
-#           "<button>شروع</button></form>" % p]
+#    out = ["<div id='watch'></div><div class='card'><h2>دامنه‌هایی که مشتری باز "
+#           "می‌کند <span class='muted'>(smartdns-watch)</span></h2><p class='muted'>برای کشف "
+#           "دامنه‌های مورد نیاز یک سرویس: یک مشتری را انتخاب کنید، دکمه را بزنید و از او بخواهید در "
+#           "همین بازه سرویسِ ناکار را باز کند. «via relay» یعنی از سرور رد شد، «direct» یعنی مستقیم "
+#           "رفت (اگر سرویس ایران را قبول نمی‌کند، همین دامنه‌ها را در صفحهٔ دامنه‌ها اضافه کنید)، "
+#           "«filtered» یعنی فیلتر خود ایران است. کوئری‌های DoH و DoT هم دیده می‌شوند، با "
+#           "علامت (DOH) یا (DOT) جلویشان.</p><form method='post' action='/%s/watch-start' class='row'><input name='target' dir='ltr' placeholder='نام "
+#           "کاربری یا "
+#           "آی‌پی (خالی = همه)' maxlength='40' style='min-width:220px'><select name='seconds'><option value='60'>۱ "
+#           "دقیقه</option><option value='120' selected>۲ دقیقه</option><option value='300'>۵ "
+#           "دقیقه</option></select><button>شروع</button></form>" % p]
 #    if job:
 #        asked = parse_ts(job.get("asked_at"))
 #        age = (datetime.now(timezone.utc) - asked).total_seconds() if asked else 1e9
@@ -26378,8 +26362,7 @@ exit 0
 #                          html.escape(r["relay"]), html.escape(ago(r["at"])),
 #                          pre(r["text"])))
 #        if not results and not waiting:
-#            out.append("<p class='muted'>جوابی از رله‌ها نیامد. رله‌ها باید روی نسخهٔ تازه "
-#                       "باشند.</p>")
+#            out.append("<p class='muted'>پاسخی از رله‌ها نرسید. رله‌ها باید روی نسخهٔ جدید باشند.</p>")
 #        if waiting:
 #            out.append("<script>setTimeout(function(){location.reload()},15000)</script>")
 #    out.append("</div>")
@@ -26436,19 +26419,14 @@ exit 0
 #
 #
 #def api_key_card(name, key):
-#    return ("<div class='card'><h2>کلید API «%s»</h2>"
-#            "<p class='onetime'><code>%s</code></p>"
-#            "<p>این کلید را در تنظیمات ربات بگذارید. <b>فقط همین یک بار</b> نشان داده "
-#            "می‌شود و بعداً خوانده نمی‌شود؛ اگر گمش کردید، یکی تازه بسازید و این را "
-#            "باطل کنید.</p>"
-#            "<ul class='muted'>"
-#            "<li>ربات با این کلید به جای همهٔ مشتری‌ها کار می‌کند، پس مثل رمز پنل از "
-#            "آن نگهداری کنید.</li>"
-#            "<li>آدرس API: <code>%s</code></li>"
-#            "<li>ربات کلید را در سرآیند <code>Authorization: Bearer ...</code> "
-#            "می‌فرستد.</li>"
-#            "<li>این صفحه را رفرش نکنید: رفرش یک کلید تازهٔ دیگر می‌سازد.</li></ul>"
-#            "<p><a href='/%s/api'>برگشت به API</a></p></div>"
+#    return ("<div class='card'><h2>کلید API «%s»</h2><p class='onetime'><code>%s</code></p><p>این "
+#            "کلید را در تنظیمات ربات وارد کنید. <b>فقط همین یک بار</b> نمایش داده می‌شود و بعداً "
+#            "قابل‌خواندن نیست؛ اگر گم شد، کلید دیگری بسازید و این را باطل "
+#            "کنید.</p><ul class='muted'><li>ربات با این کلید به جای همهٔ مشتری‌ها کار می‌کند، پس مثل "
+#            "رمز پنل از آن نگهداری کنید.</li><li>آدرس API: <code>%s</code></li><li>ربات کلید را در "
+#            "سرآیند <code>Authorization: Bearer ...</code> می‌فرستد.</li><li>این صفحه را رفرش "
+#            "نکنید: رفرش یک کلید تازهٔ دیگر می‌سازد.</li></ul><p><a href='/%s/api'>برگشت "
+#            "به API</a></p></div>"
 #            % (html.escape(name), html.escape(key), html.escape(bot_api_url()),
 #               html.escape(CFG["ADMIN_PATH"])))
 #
@@ -26471,15 +26449,12 @@ exit 0
 #
 #
 #def temp_password_card(name, password):
-#    return ("<div class='card'><h2>رمز موقت «%s»</h2>"
-#            "<p class='onetime'><code>%s</code></p>"
-#            "<p>این رمز را برای مشتری بفرستید. فقط همین یک بار نشان داده می‌شود.</p>"
-#            "<ul class='muted'>"
-#            "<li>مشتری از همهٔ دستگاه‌ها بیرون آمد. اینترنتش قطع نشده.</li>"
-#            "<li>با اولین ورود باید رمز خودش را انتخاب کند؛ بعد از آن این رمز "
-#            "دیگر کار نمی‌کند.</li>"
-#            "<li>این صفحه را رفرش نکنید: رفرش یک رمز تازهٔ دیگر می‌سازد.</li></ul>"
-#            "<p><a href='/%s/users'>برگشت به کاربران</a></p></div>"
+#    return ("<div class='card'><h2>رمز موقت «%s»</h2><p class='onetime'><code>%s</code></p><p>این "
+#            "رمز را به مشتری برسانید. فقط همین یک بار نمایش داده "
+#            "می‌شود.</p><ul class='muted'><li>مشتری از همهٔ دستگاه‌ها خارج شد؛ اینترنتش قطع نشده "
+#            "است.</li><li>در نخستین ورود باید گذرواژهٔ خودش را بگذارد و پس از آن این رمز موقت دیگر "
+#            "کار نمی‌کند.</li><li>این صفحه را رفرش نکنید: رفرش یک رمز تازهٔ دیگر "
+#            "می‌سازد.</li></ul><p><a href='/%s/users'>برگشت به کاربران</a></p></div>"
 #            % (html.escape(name), html.escape(password),
 #               html.escape(CFG["ADMIN_PATH"])))
 #
@@ -26596,27 +26571,10 @@ exit 0
 #    unlimited = plan and not quota
 #    kbps = plan.get("speed_kbps") or 0
 #    return (
-#        "<td><input form='%s' name='name' value='%s' size='12' required"
-#        " maxlength='60' placeholder='مثلاً گیمینگ ماهانه'></td>"
-#        "<td><select form='%s' name='template_id'>%s</select></td>"
-#        "<td><input form='%s' name='days' value='%s' size='3' required"
-#        " inputmode='numeric' placeholder='۳۰'></td>"
-#        "<td><input form='%s' name='quota_gb' value='%s' size='4'"
-#        " inputmode='decimal' placeholder='گیگ'>"
-#        "<label style='display:inline;margin-right:6px'>"
-#        "<input form='%s' type='checkbox' name='unlimited' value='1'%s>"
-#        " نامحدود</label></td>"
-#        "<td><input form='%s' name='price' value='%s' size='7'"
-#        " inputmode='numeric' placeholder='تومان'>"
-#        "<label style='display:block;margin-top:4px' title='رایگان، با یک کلیک، هر "
-#        "تلگرام و هر حساب یک بار'><input form='%s' type='checkbox' name='trial' value='1'%s>"
-#        " 🎁 تست رایگان</label></td>"
-#        "<td><input form='%s' name='speed_mb' value='%s' size='3'"
-#        " inputmode='decimal' title='مگابیت بر ثانیه؛ خالی یا ۰ یعنی بی‌حد'></td>"
-#        "<td><input form='%s' name='devices' value='%s' size='2' inputmode='numeric'"
-#        " title='چند آی‌پی هم‌زمان، ۱ تا ۵'></td>"
-#        "<td><input form='%s' name='note' value='%s' size='14' maxlength='120'"
-#        " placeholder='اختیاری'></td>%s"
+#        "<td><input form='%s' name='name' value='%s' size='12' required maxlength='60' placeholder='مثلاً گیمینگ ماهانه'></td><td><select form='%s' name='template_id'>%s</select></td><td><input form='%s' name='days' value='%s' size='3' required inputmode='numeric' placeholder='۳۰'></td><td><input form='%s' name='quota_gb' value='%s' size='4' inputmode='decimal' placeholder='گیگ'><label style='display:inline;margin-right:6px'><input form='%s' type='checkbox' name='unlimited' value='1'%s> "
+#        "نامحدود</label></td><td><input form='%s' name='price' value='%s' size='7' inputmode='numeric' placeholder='تومان'><label style='display:block;margin-top:4px' title='رایگان، با یک کلیک، هر تلگرام و هر حساب یک بار'><input form='%s' type='checkbox' name='trial' value='1'%s> "
+#        "🎁 تست "
+#        "رایگان</label></td><td><input form='%s' name='speed_mb' value='%s' size='3' inputmode='decimal' title='مگابیت بر ثانیه؛ خالی یا ۰ یعنی بی‌حد'></td><td><input form='%s' name='devices' value='%s' size='2' inputmode='numeric' title='چند آی‌پی هم‌زمان، ۱ تا ۵'></td><td><input form='%s' name='note' value='%s' size='14' maxlength='120' placeholder='اختیاری'></td>%s"
 #        % (form, html.escape(plan.get("name") or "", quote=True),
 #           form, sel,
 #           form, plan.get("days") or "",
@@ -26647,21 +26605,15 @@ exit 0
 #    # The plans reserved to start when this one ends, each with a way to
 #    # take it back.
 #    reserved = "".join(
-#        "<form method='post' action='/%s/user-reserve-cancel' class='reserve'"
-#        " onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'>"
-#        "<span>⏳ رزرو: %s</span> <button class='del' title='لغو رزرو'>لغو رزرو</button></form>"
+#        "<form method='post' action='/%s/user-reserve-cancel' class='reserve' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><span>⏳ "
+#        "رزرو: %s</span> <button class='del' title='لغو رزرو'>لغو رزرو</button></form>"
 #        % (CFG["ADMIN_PATH"], html.escape(json.dumps(
 #            "رزرو پلن «%s» لغو شود؟ پولش خودکار برنمی‌گردد." % (w["name"] or "?"),
 #            ensure_ascii=False), quote=True), w["id"], html.escape(w["name"] or "?"))
 #        for w in waiting)
-#    return ("<details><summary>%s%s</summary>%s"
-#            "<form method='post' action='/%s/user-plan'"
-#            " onsubmit='return confirm(\"این پلن به این کاربر داده شود؟ اگر پلن فعلی‌اش "
-#            "هنوز تمام نشده، رزرو می‌شود و بعد از آن خودکار فعال می‌شود.\")'>"
-#            "<input type='hidden' name='id' value='%d'>"
-#            "<label>دادن پلن بدون رسید</label>"
-#            "<select name='plan_id' required><option value=''>انتخاب پلن…</option>"
-#            "%s</select> <button class='ghost'>اعمال</button></form></details>"
+#    return ("<details><summary>%s%s</summary>%s<form method='post' action='/%s/user-plan' onsubmit='return confirm(\"این پلن به این کاربر داده شود؟ اگر پلن فعلی‌اش هنوز تمام نشده، رزرو می‌شود و بعد از آن خودکار فعال می‌شود.\")'><input type='hidden' name='id' value='%d'><label>دادن "
+#            "پلن بدون رسید</label><select name='plan_id' required><option value=''>انتخاب "
+#            "پلن…</option>%s</select> <button class='ghost'>اعمال</button></form></details>"
 #            % (html.escape(held) if held else "<span class='muted'>بدون پلن</span>",
 #               " <small class='reserved'>+%d رزرو</small>" % len(waiting) if waiting else "",
 #               reserved, CFG["ADMIN_PATH"], user["id"], opts))
@@ -26707,6 +26659,7 @@ exit 0
 #    ("<a href='#exit'>سرور خارج</a>", "<a href='#exit'>پنل‌ها</a>"),
 #    ("<a href='#relays'>سرورهای ایران</a>", "<a href='#relays'>DNS و همگام‌سازی</a>"),
 #    ("آی‌پی ایرانی رله", "آی‌پی ایرانی مشتری"),
+#    ("سرورهای داخل ایران", "سرور"),
 #    ("سرورهای ایران", "سرور"),
 #    ("سرور ایران", "سرور"),
 #    (" — سرور خارج", ""),
@@ -27026,14 +26979,11 @@ exit 0
 ## brings back at once.
 #USERS_MOST = 5000
 #
-#USERS_HELP = ("<p class='muted'>ثبت‌نام تازه با وضعیت «در انتظار "
-#              "پلن» می‌آید و تا وقتی برایش پلن ذخیره نکنید هیچ ترافیکی "
-#              "نمی‌گیرد؛ اولین ذخیرهٔ همین سطر فعالش می‌کند. "
-#              "صفر در سهمیه یا سرعت یعنی بی‌حد. "
-#              "«زمان» خالی یعنی بدون تغییر؛ عددی که بنویسید تاریخ پایان را "
-#              "از امروز همان‌قدر روز جلو می‌برد، و رنگ خاکستریِ داخلش روزهای "
-#              "باقی‌مانده است. سرعت فقط دانلود را محدود می‌کند و تا ۳۰ ثانیه "
-#              "دیگر روی رله‌ها اعمال می‌شود.</p>")
+#USERS_HELP = ("<p class='muted'>ثبت‌نام جدید با وضعیت «در انتظار پلن» می‌آید و تا پلنی برایش ذخیره "
+#              "نکنید ترافیکی دریافت نمی‌کند؛ اولین ذخیرهٔ همین سطر فعالش می‌کند. صفر در سهمیه یا سرعت "
+#              "یعنی بی‌حد. «زمان» خالی یعنی بدون تغییر؛ عددی که بنویسید تاریخ پایان را از امروز "
+#              "همان‌قدر روز جلو می‌برد، و رنگ خاکستریِ داخلش روزهای باقی‌مانده است. سرعت فقط دانلود را "
+#              "محدود می‌کند و حداکثر ۳۰ ثانیه بعد روی رله‌ها اعمال می‌شود.</p>")
 #
 ## The rest of the table as the admin scrolls down, and the way back to the
 ## same row after an action on one: how many rows were showing and which one
@@ -27094,13 +27044,8 @@ exit 0
 #    opts = "".join("<option value='%s'%s>%s</option>"
 #                   % (k, " selected" if k == sort else "", label)
 #                   for k, label, _ in USER_SORTS)
-#    return ("<form method='get' action='/%s/users' class='row usearch'>"
-#            "<input type='search' name='q' value='%s' autocomplete='off' "
-#            "placeholder='جستجو: اسم، نام کاربری، شماره، آیدی تلگرام یا آی‌پی'>"
-#            "<button class='ghost'>جستجو</button>%s"
-#            "<label class='usort'>مرتب‌سازی: <select name='sort' onchange=\"document.cookie="
-#            "'usort='+this.value+'; path=/; max-age=31536000; SameSite=Strict';"
-#            "this.form.submit()\">%s</select></label></form>"
+#    return ("<form method='get' action='/%s/users' class='row usearch'><input type='search' name='q' value='%s' autocomplete='off' placeholder='جستجو: اسم، نام کاربری، شماره، آیدی تلگرام یا آی‌پی'><button class='ghost'>جستجو</button>%s<label class='usort'>مرتب‌سازی: "
+#            "<select name='sort' onchange=\"document.cookie='usort='+this.value+'; path=/; max-age=31536000; SameSite=Strict';this.form.submit()\">%s</select></label></form>"
 #            % (p, html.escape(q, quote=True),
 #               "<a href='/%s/users'>همه</a>" % p if q else "", opts))
 #
@@ -27220,7 +27165,7 @@ exit 0
 #             ("%s از %s" % (human(s["used_bytes"]), human(s["cap_bytes"]))
 #              if s["cap_bytes"] else human(s["used_bytes"]), "مصرف مشتری‌ها"),
 #             (left, "روز مانده"), (format(sold, ","), "فروش این ماه (تومان)"))
-#    out = ["<div class='card'><h2>حساب فروشنده</h2>"]
+#    out = ["<div class='card'><h2>پروفایل فروشنده</h2>"]
 #    stopped = (s["cap_bytes"] and s["used_bytes"] >= s["cap_bytes"]) or (
 #        s["expires_at"] and s["expires_at"] <= now())
 #    if stopped:
@@ -27241,11 +27186,11 @@ exit 0
 #        links.append("<code dir='ltr'>%ssignup?ref=%s</code>" % (html.escape(web), code))
 #    if code and bot:
 #        links.append("<code dir='ltr'>%s?start=ref_%s</code>" % (html.escape(bot), code))
-#    out.append("<h3 class='chart-h'>لینک ثبت‌نام مشتری‌های شما</h3>")
+#    out.append("<h3 class='chart-h'>پیوند ثبت‌نام برای مشتری‌های شما</h3>")
 #    out.append("<p>%s</p>" % "<br>".join(links) if links else
-#               "<p class='muted'>مالک پنل هنوز آدرس پنل مشتری را نگذاشته.</p>")
-#    out.append("<p class='muted'>هر کس با این لینک ثبت‌نام کند، مشتری شما می‌شود و پلن‌ها و "
-#               "اطلاعات پرداخت شما را می‌بیند.</p></div>")
+#               "<p class='muted'>مالک پنل هنوز نشانی پنل مشتری را تنظیم نکرده است.</p>")
+#    out.append("<p class='muted'>هرکس از این پیوند ثبت‌نام کند، مشتری شما حساب می‌شود و پلن‌ها و مشخصات "
+#               "واریز شما را می‌بیند.</p></div>")
 #    return "".join(out)
 #
 #
@@ -27255,8 +27200,8 @@ exit 0
 #    rows = STORE.q("SELECT * FROM admins WHERE own_only = 1 ORDER BY id")
 #    if not rows:
 #        return ""
-#    out = ["<div class='card'><h2>فروشنده‌ها</h2><table><tr><th>نام کاربری</th><th>مشتری</th>"
-#           "<th>حجم</th><th>روز مانده</th><th>وضعیت</th></tr>"]
+#    out = ["<div class='card'><h2>فهرست فروشنده‌ها</h2><table><tr><th>نام "
+#           "کاربری</th><th>مشتری</th><th>حجم</th><th>روز مانده</th><th>وضعیت</th></tr>"]
 #    for s in rows:
 #        n = STORE.one("SELECT count(*) c FROM users WHERE owner_admin = ?", (s["id"],))["c"]
 #        left = "—"
@@ -27319,7 +27264,7 @@ exit 0
 #
 #
 #def denied_page(why=None):
-#    return ("<div class='card'><h2>دسترسی ندارید</h2><p class='muted'>%s</p></div>"
+#    return ("<div class='card'><h2>این بخش برایتان باز نیست</h2><p class='muted'>%s</p></div>"
 #            % html.escape(why or "این بخش برای حساب شما باز نیست؛ اگر لازمش دارید، به مالک "
 #                                 "پنل بگویید."))
 #
@@ -27330,13 +27275,12 @@ exit 0
 #    form. `back` is where the answer comes back to."""
 #    n = STORE.one("SELECT count(*) c FROM users WHERE owner_admin = ?", (r["id"],))["c"]
 #    seller = r["own_only"]
-#    hidden = ("<input type='hidden' name='id' value='%d'><input type='hidden' name='back' "
-#              "value='%s'>" % (r["id"], back))
+#    hidden = ("<input type='hidden' name='id' value='%d'><input type='hidden' name='back' value='%s'>" % (r["id"], back))
 #    ask_js = lambda text: html.escape(json.dumps(text, ensure_ascii=False), quote=True)
 #    out = []
 #    if r["disabled"]:
-#        out.append("<form method='post' action='/%s/admin-disable'>%s<input type='hidden' "
-#                   "name='to' value='0'><button class='ghost'>فعال کردن</button></form>"
+#        out.append("<form method='post' action='/%s/admin-disable'>%s<input type='hidden' name='to' value='0'><button class='ghost'>فعال "
+#                   "کردن</button></form>"
 #                   % (p, hidden))
 #    else:
 #        out.append("<form method='post' action='/%s/admin-disable' onsubmit='return confirm(%s)'>"
@@ -27347,8 +27291,8 @@ exit 0
 #                       "با «فعال کردن» همه‌چیز برمی‌گردد." % n if seller
 #                       else "این ادمین غیرفعال شود؟ دیگر نمی‌تواند وارد شود."), hidden))
 #    if seller:
-#        out.append("<form method='post' action='/%s/admin-reset-usage' onsubmit='return "
-#                   "confirm(%s)'>%s<button class='ghost'>صفر کردن مصرف</button></form>"
+#        out.append("<form method='post' action='/%s/admin-reset-usage' onsubmit='return confirm(%s)'>%s<button class='ghost'>صفر "
+#                   "کردن مصرف</button></form>"
 #                   % (p, ask_js("مصرف این فروشنده صفر شود؟"), hidden))
 #    out.append("<form method='post' action='/%s/admin-delete' onsubmit='return confirm(%s)'>"
 #               "%s<button class='del'>حذف همیشگی</button></form>" % (p, ask_js(
@@ -27369,11 +27313,9 @@ exit 0
 #    state = ("<span class='pill'>غیرفعال</span>" if r["disabled"] else
 #             "<span class='pill bad'>قطع</span>" if stopped else "<span class='pill ok'>فعال</span>")
 #    out = ["<p><a href='/%s/admins'>‹ برگشت به ادمین‌ها</a></p>" % p,
-#           "<div class='card'><h2><code>%s</code> %s %s</h2><p class='muted'>%s · دسترسی: %s"
-#           "</p><div class='row' style='gap:6px;align-items:center'>%s"
-#           "<a class='dl' href='/%s/admins?id=%d'>ویرایش</a>"
-#           "<form method='post' action='/%s/admin-view-as'><input type='hidden' name='id' "
-#           "value='%d'><button class='ghost'>دیدن به‌جای او</button></form></div></div>"
+#           "<div class='card'><h2><code>%s</code> %s %s</h2><p class='muted'>%s · دسترسی: "
+#           "%s</p><div class='row' style='gap:6px;align-items:center'>%s<a class='dl' href='/%s/admins?id=%d'>ویرایش</a><form method='post' action='/%s/admin-view-as'><input type='hidden' name='id' value='%d'><button class='ghost'>دیدن "
+#           "به‌جای او</button></form></div></div>"
 #           % (html.escape(r["username"]),
 #              "<span class='pill warn'>فروشنده</span>" if seller else "", state,
 #              "ساخته شده %s" % html.escape(show_date(r["created_at"] or "")),
@@ -27382,9 +27324,9 @@ exit 0
 #                                   and (not seller or k in RESELLER_SECTIONS)) or "—"),
 #              admin_row_buttons(p, r, "stats"), p, r["id"], p, r["id"])]
 #    if not seller:
-#        out.append("<div class='card'><p class='muted'>کارمند است و مشتری مال خودش ندارد؛ "
-#                   "همهٔ مشتری‌ها را در بخش‌هایی که برایش تیک خورده می‌بیند. هر کاری که "
-#                   "کرده با نام کاربری‌اش در صفحهٔ <a href='/%s/logs'>لاگ</a> ثبت شده.</p></div>"
+#        out.append("<div class='card'><p class='muted'>این ادمین کارمند است و مشتری اختصاصی ندارد؛ همهٔ "
+#                   "مشتری‌ها را در بخش‌هایی که برایش تیک خورده می‌بیند. هر کاری که کرده با نام کاربری‌اش در "
+#                   "صفحهٔ <a href='/%s/logs'>لاگ</a> ثبت شده.</p></div>"
 #                   % p)
 #        return "".join(out)
 #    sid = r["id"]
@@ -27414,7 +27356,7 @@ exit 0
 #                   " WHERE u.owner_admin = ? AND t.status = 'open'", (sid,))), "تیکت باز"),
 #        (str(one_n("SELECT count(*) FROM plans WHERE owner_admin = ? AND active = 1",
 #                   (sid,))), "پلن فعال"))
-#    out.append("<div class='card'><h2>خلاصه</h2><div class='grid'>")
+#    out.append("<div class='card'><h2>نمای کلی</h2><div class='grid'>")
 #    for v, label in stats:
 #        out.append("<div class='stat'><div class='n'>%s</div><div class='l'>%s</div></div>"
 #                   % (html.escape(v), label))
@@ -27431,8 +27373,8 @@ exit 0
 #        states = {"pending": "<span class='pill warn'>در انتظار</span>",
 #                  "approved": "<span class='pill ok'>تأیید شده</span>",
 #                  "rejected": "<span class='pill bad'>رد شده</span>"}
-#        out.append("<div class='card'><h2>آخرین خریدها</h2><table><tr><th>زمان</th>"
-#                   "<th>مشتری</th><th>چه</th><th>مبلغ</th><th></th></tr>")
+#        out.append("<div class='card'><h2>تازه‌ترین "
+#                   "خریدها</h2><table><tr><th>زمان</th><th>مشتری</th><th>چه</th><th>مبلغ</th><th></th></tr>")
 #        for t in rows:
 #            out.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
 #                       % (html.escape(show_date(t["created_at"], True)),
@@ -27449,7 +27391,7 @@ exit 0
 #    rows = STORE.q("SELECT * FROM admins ORDER BY id")
 #    out = ["<div class='card'><h2>ادمین‌ها (%d)</h2>" % len(rows)]
 #    if not rows:
-#        out.append("<p class='muted'>هنوز ادمینی نساخته‌اید.</p>")
+#        out.append("<p class='muted'>هنوز ادمین دیگری اضافه نکرده‌اید.</p>")
 #    else:
 #        out.append("<table><tr><th>نام کاربری</th><th>دسترسی</th><th>مشتری</th><th>حجم</th>"
 #                   "<th>تا</th><th></th></tr>")
@@ -27459,15 +27401,8 @@ exit 0
 #            perms = "، ".join(labels.get(x, x) for x in ADMIN_SECTIONS_ORDER
 #                              if x in admin_perms(r)) or "—"
 #            out.append(
-#                "<tr%s><td><a href='/%s/admins?stats=%d' title='آمار و کارها'><code>%s</code>"
-#                "</a>%s</td><td class='muted'>%s</td><td>%s</td><td>%s</td>"
-#                "<td>%s</td><td class='acts'><div style='display:flex;gap:6px;"
-#                "align-items:center;flex-wrap:wrap'>%s"
-#                "<form method='get' action='/%s/admins'><input type='hidden' name='id' "
-#                "value='%d'><button class='ghost go'>ویرایش</button></form>"
-#                "<form method='post' action='/%s/admin-view-as'><input type='hidden' name='id' "
-#                "value='%d'><button class='ghost' title='پنل را همان‌طور ببینید که او می‌بیند'>"
-#                "دیدن به‌جای او</button></form></div></td></tr>"
+#                "<tr%s><td><a href='/%s/admins?stats=%d' title='آمار و کارها'><code>%s</code></a>%s</td><td class='muted'>%s</td><td>%s</td><td>%s</td><td>%s</td><td class='acts'><div style='display:flex;gap:6px;align-items:center;flex-wrap:wrap'>%s<form method='get' action='/%s/admins'><input type='hidden' name='id' value='%d'><button class='ghost go'>ویرایش</button></form><form method='post' action='/%s/admin-view-as'><input type='hidden' name='id' value='%d'><button class='ghost' title='پنل را همان‌طور ببینید که او می‌بیند'>دیدن "
+#                "به‌جای او</button></form></div></td></tr>"
 #                % (" class='off'" if r["disabled"] else "", p, r["id"],
 #                   html.escape(r["username"]),
 #                   " <span class='pill warn'>فروشنده</span>" if r["own_only"] else "",
@@ -27479,8 +27414,7 @@ exit 0
 #                   html.escape(show_date(r["expires_at"] or "")) or "—",
 #                   admin_row_buttons(p, r, "list"),
 #                   p, r["id"], p, r["id"]))
-#        out.append("</table><p class='muted'>روی نام هر ادمین بزنید تا آمار و کارهایش را "
-#                   "ببینید.</p>")
+#        out.append("</table><p class='muted'>روی نام هر ادمین کلیک کنید تا آمار و فعالیت‌هایش را ببینید.</p>")
 #    out.append("<p><a class='dl' href='/%s/admins?id=0'>ادمین تازه</a></p></div>" % p)
 #    return "".join(out)
 #
@@ -27492,11 +27426,10 @@ exit 0
 #    """In a customer's menu: their usage back to zero every so many days."""
 #    days = user["reset_days"] if "reset_days" in user.keys() else None
 #    nxt = show_date(user["reset_next"] or "") if days else ""
-#    return ("<form method='post' action='/%s/user-reset-days' class='resetdays'>"
-#            "<input type='hidden' name='id' value='%d'>"
-#            "<label>ریست خودکار مصرف هر</label>"
-#            "<input name='days' size='3' dir='ltr' inputmode='numeric' value='%s' "
-#            "placeholder='—'> روز <button class='ghost'>ذخیره</button>%s</form>"
+#    return ("<form method='post' action='/%s/user-reset-days' class='resetdays'><input type='hidden' name='id' value='%d'><label>ریست "
+#            "خودکار مصرف "
+#            "هر</label><input name='days' size='3' dir='ltr' inputmode='numeric' value='%s' placeholder='—'> "
+#            "روز <button class='ghost'>ذخیره</button>%s</form>"
 #            % (p, user["id"], days or "",
 #               "<small class='muted'>بعدی: %s</small>" % nxt if nxt else ""))
 #
@@ -27525,54 +27458,42 @@ exit 0
 #    if row.get("expires_at"):
 #        left = parse_ts(row["expires_at"]) - datetime.now(timezone.utc)
 #        days = str(max(0, left.days + (1 if left.seconds else 0)))
-#    boxes = "".join("<label style='display:inline;margin-left:14px'><input type='checkbox' "
-#                    "name='perm' value='%s'%s> %s</label>"
+#    boxes = "".join("<label style='display:inline;margin-left:14px'><input type='checkbox' name='perm' value='%s'%s> "
+#                    "%s</label>"
 #                    % (k, " checked" if k in perms else "", html.escape(label))
 #                    for k, label in ADMIN_SECTIONS)
-#    tboxes = "".join("<label style='display:inline;margin-left:14px'><input type='checkbox' "
-#                     "name='tpl' value='%d'%s> %s</label>"
+#    tboxes = "".join("<label style='display:inline;margin-left:14px'><input type='checkbox' name='tpl' value='%d'%s> "
+#                     "%s</label>"
 #                     % (t["id"], " checked" if t["id"] in picked else "", html.escape(t["name"]))
 #                     for t in tpls)
 #    return (
-#        "<div class='card'><h2>%s</h2><p><a href='/%s/admins'>‹ برگشت به ادمین‌ها</a></p>"
-#        "<form method='post' action='/%s/admin-save'>"
-#        "<input type='hidden' name='id' value='%d'>"
-#        "<div class='row'><div class='f'><label>نام کاربری</label><input name='username' "
-#        "dir='ltr' required value='%s'></div>"
-#        "<div class='f'><label>رمز%s</label><input name='password' type='password' "
-#        "autocomplete='new-password' dir='ltr'%s></div></div>"
-#        "<h3 class='chart-h'>چه بخش‌هایی را ببیند</h3><p>%s</p>"
-#        "<h3 class='chart-h'>فروشنده</h3>"
-#        "<p><label style='display:inline'><input type='checkbox' name='own_only' value='1'%s>"
-#        " <b>فروشنده است</b> — سرویس را از شما می‌خرد و به مشتری‌های خودش می‌فروشد."
-#        " فقط مشتری‌هایی را می‌بیند که خودش آورده؛ پلن و قیمت و شماره کارت هم مال خودش."
-#        " بدون این تیک، مثل کارمند شماست و همهٔ مشتری‌ها را می‌بیند.</label></p>"
+#        "<div class='card'><h2>%s</h2><p><a href='/%s/admins'>‹ برگشت به "
+#        "ادمین‌ها</a></p><form method='post' action='/%s/admin-save'><input type='hidden' name='id' value='%d'><div class='row'><div class='f'><label>نام "
+#        "کاربری</label><input name='username' dir='ltr' required value='%s'></div><div class='f'><label>رمز%s</label><input name='password' type='password' autocomplete='new-password' dir='ltr'%s></div></div><h3 class='chart-h'>بخش‌های "
+#        "قابل‌دسترس</h3><p>%s</p><h3 class='chart-h'>فروشنده</h3><p><label style='display:inline'><input type='checkbox' name='own_only' value='1'%s> "
+#        "<b>فروشنده است</b> — سرویس را از شما می‌خرد و به مشتری‌های خودش می‌فروشد. فقط "
+#        "مشتری‌هایی را می‌بیند که خودش آورده؛ پلن و قیمت و شماره کارت هم مال خودش. بدون این تیک، "
+#        "مثل کارمند شماست و همهٔ مشتری‌ها را می‌بیند.</label></p>"
 #        # Only a seller's: shown while "is a seller" is ticked.
-#        "<style>form:has(input[name=own_only]:not(:checked)) .route-tick{display:none}</style>"
-#        "<p class='route-tick'><label style='display:inline'><input type='checkbox' "
-#        "name='can_route' value='1'%s> رله و سرور خارج مشتری‌هایش را خودش انتخاب کند"
-#        "</label></p>"
-#        "<div class='row'><div class='f'><label>سقف تعداد مشتری</label><input name='max_users' "
-#        "dir='ltr' size='6' style='width:100%%' value='%s' placeholder='خالی = بی‌حد'></div>"
-#        "<div class='f'><label>سقف حجم کل مشتری‌ها (گیگ)</label><input name='cap_gb' dir='ltr' "
-#        "size='8' style='width:100%%' value='%s' placeholder='خالی = بی‌حد'></div>"
-#        "<div class='f'><label>چند روز دیگر</label><input name='days' dir='ltr' size='6' "
-#        "style='width:100%%' value='%s' placeholder='خالی = بی‌پایان'></div>"
-#        "<div class='f'><label>ریست خودکار مصرف هر چند روز</label><input name='reset_days' "
-#        "dir='ltr' size='6' style='width:100%%' value='%s' placeholder='خالی = خاموش'>%s</div></div>"
-#        "%s"
-#        "<h3 class='chart-h'>قالب‌ها</h3>"
-#        "<p><label style='display:inline'><input type='radio' name='templates_mode' "
-#        "value='pick'%s> فقط از قالب‌های تیک‌خورده</label> "
-#        "<label style='display:inline;margin-right:14px'><input type='radio' "
-#        "name='templates_mode' value='own'%s> خودش قالب بسازد، تا "
-#        "<input name='templates_max' dir='ltr' size='3' value='%s'> قالب</label></p><p>%s</p>"
-#        "<button>ذخیره</button></form>"
-#        "<p class='muted'>فروشنده فقط مشتری‌هایی را می‌بیند که خودش آورده (با لینک یا ربات "
-#        "خودش)، همراه با رسیدها، تیکت‌ها و کیف پولشان. پلن‌ها و قیمت‌هایش را هم خودش می‌سازد. "
-#        "اگر مصرف مشتری‌هایش روی هم به سقف حجم برسد یا روزهایش تمام شود، سرویس همهٔ "
-#        "مشتری‌هایش قطع می‌شود تا تمدیدش کنید. هر تغییری در این صفحه، آن ادمین را از همهٔ "
-#        "دستگاه‌ها بیرون می‌برد.</p>%s</div>"
+#        "<style>form:has(input[name=own_only]:not(:checked)) .route-tick{display:none}</style><p class='route-tick'><label style='display:inline'><input type='checkbox' name='can_route' value='1'%s> رله "
+#        "و سرور خارج مشتری‌هایش را خودش انتخاب "
+#        "کند</label></p><div class='row'><div class='f'><label>سقف تعداد "
+#        "مشتری</label><input name='max_users' dir='ltr' size='6' style='width:100%%' value='%s' placeholder='خالی = بی‌حد'></div><div class='f'><label>سقف "
+#        "حجم کل "
+#        "مشتری‌ها (گیگ)</label><input name='cap_gb' dir='ltr' size='8' style='width:100%%' value='%s' placeholder='خالی = بی‌حد'></div><div class='f'><label>چند "
+#        "روز "
+#        "دیگر</label><input name='days' dir='ltr' size='6' style='width:100%%' value='%s' placeholder='خالی = بی‌پایان'></div><div class='f'><label>ریست "
+#        "خودکار مصرف هر چند "
+#        "روز</label><input name='reset_days' dir='ltr' size='6' style='width:100%%' value='%s' placeholder='خالی = خاموش'>%s</div></div>%s<h3 class='chart-h'>قالب‌های "
+#        "مجاز</h3><p><label style='display:inline'><input type='radio' name='templates_mode' value='pick'%s> فقط "
+#        "از قالب‌های "
+#        "تیک‌خورده</label> <label style='display:inline;margin-right:14px'><input type='radio' name='templates_mode' value='own'%s> خودش "
+#        "قالب بسازد، "
+#        "تا <input name='templates_max' dir='ltr' size='3' value='%s'> قالب</label></p><p>%s</p><button>ذخیره</button></form><p class='muted'>فروشنده "
+#        "فقط مشتری‌هایی را می‌بیند که خودش جذب کرده (با پیوند یا ربات خودش)، به‌همراه رسیدها، "
+#        "تیکت‌ها و کیف پول آن‌ها. پلن‌ها و قیمت‌هایش را هم خودش می‌سازد. اگر مصرف مشتری‌هایش روی "
+#        "هم به سقف حجم برسد یا روزهایش تمام شود، سرویس همهٔ مشتری‌هایش قطع می‌شود تا تمدیدش "
+#        "کنید. هر تغییر در این صفحه، ادمین را از همهٔ دستگاه‌ها خارج می‌کند.</p>%s</div>"
 #        % ("ویرایش %s" % html.escape(row["username"]) if row else "ادمین تازه", p, p,
 #           row.get("id") or 0, html.escape(row.get("username") or "", quote=True),
 #           " (خالی = همین بماند)" if row else "", "" if row else " required", boxes,
@@ -27583,9 +27504,9 @@ exit 0
 #           " <small class='muted'>بعدی: %s</small>" % show_date(row["reset_next"])
 #           if row.get("reset_days") and row.get("reset_next") else "",
 #           # Renewing: the usage so far back to nothing, by its own button.
-#           ("<p><span class='muted'>مصرف تا حالا: %s</span> <button class='ghost' "
-#            "formaction='/%s/admin-reset-usage' formnovalidate onclick=\"return confirm("
-#            "'مصرف این فروشنده صفر شود؟')\">صفر کردن مصرف</button></p>"
+#           ("<p><span class='muted'>مصرف تا حالا: %s</span> "
+#            "<button class='ghost' formaction='/%s/admin-reset-usage' formnovalidate onclick=\"return confirm('مصرف این فروشنده صفر شود؟')\">صفر "
+#            "کردن مصرف</button></p>"
 #            % (human(row.get("used_bytes") or 0), p)) if row else "",
 #           "" if row.get("templates_mode") == "own" else " checked",
 #           " checked" if row.get("templates_mode") == "own" else "",
@@ -27654,17 +27575,15 @@ exit 0
 #    n = STORE.one("SELECT count(*) c FROM users WHERE owner_admin = ?", (row["id"],))["c"]
 #    seller = row.get("own_only")
 #    if row.get("disabled"):
-#        toggle = ("<form method='post' action='/%s/admin-disable'><input type='hidden' "
-#                  "name='id' value='%d'><input type='hidden' name='to' value='0'>"
-#                  "<button class='ghost'>فعال کردن</button></form>" % (p, row["id"]))
+#        toggle = ("<form method='post' action='/%s/admin-disable'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='0'><button class='ghost'>فعال "
+#                  "کردن</button></form>" % (p, row["id"]))
 #    else:
 #        ask = ("این فروشنده غیرفعال شود؟ دیگر نمی‌تواند وارد شود، سرویس همهٔ %d مشتری‌اش "
 #               "قطع می‌شود، چیزی از او فروخته نمی‌شود و رباتش خاموش می‌شود. با «فعال کردن» "
 #               "همه‌چیز برمی‌گردد."
 #               % n if seller else "این ادمین غیرفعال شود؟ دیگر نمی‌تواند وارد شود.")
-#        toggle = ("<form method='post' action='/%s/admin-disable' onsubmit='return confirm(%s)'>"
-#                  "<input type='hidden' name='id' value='%d'><input type='hidden' name='to' "
-#                  "value='1'><button class='ghost'>غیرفعال کردن</button></form>"
+#        toggle = ("<form method='post' action='/%s/admin-disable' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='1'><button class='ghost'>غیرفعال "
+#                  "کردن</button></form>"
 #                  % (p, html.escape(json.dumps(ask, ensure_ascii=False), quote=True), row["id"]))
 #    ask = ("این فروشنده و همه‌چیزش برای همیشه پاک شود؟ %d مشتری با رسیدها و تیکت‌هایشان، "
 #           "و پلن‌ها، قالب‌ها و رباتش پاک می‌شوند و قابل برگشت نیست." % n if seller
@@ -27682,15 +27601,16 @@ exit 0
 #    """An admin's own page: who they are, what they may see, their password."""
 #    row = me()
 #    if row is None:
-#        return ("<div class='card'><h2>حساب من</h2><p>شما مالک این پنل هستید: <code>%s</code>"
-#                "</p></div>" % html.escape(owner_name() or "—"))
+#        return ("<div class='card'><h2>پروفایل من</h2><p>شما مالک این پنل "
+#                "هستید: <code>%s</code></p></div>" % html.escape(owner_name() or "—"))
 #    labels = dict(ADMIN_SECTIONS)
 #    return (seller_card(p, row) + seller_notes_card(p, row) if row["own_only"] else "") + (
-#            "<div class='card'><h2>حساب من — %s</h2><p class='muted'>دسترسی: %s</p>"
-#            "<h3 class='chart-h'>تغییر رمز</h3><form method='post' action='/%s/me-password'>"
-#            "<div class='row'><input name='current' type='password' placeholder='رمز فعلی' "
-#            "required><input name='new' type='password' placeholder='رمز تازه (دست‌کم ۸ نویسه)'"
-#            " required minlength='8'><button class='ghost'>تغییر رمز</button></div></form></div>"
+#            "<div class='card'><h2>پروفایل "
+#            "من — %s</h2><p class='muted'>دسترسی: %s</p><h3 class='chart-h'>تعویض "
+#            "گذرواژه</h3><form method='post' action='/%s/me-password'><div class='row'><input name='current' type='password' placeholder='رمز "
+#            "فعلی' required><input name='new' type='password' placeholder='رمز تازه (دست‌کم ۸ "
+#            "نویسه)' required minlength='8'><button class='ghost'>تغییر "
+#            "رمز</button></div></form></div>"
 #            % (html.escape(row["username"]),
 #               html.escape("، ".join(labels[k] for k in ADMIN_SECTIONS_ORDER
 #                                    if k in admin_perms(row)
@@ -27703,11 +27623,10 @@ exit 0
 #    waiting = tickets_waiting()
 #    for path, label in (("", "خانه"), ("users", "کاربران"), ("receipts", "رسیدها"),
 #                        ("tickets", "تیکت‌ها (%d)" % waiting if waiting else "تیکت‌ها"),
-#                        ("plans", "پلن‌ها"), ("pay", "پرداخت"), ("templates", "قالب‌ها"), ("domains", "دامنه‌ها"),
-#                        ("bot", "ربات"), ("api", "API"), ("nodes", "نود"),
-#                        ("wireguard", "وایرگارد"), ("settings", "تنظیمات"),
-#                        ("logs", "لاگ"), ("diagnose", "عیب‌یابی"), ("admins", "ادمین‌ها"),
-#                        ("me", "حساب من")):
+#                        ("plans", "پلن‌ها"), ("pay", "پرداخت"), ("templates", "قالب‌ها"),
+#                        ("domains", "دامنه‌ها"), ("bot", "ربات"), ("api", "API"), ("nodes", "نود"),
+#                        ("wireguard", "وایرگارد"), ("settings", "تنظیمات"), ("logs", "لاگ"),
+#                        ("diagnose", "عیب‌یابی"), ("admins", "ادمین‌ها"), ("me", "حساب من")):
 #        # A single machine has no relays of its own to manage.
 #        if path in ("nodes", "wireguard") and one_server():
 #            continue
@@ -27730,12 +27649,13 @@ exit 0
 #    return ("""<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 #<meta name="viewport" content="width=device-width,initial-scale=1">
 #<link rel="icon" href="data:,">
-#<title>%s</title>%s<style>%s</style></head><body>%s<div class="wrap">%s
-#<header><h1>%s</h1><nav>%s<a class='out' href='/%s/logout'>خروج</a></nav></header>
-#%s%s%s</div></body></html>""" % (html.escape(title), THEME_HEAD,
+#<title>%s</title>%s<style>%s</style></head>
+#<body><div class="shell"><aside class="side">%s<nav>%s<a class='out' href='/%s/logout'>خروج</a></nav></aside>
+#<main class="wrap"><div class="topbar"><h1>%s</h1><div class="tools">%s</div></div>
+#%s%s%s</main></div></body></html>""" % (html.escape(title), THEME_HEAD,
 #                                 font_face("/" + cfg["ADMIN_PATH"]) + CSS,
-#                                 THEME_BUTTON, brand_html(),
-#                                 html.escape(title), nav, cfg["ADMIN_PATH"],
+#                                 brand_html(), nav, cfg["ADMIN_PATH"],
+#                                 html.escape(title), THEME_BUTTON,
 #                                 banner, body, footer_html()))
 #
 #
@@ -27747,9 +27667,10 @@ exit 0
 #    return """<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 #<meta name="viewport" content="width=device-width,initial-scale=1">
 #<link rel="icon" href="data:,">
-#<title>ورود</title>%s<style>%s</style></head><body>%s<div class="wrap">%s
-#<div class="login" style="margin-top:6vh">
-#<div class="card"><h2>پنل مدیریت</h2>%s
+#<title>ورود</title>%s<style>%s</style></head><body class="solo">%s<div class="wrap">%s
+#<div class="login">
+#<div class="card"><h2>ورود به مرکز مدیریت</h2>
+#<p class="sub">برای ادامه نام کاربری و رمز عبور را وارد کنید.</p>%s
 #<form method="post" action="/%s/"><div class="f"><label>نام کاربری</label>
 #<input name="username" autocomplete="username" dir="ltr" autocapitalize="none"
 #spellcheck="false" autofocus style="width:100%%"></div>
@@ -27981,7 +27902,7 @@ exit 0
 #        if rank not in seen:
 #            seen.add(rank)
 #            if rank == -1:
-#                out.append("<h3 class='sec'>گروه‌های من</h3>")
+#                out.append("<h3 class='sec'>گروه‌های اختصاصی</h3>")
 #            elif rank < len(order) and label.get(order[rank]):
 #                out.append("<h3 class='sec'>%s</h3>" % html.escape(label[order[rank]]))
 #        yield svc, grp
@@ -28261,7 +28182,7 @@ exit 0
 #        pending = [r for r in rows if r["status"] == "pending"]
 #        out = ["<div class='card'><h2>رسیدهای در انتظار (%d)</h2>" % len(pending)]
 #        if not pending:
-#            out.append("<p class='muted'>رسیدی نرسیده.</p>")
+#            out.append("<p class='muted'>هنوز رسیدی ثبت نشده است.</p>")
 #        for r in pending:
 #            who = (r["first_name"] or "") + " · " + (
 #                r["username"] or r["phone"]
@@ -28317,20 +28238,18 @@ exit 0
 #                % (html.escape(who), html.escape(show_date(r["created_at"], True)),
 #                   human(r["size"] or 0), bought,
 #                   p, r["id"], p, r["id"], p, r["id"],
-#                   ("<input name='amount' value='%d' size='10' dir='ltr' title='مبلغی که "
-#                    "به کیف پول اضافه می‌شود؛ اگر رسید چیز دیگری می‌گوید درستش کنید'> تومان "
+#                   ("<input name='amount' value='%d' size='10' dir='ltr' title='مبلغی که به کیف پول اضافه می‌شود؛ اگر رسید چیز دیگری می‌گوید درستش کنید'> "
+#                    "تومان "
 #                    % r["amount"]) if topup else "",
 #                   p, r["id"], p))
-#        out.append("<p class='muted'>با تأیید، پلنی که مشتری انتخاب کرده خودکار "
-#                   "روی حسابش می‌نشیند: قالب، حجم، مدت و سرعتش. رسیدِ بدون پلن فقط "
-#                   "ثبت می‌شود و سهمیه و زمان را خودتان در صفحهٔ کاربران می‌گذارید. "
-#                   "عکس رسید بعد از تصمیم پاک می‌شود.</p></div>")
+#        out.append("<p class='muted'>با تأیید رسید، پلن انتخابی مشتری خودکار روی حسابش اعمال می‌شود؛ یعنی "
+#                   "قالب، حجم، مدت و سرعت. رسیدِ بدون پلن فقط ثبت می‌شود و حجم و زمان را خودتان در صفحهٔ "
+#                   "کاربران تعیین می‌کنید. تصویر رسید پس از تصمیم‌گیری حذف می‌شود.</p></div>")
 #
 #        decided = [r for r in rows if r["status"] != "pending"]
 #        if decided:
-#            out.append("<div class='card'><h2>تصمیم‌های قبلی</h2>"
-#                       "<table><tr><th>کاربر</th><th>رسید</th><th>پلن</th>"
-#                       "<th>تصمیم</th><th>تاریخ</th></tr>")
+#            out.append("<div class='card'><h2>انتخاب‌های "
+#                       "پیشین</h2><table><tr><th>کاربر</th><th>رسید</th><th>پلن</th><th>تصمیم</th><th>تاریخ</th></tr>")
 #            for r in decided[:40]:
 #                out.append("<tr><td>%s</td><td>%s</td><td>%s</td>"
 #                           "<td class='%s'>%s</td><td>%s</td></tr>"
@@ -28400,9 +28319,9 @@ exit 0
 #    def restore_page(self):
 #        p = CFG["ADMIN_PATH"]
 #        if not PENDING.get("path") or not os.path.exists(PENDING.get("path", "")):
-#            return ("<div class='card'><h2>بازگردانی</h2><p class='muted'>فایلی "
-#                    "برای بازگردانی منتظر نیست. از <a href='/%s/settings'>تنظیمات</a> "
-#                    "یک نسخهٔ پشتیبان بفرستید.</p></div>" % p)
+#            return ("<div class='card'><h2>بازیابی از نسخهٔ پشتیبان</h2><p class='muted'>فایلی برای بازیابی "
+#                    "در انتظار نیست. از بخش <a href='/%s/settings'>تنظیمات</a> یک نسخهٔ پشتیبان بارگذاری "
+#                    "کنید.</p></div>" % p)
 #        c = PENDING["counts"]
 #        now_c = STORE.one(
 #            "SELECT (SELECT count(*) FROM users) u, (SELECT count(*) FROM ips) i,"
@@ -28412,7 +28331,7 @@ exit 0
 #                ("آی‌پی‌های ثبت‌شده", c["ips"], now_c["i"]),
 #                ("قالب‌ها", c["templates"], now_c["t"]),
 #                ("تراکنش‌ها", c["transactions"], now_c["x"])]
-#        body = ["<div class='card'><h2>این فایل جایگزین دیتابیس فعلی شود؟</h2>",
+#        body = ["<div class='card'><h2>دیتابیس فعلی با این فایل عوض شود؟</h2>",
 #                "<p class='muted'>حجم فایل: %s</p>" % human(PENDING["size"]),
 #                "<table class='tbl'><tr><th></th><th>در فایل</th>"
 #                "<th>الان در سرویس</th></tr>"]
@@ -28449,14 +28368,11 @@ exit 0
 #        """
 #        url = "https://%s:%s/%s/" % (panel_host(), port, path)
 #        self.send(page("آدرس تازه",
-#                       "<div class='card'><h2>آدرس پنل عوض شد</h2>"
-#                       "<p>از این به بعد اینجاست — همین حالا ذخیره‌اش کنید:</p>"
-#                       "<p><code>%s</code></p>"
-#                       "<p class='muted'>پنل تا چند ثانیهٔ دیگر روی آدرس تازه "
-#                       "بالا می‌آید. اگر باز نشد، به احتمال زیاد فایروال یا "
-#                       "security group سرور پورت را نمی‌گذارد رد شود؛ از روی "
-#                       "خود سرور با <code>smartdns-access</code> برش گردانید."
-#                       "</p></div>" % html.escape(url), CFG, "settings"),
+#                       "<div class='card'><h2>نشانی پنل تغییر کرد</h2><p>از این پس پنل این‌جاست؛ همین حالا "
+#                       "ذخیره‌اش کنید:</p><p><code>%s</code></p><p class='muted'>پنل تا چند ثانیهٔ دیگر روی "
+#                       "آدرس تازه بالا می‌آید. اگر باز نشد، به احتمال زیاد فایروال یا security group سرور پورت "
+#                       "را نمی‌گذارد رد شود؛ از روی خود سرور با <code>smartdns-access</code> برش "
+#                       "گردانید.</p></div>" % html.escape(url), CFG, "settings"),
 #                  200, {"Refresh": "6; url=%s" % url})
 #        try:
 #            self.wfile.flush()
@@ -28508,11 +28424,10 @@ exit 0
 #
 #        p = CFG["ADMIN_PATH"]
 #        self.send(page("بازگردانی شد",
-#                       "<div class='card'><h2>بازگردانی شد</h2>"
-#                       "<p>نسخهٔ قبلی اینجا نگه داشته شد:</p><p><code>%s</code></p>"
-#                       "<p class='muted'>این پنل هم دارد ری‌استارت می‌شود تا "
-#                       "دیتابیس تازه را باز کند. چند ثانیه دیگر خودش برمی‌گردد.</p>"
-#                       "<p><a href='/%s/users'>رفتن به کاربران</a></p></div>"
+#                       "<div class='card'><h2>بازیابی انجام شد</h2><p>نسخهٔ پیشین این‌جا نگهداری "
+#                       "شد:</p><p><code>%s</code></p><p class='muted'>خود پنل نیز برای بارگذاری دیتابیس تازه "
+#                       "راه‌اندازی مجدد می‌شود و چند ثانیه دیگر برمی‌گردد.</p><p><a href='/%s/users'>برگشت به "
+#                       "فهرست کاربران</a></p></div>"
 #                       % (html.escape(keep), p),
 #                       CFG, "settings"),
 #                  200, {"Refresh": "16; url=/%s/users" % p})
@@ -28738,28 +28653,28 @@ exit 0
 #        msg = msg[0] if msg else None
 #        kind = "err" if (msg or "").startswith("!") else "good"
 #        msg = msg.lstrip("!") if msg else None
-#        pages = {"": ("پنل مدیریت", self.home), "index": ("پنل مدیریت", self.home),
-#                 "users": ("کاربران", self.users),
-#                 "receipts": ("رسیدها", self.receipts),
-#                 "plans": ("پلن‌ها", self.plans),
-#                 "pay": ("اطلاعات پرداخت", self.pay_page),
-#                 "tickets": ("تیکت‌ها", self.tickets),
-#                 "templates": ("قالب‌ها", self.templates),
-#                 "domains": ("دامنه‌ها", self.domains),
-#                 "api": ("API ربات", self.api_keys),
+#        pages = {"": ("داشبورد مدیریت", self.home), "index": ("داشبورد مدیریت", self.home),
+#                 "users": ("مشتریان", self.users),
+#                 "receipts": ("رسیدهای واریز", self.receipts),
+#                 "plans": ("پلن‌های فروش", self.plans),
+#                 "pay": ("مشخصات واریز", self.pay_page),
+#                 "tickets": ("درخواست‌های پشتیبانی", self.tickets),
+#                 "templates": ("قالب‌های سرویس", self.templates),
+#                 "domains": ("مدیریت دامنه‌ها", self.domains),
+#                 "api": ("رابط API ربات", self.api_keys),
 #                 "bot": ("ربات تلگرام", self.bot_page),
-#                 "settings": ("تنظیمات", self.settings),
-#                 "restore": ("بازگردانی", self.restore_page),
-#                 "logs": ("لاگ", self.logs),
-#                 "diagnose": ("عیب‌یابی", diagnose_page),
-#                 "nodes": ("نود", nodes_page),
+#                 "settings": ("تنظیمات پنل", self.settings),
+#                 "restore": ("بازیابی از نسخهٔ پشتیبان", self.restore_page),
+#                 "logs": ("گزارش رویدادها", self.logs),
+#                 "diagnose": ("سنجش سلامت", diagnose_page),
+#                 "nodes": ("نودها و سرورها", nodes_page),
 #                 "server": ("آمار سرور", self.server_page),
 #                 "usage": ("مصرف کاربر", self.user_usage_page),
 #                 "wallet": ("کیف پول کاربر", self.wallet_page),
 #                 "wg": ("وایرگارد کاربر", lambda: wg_page(self.path)),
-#                 "wireguard": ("وایرگارد", lambda: wg_admin_page(CFG["ADMIN_PATH"])),
-#                 "admins": ("ادمین‌ها", self.admins_page),
-#                 "me": ("حساب من", lambda: me_card(CFG["ADMIN_PATH"]))}
+#                 "wireguard": ("تونل وایرگارد", lambda: wg_admin_page(CFG["ADMIN_PATH"])),
+#                 "admins": ("مدیران پنل", self.admins_page),
+#                 "me": ("پروفایل من", lambda: me_card(CFG["ADMIN_PATH"]))}
 #        if rest not in pages:
 #            return self.lost()
 #        title, fn = pages[rest]
@@ -28789,7 +28704,7 @@ exit 0
 #        ips = STORE.one("SELECT count(*) c FROM ips i JOIN users u ON u.id = i.user_id"
 #                        " WHERE i.wg = 0" + extra, args)
 #        online = online_rows(extra, args) if may("users") else None
-#        out = ["<div class='card'><h2>خلاصه</h2><div class='grid'>"]
+#        out = ["<div class='card'><h2>نمای کلی</h2><div class='grid'>"]
 #        stats = [(u["c"], "کاربر"), (act["c"], "فعال")]
 #        if online is not None:
 #            stats.append((len(online), "آنلاین"))
@@ -28838,7 +28753,7 @@ exit 0
 #                if r["host"] in hosts]
 #        out.append("<div class='card'><h2>سرورها</h2>")
 #        if not rows:
-#            out.append("<p class='muted'>هنوز آماری نرسیده.</p>")
+#            out.append("<p class='muted'>هنوز آماری دریافت نشده است.</p>")
 #        else:
 #            out.append("<table><tr><th>سرور</th><th>CPU</th><th>RAM</th>"
 #                       "<th>SWAP</th><th>دیسک</th><th>شبکه</th><th>روشن</th></tr>")
@@ -28872,7 +28787,7 @@ exit 0
 #        here = exit_address()
 #        known = [here] + node_list() if kind == "exit" else relay_list() if kind == "relay" else []
 #        if ip not in known:
-#            return "<div class='card'><p class='muted'>این سرور پیدا نشد.</p></div>"
+#            return "<div class='card'><p class='muted'>چنین سروری پیدا نشد.</p></div>"
 #        p = CFG["ADMIN_PATH"]
 #        label = ("سرور خارج — پنل" if ip == here else "نود") if kind == "exit" else "رله"
 #        out = ["<div class='card'><h2>%s <code dir='ltr'>%s</code></h2>"
@@ -28889,8 +28804,8 @@ exit 0
 #                      " AND g.day >= ? GROUP BY u.id ORDER BY SUM(g.down) + SUM(g.up) DESC"
 #                      " LIMIT 50", (kind, ip, since))
 #        if not view["days"] and not view["five"]:
-#            out.append("<div class='card'><h2>مصرف</h2><p class='muted'>هنوز مصرفی از این "
-#                       "سرور ثبت نشده.</p></div>")
+#            out.append("<div class='card'><h2>ترافیک</h2><p class='muted'>هنوز مصرفی از این سرور ثبت "
+#                       "نشده.</p></div>")
 #        else:
 #            out.append(usage_card(p, "مصرف — %s" % ip, view, top))
 #        return "".join(out)
@@ -28904,7 +28819,7 @@ exit 0
 #        extra, args = mine()
 #        user = STORE.one("SELECT * FROM users u WHERE id = ?" + extra, (uid,) + args)
 #        if not user:
-#            return "<div class='card'><p class='muted'>این کاربر پیدا نشد.</p></div>"
+#            return "<div class='card'><p class='muted'>چنین مشتری‌ای پیدا نشد.</p></div>"
 #        view = user_usage(uid)
 #        who = user["username"] or user["phone"] or user["telegram_id"] or "#%d" % uid
 #        days_svg, rows = days_chart(view["days"])
@@ -28920,10 +28835,10 @@ exit 0
 #            out.append("<div class='stat'><div class='n' dir='ltr'>%s</div>"
 #                       "<div class='l'>%s</div></div>" % (n, l))
 #        out.append("</div></div>")
-#        out.append("<div class='card'><h2>روزانه</h2>%s%s</div>" % (legend(), days_svg))
-#        out.append("<div class='card'><h2>سرعت ۲۴ ساعت اخیر</h2>%s%s</div>"
+#        out.append("<div class='card'><h2>روند روزانه</h2>%s%s</div>" % (legend(), days_svg))
+#        out.append("<div class='card'><h2>سرعت در ۲۴ ساعت گذشته</h2>%s%s</div>"
 #                   % (legend(), speed_chart(view["five"])))
-#        out.append("<div class='card'><h2>ساعت‌های پرمصرف — ۷ روز اخیر</h2>%s</div>"
+#        out.append("<div class='card'><h2>ساعات اوج مصرف — هفتهٔ اخیر</h2>%s</div>"
 #                   % heat_chart(view["hours"]))
 #        out.append(user_servers_card(uid))
 #        out.append(qlog_card(user))
@@ -28931,8 +28846,8 @@ exit 0
 #                        % (show_date(d), human(dn), human(u))
 #                        for d, u, dn in reversed(rows) if u or dn)
 #        if table:
-#            out.append("<div class='card'><h2>جدول روزانه</h2><table><tr><th>روز</th>"
-#                       "<th>دانلود</th><th>آپلود</th></tr>%s</table></div>" % table)
+#            out.append("<div class='card'><h2>جدول "
+#                       "روزها</h2><table><tr><th>روز</th><th>دانلود</th><th>آپلود</th></tr>%s</table></div>" % table)
 #        return "".join(out)
 #
 #    def users(self, rows_only=False):
@@ -28986,7 +28901,7 @@ exit 0
 #            out.append("<div class='card wide'><h2>کاربران (%s)</h2>"
 #                       % ("%d از %d" % (found, total) if q else total))
 #            if not total:
-#                return "".join(out) + "<p class='muted'>هنوز کسی ثبت‌نام نکرده.</p></div>"
+#                return "".join(out) + "<p class='muted'>تا اینجا کسی ثبت‌نام نکرده است.</p></div>"
 #            out.append(purge_card(CFG["ADMIN_PATH"]))
 #            out.append(user_search_box(CFG["ADMIN_PATH"], q, sort))
 #            if not rows:
@@ -29039,58 +28954,24 @@ exit 0
 #            # bot has no other way in.
 #            if r["username"] and r["telegram_id"]:
 #                reset += (
-#                    "<form method='post' action='/%s/user-unlink-telegram'"
-#                    " onsubmit='return confirm(%s)'>"
-#                    "<input type='hidden' name='id' value='%d'>"
-#                    "<button class='ghost' title='تلگرام %s'>جدا کردن تلگرام</button>"
-#                    "</form>"
+#                    "<form method='post' action='/%s/user-unlink-telegram' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='ghost' title='تلگرام %s'>جدا "
+#                    "کردن تلگرام</button></form>"
 #                    % (p, html.escape(json.dumps(
 #                        "تلگرام «%s» جدا شود؟ بعد از آن بازیابی رمز با تلگرام کار "
 #                        "نمی‌کند تا دوباره وصل کند." % who, ensure_ascii=False),
 #                        quote=True), r["id"], r["telegram_id"]))
 #            if r["username"]:
 #                reset += (
-#                    "<form method='post' action='/%s/user-password-reset'"
-#                    " onsubmit='return confirm(%s)'>"
-#                    "<input type='hidden' name='id' value='%d'>"
-#                    "<button class='ghost' title='ساختن رمز موقت برای این کاربر'>"
-#                    "رمز تازه</button></form>"
+#                    "<form method='post' action='/%s/user-password-reset' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='ghost' title='ساختن رمز موقت برای این کاربر'>رمز "
+#                    "تازه</button></form>"
 #                    % (p, html.escape(json.dumps(
 #                        "برای «%s» رمز تازه ساخته شود؟ از همهٔ دستگاه‌ها بیرون "
 #                        "می‌آید." % who, ensure_ascii=False), quote=True), r["id"]))
 #            out.append(
-#                "<tr id='r%d'><td class='who' title='%s'>%s<code>%s</code><small>%s</small>"
-#                "<small class='seen'>%s</small><small class='seen'>%s</small></td>"
-#                "<td><code>%s</code>%s</td><td class='num'>%s</td><td class='num'>%s</td>"
-#                "<td><form id='u%d' method='post' action='/%s/user-save'></form>"
-#                "<input form='u%d' type='hidden' name='id' value='%d'>"
-#                "<input form='u%d' name='quota_gb' value='%s' size='3'"
-#                " title='گیگابایت، ۰=نامحدود'></td>"
-#                "<td><input form='u%d' name='speed_mb' value='%s' size='3'"
-#                " title='مگابیت بر ثانیه، ۰=بی‌حد'></td>"
-#                "<td><input form='u%d' name='days' size='5' placeholder='%s'"
-#                " title='از امروز چند روز دیگر'></td>"
-#                "<td><form method='post' action='/%s/user-template'>"
-#                "<input type='hidden' name='id' value='%d'>"
-#                "<select name='template_id' onchange='this.form.submit()'>%s</select>"
-#                "</form></td><td>%s</td>%s"
-#                "<td><span class='pill %s'>%s</span></td>"
-#                "<td class='acts'><button form='u%d' title='ذخیره'>ثبت</button>"
-#                "<form method='post' action='/%s/user-status'>"
-#                "<input type='hidden' name='id' value='%d'>"
-#                "<input type='hidden' name='to' value='%s'>"
-#                "<button class='%s' title='%s'>%s</button></form>"
-#                "<details class='more'><summary title='کارهای دیگر'>⋯</summary><div class='menu'>"
-#                "<form method='post' action='/%s/user-reset'"
-#                " onsubmit='return confirm(\"مصرف این کاربر صفر شود؟\")'>"
-#                "<input type='hidden' name='id' value='%d'>"
-#                "<button class='ghost' title='صفر کردن مصرف'>صفر کردن مصرف</button></form>"
-#                "%s"
-#                "<form method='post' action='/%s/user-delete'"
-#                " onsubmit='return confirm(%s)'>"
-#                "<input type='hidden' name='id' value='%d'>"
-#                "<button class='del' title='حذف همیشگی این کاربر'>حذف کاربر</button></form>"
-#                "</div></details></td></tr>"
+#                "<tr id='r%d'><td class='who' title='%s'>%s<code>%s</code><small>%s</small><small class='seen'>%s</small><small class='seen'>%s</small></td><td><code>%s</code>%s</td><td class='num'>%s</td><td class='num'>%s</td><td><form id='u%d' method='post' action='/%s/user-save'></form><input form='u%d' type='hidden' name='id' value='%d'><input form='u%d' name='quota_gb' value='%s' size='3' title='گیگابایت، ۰=نامحدود'></td><td><input form='u%d' name='speed_mb' value='%s' size='3' title='مگابیت بر ثانیه، ۰=بی‌حد'></td><td><input form='u%d' name='days' size='5' placeholder='%s' title='از امروز چند روز دیگر'></td><td><form method='post' action='/%s/user-template'><input type='hidden' name='id' value='%d'><select name='template_id' onchange='this.form.submit()'>%s</select></form></td><td>%s</td>%s<td><span class='pill %s'>%s</span></td><td class='acts'><button form='u%d' title='ذخیره'>ثبت</button><form method='post' action='/%s/user-status'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='%s'><button class='%s' title='%s'>%s</button></form><details class='more'><summary title='کارهای دیگر'>⋯</summary><div class='menu'><form method='post' action='/%s/user-reset' onsubmit='return confirm(\"مصرف این کاربر صفر شود؟\")'><input type='hidden' name='id' value='%d'><button class='ghost' title='صفر کردن مصرف'>صفر "
+#                "کردن "
+#                "مصرف</button></form>%s<form method='post' action='/%s/user-delete' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='del' title='حذف همیشگی این کاربر'>حذف "
+#                "کاربر</button></form></div></details></td></tr>"
 #                # What a customer signs in with. Accounts opened before this
 #                # was a username have a phone number instead, and the ones
 #                # that came through the bot have neither - so the column shows
@@ -29157,9 +29038,8 @@ exit 0
 #                + ("<th>سرورها</th>" if servers else "") + "<th>%s</th><th></th></tr>")
 #        out = ["<div class='card'><h2>پلن‌ها (%d)</h2>" % len(rows)]
 #        if not rows:
-#            out.append("<p class='muted'>هنوز پلنی نساخته‌اید. تا وقتی پلنی نباشد، "
-#                       "مشتری رسید را بدون انتخاب پلن می‌فرستد و سهمیه را خودتان "
-#                       "می‌گذارید.</p>")
+#            out.append("<p class='muted'>هنوز پلنی تعریف نکرده‌اید. تا وقتی پلنی نباشد، مشتری رسید را بدون "
+#                       "انتخاب پلن می‌فرستد و سهمیه را خودتان می‌گذارید.</p>")
 #        else:
 #            out.append("<table>" + head % "مشتری")
 #            for r in rows:
@@ -29167,18 +29047,7 @@ exit 0
 #                ask = html.escape(json.dumps("پلن «%s» حذف شود؟" % r["name"],
 #                                             ensure_ascii=False), quote=True)
 #                out.append(
-#                    "<tr%s>%s<td>%d</td><td class='acts'>"
-#                    "<form id='%s' method='post' action='/%s/plan-save'>"
-#                    "<input type='hidden' name='id' value='%d'></form>"
-#                    "<button form='%s'>ذخیره</button>"
-#                    "<form method='post' action='/%s/plan-active'>"
-#                    "<input type='hidden' name='id' value='%d'>"
-#                    "<input type='hidden' name='to' value='%d'>"
-#                    "<button class='ghost' title='%s'>%s</button></form>"
-#                    "<form method='post' action='/%s/plan-delete'"
-#                    " onsubmit='return confirm(%s)'>"
-#                    "<input type='hidden' name='id' value='%d'>"
-#                    "<button class='del'>حذف</button></form></td></tr>"
+#                    "<tr%s>%s<td>%d</td><td class='acts'><form id='%s' method='post' action='/%s/plan-save'><input type='hidden' name='id' value='%d'></form><button form='%s'>ذخیره</button><form method='post' action='/%s/plan-active'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='%d'><button class='ghost' title='%s'>%s</button></form><form method='post' action='/%s/plan-delete' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='del'>حذف</button></form></td></tr>"
 #                    % ("" if r["active"] else " class='off'",
 #                       plan_fields(form, tpls, dict(r), servers, exits), r["holders"],
 #                       form, p, r["id"], form,
@@ -29189,22 +29058,17 @@ exit 0
 #                       p, ask, r["id"]))
 #            out.append("</table>")
 #        out.append("</div>")
-#        out.append("<div class='card'><h2>پلن تازه</h2>"
-#                   "<form id='pnew' method='post' action='/%s/plan-save'></form>"
-#                   "<table>%s<tr>%s<td></td><td><button form='pnew'>ساختن</button>"
-#                   "</td></tr></table>"
-#                   "<p class='muted'>هر پلن یعنی یک قالب، برای چند روز، با یک حجم و "
-#                   "یک قیمت. مشتری در پنل خودش پلن را انتخاب می‌کند و رسید "
-#                   "می‌فرستد؛ با تأیید رسید همه‌چیز خودکار روی حسابش می‌نشیند. "
-#                   "خرید دوبارهٔ همان پلن پیش از تمام شدنش تمدید است: روزها و حجم "
-#                   "روی باقی‌مانده اضافه می‌شوند. خرید پلن دیگر از همان لحظه از نو "
-#                   "شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ این را پیش از "
-#                   "خرید به مشتری می‌گوییم. «نامحدود» فقط با تیک خودش؛ خانهٔ خالیِ "
-#                   "حجم پذیرفته نمی‌شود.</p>%s<p class='muted'>🎁 «تست رایگان»: فروخته "
-#                   "نمی‌شود؛ مشتری با یک کلیک می‌گیردش، در پنل خودش یا ربات. شرطش "
-#                   "تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب فقط یک بار. کسی که همین "
-#                   "حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین نرود. "
-#                   "یک پلن تست در یک زمان.</p></div>"
+#        out.append("<div class='card'><h2>ساخت "
+#                   "پلن</h2><form id='pnew' method='post' action='/%s/plan-save'></form><table>%s<tr>%s<td></td><td><button form='pnew'>ساختن</button></td></tr></table><p class='muted'>هر "
+#                   "پلن ترکیبی است از یک قالب، چند روز مدت، یک حجم و یک قیمت. مشتری در پنل خودش پلن را "
+#                   "برمی‌گزیند و رسید می‌فرستد؛ با تأیید شما همه‌چیز خودکار روی حسابش اعمال می‌شود. خرید "
+#                   "دوبارهٔ همان پلن پیش از تمام شدنش تمدید است: روزها و حجم روی باقی‌مانده اضافه "
+#                   "می‌شوند. خرید پلن دیگر از همان لحظه از نو شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ "
+#                   "این را پیش از خرید به مشتری می‌گوییم. «نامحدود» فقط با تیک خودش؛ خانهٔ خالیِ حجم "
+#                   "پذیرفته نمی‌شود.</p>%s<p class='muted'>🎁 «تست رایگان» فروخته نمی‌شود؛ مشتری با یک کلیک "
+#                   "آن را از پنل خودش یا ربات برمی‌دارد. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب "
+#                   "فقط یک بار. کسی که همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین "
+#                   "نرود. یک پلن تست در یک زمان.</p></div>"
 #                   % (p, head % "", plan_fields("pnew", tpls, servers=servers, exits=exits),
 #                      "<p class='muted'>سرورها: برای هر سرور انتخاب کنید پلن روی آن باشد یا "
 #                      "نه، و مشتری از آن رله از کدام سرور خارج بیرون برود. «—» یعنی پلن روی "
@@ -29263,8 +29127,8 @@ exit 0
 #        out = ["<div class='card'><h2>تیکت‌ها%s</h2>"
 #               % (" — %d منتظر جواب شما" % waiting if waiting else "")]
 #        if not rows:
-#            out.append("<p class='muted'>تیکتی نیامده. مشتری‌ها از پنل خودشان یا از "
-#                       "ربات تیکت می‌فرستند.</p></div>")
+#            out.append("<p class='muted'>هنوز تیکتی ثبت نشده است. مشتری‌ها از پنل خودشان یا از ربات تیکت "
+#                       "می‌فرستند.</p></div>")
 #            return "".join(out)
 #        out.append("<table><tr><th>#</th><th>مشتری</th><th>موضوع</th><th>پیام</th>"
 #                   "<th>وضعیت</th><th>آخرین تغییر</th></tr>")
@@ -29301,23 +29165,14 @@ exit 0
 #                          html.escape(show_date(m["created_at"], True)),
 #                          html.escape(m["body"]), pic))
 #        out.append("</div>")
-#        out.append("<form method='post' action='/%s/ticket-reply'"
-#                   " enctype='multipart/form-data'>"
-#                   "<input type='hidden' name='id' value='%d'>"
-#                   "<div class='f'><label>جواب</label>"
-#                   "<textarea name='body' rows='4' maxlength='2000'"
-#                   " style='width:100%%'></textarea></div>"
-#                   "<div class='f'><label>عکس (اختیاری؛ با عکس، نوشتن لازم نیست)</label>"
-#                   "<input type='file' name='image' accept='image/jpeg,image/png,image/webp'>"
-#                   "</div><button>فرستادن جواب</button></form>" % (p, t["id"]))
+#        out.append("<form method='post' action='/%s/ticket-reply' enctype='multipart/form-data'><input type='hidden' name='id' value='%d'><div class='f'><label>جواب</label><textarea name='body' rows='4' maxlength='2000' style='width:100%%'></textarea></div><div class='f'><label>عکس "
+#                   "(اختیاری؛ با عکس، نوشتن لازم "
+#                   "نیست)</label><input type='file' name='image' accept='image/jpeg,image/png,image/webp'></div><button>فرستادن "
+#                   "جواب</button></form>" % (p, t["id"]))
 #        to = "open" if t["status"] == "closed" else "closed"
-#        out.append("<form method='post' action='/%s/ticket-status' style='margin-top:12px'>"
-#                   "<input type='hidden' name='id' value='%d'>"
-#                   "<input type='hidden' name='to' value='%s'>"
-#                   "<button class='ghost'>%s</button></form>"
-#                   "<p class='muted'>مشتری جواب را در پنل خودش یا در ربات می‌بیند. اگر "
-#                   "در تیکت بسته بنویسد، دوباره باز می‌شود. عکس‌های تیکت بسته %d روز "
-#                   "بعد پاک می‌شوند؛ متن می‌ماند.</p></div>"
+#        out.append("<form method='post' action='/%s/ticket-status' style='margin-top:12px'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='%s'><button class='ghost'>%s</button></form><p class='muted'>پاسخ "
+#                   "شما را مشتری در پنل خودش یا در ربات می‌بیند. اگر در تیکتِ بسته‌شده پیام بدهد، تیکت "
+#                   "دوباره باز می‌شود. عکس‌های تیکت بسته %d روز بعد پاک می‌شوند؛ متن می‌ماند.</p></div>"
 #                   % (p, t["id"], to, "باز کردن دوباره" if to == "open" else "بستن تیکت",
 #                      TICKET_IMAGE_DAYS))
 #        return "".join(out)
@@ -29326,13 +29181,11 @@ exit 0
 #        p = CFG["ADMIN_PATH"]
 #        s = seller()
 #        if urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("log"):
-#            return ("<div class='card'><h2>لاگ ربات — %d خط آخر</h2>"
-#                    "<p><a href='/%s/bot'>برگشت به ربات</a> · <a href='/%s/bot?log=1'>تازه کردن</a>"
-#                    "</p><pre dir='ltr' style='white-space:pre-wrap;font-size:12px;"
-#                    "max-height:70vh;overflow:auto'>%s</pre>"
-#                    "<p class='muted'>روی سرور هم: <code>sudo smartdns-bot-logs</code> "
-#                    "(با <code>-f</code> زنده، با <code>-e</code> فقط خطاها). توکن ربات همه‌جا "
-#                    "با &lt;token&gt; پوشانده می‌شود.</p></div>"
+#            return ("<div class='card'><h2>لاگ ربات — %d خط آخر</h2><p><a href='/%s/bot'>برگشت به ربات</a> · "
+#                    "<a href='/%s/bot?log=1'>تازه "
+#                    "کردن</a></p><pre dir='ltr' style='white-space:pre-wrap;font-size:12px;max-height:70vh;overflow:auto'>%s</pre><p class='muted'>روی "
+#                    "سرور هم: <code>sudo smartdns-bot-logs</code> (با <code>-f</code> زنده، با "
+#                    "<code>-e</code> فقط خطاها). توکن ربات همه‌جا با &lt;token&gt; پوشانده می‌شود.</p></div>"
 #                    % (BOT_LOG_LINES, p, p,
 #                       html.escape(bot_journal(BOT_LOG_LINES, s).strip()
 #                                   or "هنوز چیزی نیست")))
@@ -29352,15 +29205,11 @@ exit 0
 #                % (html.escape(name), html.escape(name)) if name else "",
 #                "<span class='ok'>روشن</span>" if running else "<span class='bad'>خاموش</span>"))
 #            if last:
-#                out.append("<p class='muted'>آخرین پیام‌های ربات:</p><pre dir='ltr' "
-#                           "style='white-space:pre-wrap;font-size:12px'>%s</pre>"
+#                out.append("<p class='muted'>آخرین پیام‌های "
+#                           "ربات:</p><pre dir='ltr' style='white-space:pre-wrap;font-size:12px'>%s</pre>"
 #                           % html.escape(last[-600:]))
-#            out.append("<div class='row'>"
-#                       "<form method='post' action='/%s/bot-power'><input type='hidden'"
-#                       " name='to' value='%s'><button class='ghost'>%s</button></form>"
-#                       "<form method='post' action='/%s/bot-test'>"
-#                       "<button class='ghost'>ارسال پیام آزمایشی</button></form>"
-#                       "<a class='dl' href='/%s/bot?log=1'>نمایش لاگ کامل</a></div>"
+#            out.append("<div class='row'><form method='post' action='/%s/bot-power'><input type='hidden' name='to' value='%s'><button class='ghost'>%s</button></form><form method='post' action='/%s/bot-test'><button class='ghost'>ارسال "
+#                       "پیام آزمایشی</button></form><a class='dl' href='/%s/bot?log=1'>نمایش لاگ کامل</a></div>"
 #                       % (p, "off" if running else "on",
 #                          "خاموش کردن" if running else "روشن کردن", p, p))
 #        else:
@@ -29370,39 +29219,28 @@ exit 0
 #        out.append("</div>")
 #        token = env.get("BOT_TOKEN", "")
 #        out.append(
-#            "<div class='card'><h2>%s</h2>"
-#            "<ol class='muted'>"
-#            "<li>در تلگرام به <b>@BotFather</b> بروید، <code>/newbot</code> بزنید و توکن را "
-#            "بگیرید.</li>"
-#            "<li>ربات تازه را در تلگرام باز کنید و <b>Start</b> را بزنید؛ وگرنه ربات "
-#            "نمی‌تواند به شما پیام بدهد.</li>"
-#            "<li>آیدی عددی تلگرام خودتان را از <b>@userinfobot</b> بگیرید.</li></ol>"
-#            "<form method='post' action='/%s/bot-setup'>"
-#            "<div class='f'><label>توکن ربات%s</label>"
-#            "<input name='token' dir='ltr' autocomplete='off' style='width:100%%'"
-#            " placeholder='123456789:AA...'%s></div>"
-#            "<div class='f'><label>آیدی عددی تلگرام شما (چند تا با ویرگول)</label>"
-#            "<input name='admins' dir='ltr' value='%s' placeholder='123456789'></div>"
-#            "<div class='f'><label>متن راهنما (اختیاری، زیر «راهنما» در ربات)</label>"
-#            "<input name='support' value='%s' maxlength='200' style='width:100%%'></div>"
-#            "<div class='f'><label>زبان ربات</label><select name='lang'>"
-#            "<option value='fa'%s>فارسی</option><option value='en'%s>English</option>"
-#            "</select></div>"
-#            "<div class='f'><label>عضویت اجباری در کانال (اختیاری)</label>"
-#            "<input name='channel' dir='ltr' value='%s' placeholder='@my_channel'"
-#            " style='width:100%%'></div>"
-#            "<div class='f'><label>لینک دعوت (فقط برای کانال خصوصی)</label>"
-#            "<input name='channel_link' dir='ltr' value='%s'"
-#            " placeholder='https://t.me/+AbCd...' style='width:100%%'></div>"
-#            "<p class='muted'>اگر کانال بنویسید، هر مشتری اول باید عضو آن شود تا ربات برایش "
-#            "کار کند. ربات را در کانال <b>ادمین</b> کنید؛ تلگرام فقط به ادمین می‌گوید چه کسی "
-#            "عضو است. کانال عمومی را با @ بنویسید؛ کانال خصوصی را با آیدی عددی‌اش (با -100 "
-#            "شروع می‌شود) و لینک دعوتش. خالی بگذارید تا خاموش شود.</p>"
-#            "<button>%s</button></form>"
-#            "<p class='muted'>شماره کارت را در صفحهٔ «پرداخت» بنویسید؛ ربات از "
-#            "همان‌جا می‌خواند. پنل برای ربات یک کلید با دسترسی ادمین می‌سازد%s، "
-#            "آدرس ربات را برای دکمهٔ «اتصال به تلگرام» پنل مشتری می‌گذارد، و ربات را "
-#            "روشن می‌کند.</p></div>"
+#            "<div class='card'><h2>%s</h2><ol class='muted'><li>در تلگرام "
+#            "سراغ <b>@BotFather</b> بروید، دستور <code>/newbot</code> را بفرستید و توکن را "
+#            "بردارید.</li><li>ربات تازه را در تلگرام باز کنید و <b>Start</b> را بزنید؛ بدون این کار "
+#            "ربات نمی‌تواند به شما پیام بدهد.</li><li>شناسهٔ عددی تلگرام خودتان را "
+#            "از <b>@userinfobot</b> بگیرید.</li></ol><form method='post' action='/%s/bot-setup'><div class='f'><label>توکن "
+#            "ربات%s</label><input name='token' dir='ltr' autocomplete='off' style='width:100%%' placeholder='123456789:AA...'%s></div><div class='f'><label>آیدی "
+#            "عددی تلگرام شما (چند تا با "
+#            "ویرگول)</label><input name='admins' dir='ltr' value='%s' placeholder='123456789'></div><div class='f'><label>متن "
+#            "راهنما (اختیاری، زیر «راهنما» در "
+#            "ربات)</label><input name='support' value='%s' maxlength='200' style='width:100%%'></div><div class='f'><label>زبان "
+#            "ربات</label><select name='lang'><option value='fa'%s>فارسی</option><option value='en'%s>English</option></select></div><div class='f'><label>عضویت "
+#            "اجباری در "
+#            "کانال (اختیاری)</label><input name='channel' dir='ltr' value='%s' placeholder='@my_channel' style='width:100%%'></div><div class='f'><label>لینک "
+#            "دعوت (فقط برای کانال "
+#            "خصوصی)</label><input name='channel_link' dir='ltr' value='%s' placeholder='https://t.me/+AbCd...' style='width:100%%'></div><p class='muted'>اگر "
+#            "کانال بنویسید، هر مشتری اول باید عضو آن شود تا ربات برایش کار کند. ربات را در "
+#            "کانال <b>ادمین</b> کنید؛ تلگرام فقط به ادمین می‌گوید چه کسی عضو است. کانال عمومی را "
+#            "با @ بنویسید؛ کانال خصوصی را با آیدی عددی‌اش (با -100 شروع می‌شود) و لینک دعوتش. خالی "
+#            "بگذارید تا خاموش شود.</p><button>%s</button></form><p class='muted'>شماره کارت را در "
+#            "صفحهٔ «پرداخت» بنویسید؛ ربات از همان‌جا می‌خواند. پنل برای ربات یک کلید با دسترسی ادمین "
+#            "می‌سازد%s، آدرس ربات را برای دکمهٔ «اتصال به تلگرام» پنل مشتری می‌گذارد، و ربات را روشن "
+#            "می‌کند.</p></div>"
 #            % ("تنظیمات ربات" if configured else "راه‌اندازی",
 #               p, " (فعلی: ...%s — خالی بگذارید تا همین بماند)" % html.escape(token[-4:])
 #               if token else "", "" if token else " required",
@@ -29424,20 +29262,17 @@ exit 0
 #        p = CFG["ADMIN_PATH"]
 #        pay = STORE.one("SELECT value FROM settings WHERE key = ?", (pay_key(),))
 #        text = pay["value"] if pay and pay["value"] else ""
-#        out = ["<div class='card'><h2>اطلاعات پرداخت</h2>"
-#               "<p>وقتی مشتری پلن را انتخاب می‌کند، در پنل خودش و در ربات همین را می‌بیند: "
-#               "کجا و به نام چه کسی واریز کند. عوض کردنش فوراً همه‌جا عوض می‌شود.</p>"
-#               "<form method='post' action='/%s/pay-save'>"
-#               "<textarea name='text' rows='4' maxlength='%d' style='width:100%%'"
-#               " placeholder='مبلغ را به کارت 6037-0000-0000-0000 به نام ... واریز کنید'>"
-#               "%s</textarea><button style='margin-top:8px'>ذخیره</button></form>"
-#               "<p class='muted'>شماره کارت، اسم صاحب کارت، و اگر لازم است یک خط توضیح "
-#               "(مثلاً «کد پیگیری را هم بفرستید»). تا %d نویسه، چند خطی.</p></div>"
+#        out = ["<div class='card'><h2>مشخصات واریز</h2><p>وقتی مشتری پلنی را برمی‌گزیند، در پنل و ربات "
+#               "همین متن را می‌بیند: به کجا و به نام چه کسی واریز کند. هر تغییری فوراً همه‌جا اعمال "
+#               "می‌شود.</p><form method='post' action='/%s/pay-save'><textarea name='text' rows='4' maxlength='%d' style='width:100%%' placeholder='مبلغ "
+#               "را به کارت 6037-0000-0000-0000 به نام ... واریز "
+#               "کنید'>%s</textarea><button style='margin-top:8px'>ذخیره</button></form><p class='muted'>شماره "
+#               "کارت، اسم صاحب کارت، و اگر لازم است یک خط توضیح (مثلاً «کد پیگیری را هم "
+#               "بفرستید»). تا %d نویسه، چند خطی.</p></div>"
 #               % (p, PAY_TEXT_MAX, html.escape(text), PAY_TEXT_MAX)]
 #        if text:
-#            out.append("<div class='card'><h2>مشتری این را می‌بیند</h2>"
-#                       "<div style='white-space:pre-wrap;padding:10px 12px;border:1px dashed "
-#                       "var(--btn);border-radius:10px;line-height:1.9'>💳 %s</div></div>"
+#            out.append("<div class='card'><h2>آنچه مشتری "
+#                       "می‌بیند</h2><div style='white-space:pre-wrap;padding:10px 12px;border:1px dashed var(--btn);border-radius:10px;line-height:1.9'>💳 %s</div></div>"
 #                       % html.escape(text))
 #        else:
 #            out.append("<div class='card'><p class='warn'>هنوز چیزی ننوشته‌اید؛ مشتری موقع خرید "
@@ -29457,7 +29292,7 @@ exit 0
 #        extra, args = mine()
 #        user = STORE.one("SELECT * FROM users u WHERE id = ?" + extra, (uid,) + args)
 #        if not user:
-#            return "<div class='card'><p class='muted'>این کاربر پیدا نشد.</p></div>"
+#            return "<div class='card'><p class='muted'>چنین مشتری‌ای پیدا نشد.</p></div>"
 #        p = CFG["ADMIN_PATH"]
 #        who = user["username"] or user["phone"] or user["telegram_id"] or "#%d" % uid
 #        out = ["<div class='card'><h2>کیف پول %s</h2>" % html.escape(str(who)),
@@ -29480,19 +29315,16 @@ exit 0
 #                    p, by["id"], html.escape(str(by["username"] or by["phone"]
 #                                                 or by["telegram_id"] or "#%d" % by["id"])))
 #                if by else "<span class='muted'>حسابی که دیگر نیست</span>"))
-#        out.append("<form method='post' action='/%s/wallet-adjust' class='row'>"
-#                   "<input type='hidden' name='id' value='%d'>"
-#                   "<input name='amount' size='12' dir='ltr' required placeholder='50000 یا -50000'>"
-#                   "<input name='note' maxlength='200' placeholder='دلیل (به مشتری هم گفته می‌شود)'>"
-#                   "<button class='ghost'>ثبت</button></form>"
-#                   "<p class='muted'>عدد مثبت به موجودی اضافه می‌کند و عدد منفی از آن کم "
-#                   "می‌کند؛ موجودی کمتر از صفر نمی‌شود. به مشتری هم پیام می‌رود.</p></div>"
+#        out.append("<form method='post' action='/%s/wallet-adjust' class='row'><input type='hidden' name='id' value='%d'><input name='amount' size='12' dir='ltr' required placeholder='50000 یا -50000'><input name='note' maxlength='200' placeholder='دلیل (به "
+#                   "مشتری هم گفته می‌شود)'><button class='ghost'>ثبت</button></form><p class='muted'>عدد "
+#                   "مثبت به موجودی می‌افزاید و عدد منفی از آن کم می‌کند؛ موجودی هرگز زیر صفر نمی‌رود و "
+#                   "مشتری هم پیام می‌گیرد.</p></div>"
 #                   % (p, uid))
 #        moves = STORE.q("SELECT * FROM wallet_moves WHERE user_id = ? ORDER BY id DESC"
 #                        " LIMIT 100", (uid,))
-#        out.append("<div class='card'><h2>گردش کیف پول</h2>")
+#        out.append("<div class='card'><h2>تراکنش‌های کیف پول</h2>")
 #        if not moves:
-#            out.append("<p class='muted'>هنوز چیزی نیامده و نرفته.</p>")
+#            out.append("<p class='muted'>هنوز تراکنشی انجام نشده است.</p>")
 #        else:
 #            out.append("<table><tr><th>زمان</th><th>چه</th><th>مبلغ</th><th>موجودی بعدش</th>"
 #                       "<th>توضیح</th></tr>")
@@ -29521,20 +29353,16 @@ exit 0
 #    def api_keys(self):
 #        p = CFG["ADMIN_PATH"]
 #        rows = STORE.q("SELECT * FROM api_tokens ORDER BY revoked_at IS NOT NULL, id DESC")
-#        out = ["<div class='card'><h2>API ربات</h2>"
-#               "<p>ربات فروش (مال خودتان یا کس دیگری) از این در به پنل وصل می‌شود: "
-#               "ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن پلن‌ها و "
-#               "فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما "
-#               "می‌مانند.</p>"
-#               "<p>آدرس: <code>%s</code></p>"
-#               "<p class='muted'>راهنمای کامل دستورها: "
-#               "<a href='https://github.com/AlsoAryan/Master-dns/blob/main/docs/bot-api.md'"
-#               " target='_blank' rel='noopener'>docs/bot-api.md</a>. "
-#               "پورت ۸۴۴۵ را اگر فایروال سرور یا دیتاسنتر دارد باز کنید.</p></div>"
+#        out = ["<div class='card'><h2>رابط API ربات</h2><p>ربات فروش (از خودتان یا شخص دیگر) از همین "
+#               "دروازه به پنل وصل می‌شود: ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن "
+#               "پلن‌ها و فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما "
+#               "می‌مانند.</p><p>آدرس: <code>%s</code></p><p class='muted'>راهنمای کامل "
+#               "دستورها: <a href='https://github.com/AlsoAryan/Master-dns/blob/main/docs/bot-api.md' target='_blank' rel='noopener'>docs/bot-api.md</a>. پورت "
+#               "۸۴۴۵ را اگر فایروال سرور یا دیتاسنتر دارد باز کنید.</p></div>"
 #               % html.escape(bot_api_url())]
-#        out.append("<div class='card'><h2>کلیدها</h2>")
+#        out.append("<div class='card'><h2>کلیدهای دسترسی</h2>")
 #        if not rows:
-#            out.append("<p class='muted'>هنوز کلیدی نساخته‌اید.</p>")
+#            out.append("<p class='muted'>هنوز کلیدی نساخته‌اید؛ اولین کلید را بسازید.</p>")
 #        else:
 #            out.append("<table><tr><th>نام</th><th>دسترسی</th><th>ساخته شده</th>"
 #                       "<th>آخرین استفاده</th><th>فقط از آدرس</th><th>وضعیت</th>"
@@ -29555,28 +29383,20 @@ exit 0
 #                       html.escape(show_date(r["last_used_at"] or "هرگز", True)),
 #                       html.escape(r["allow_ips"] or "همه"),
 #                       "ok" if live else "bad", "فعال" if live else "باطل شده",
-#                       ("<form method='post' action='/%s/api-key-revoke'"
-#                        " onsubmit='return confirm(%s)'>"
-#                        "<input type='hidden' name='id' value='%d'>"
-#                        "<button class='del'>باطل کردن</button></form>"
+#                       ("<form method='post' action='/%s/api-key-revoke' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='del'>باطل "
+#                        "کردن</button></form>"
 #                        % (p, ask, r["id"])) if live else ""))
 #            out.append("</table>")
 #        out.append("</div>")
 #        live = [r for r in rows if not r["revoked_at"]]
 #        if live:
-#            out.append("<div class='card'><h2>خبر دادن به ربات (webhook)</h2>"
-#                       "<p>پنل به این آدرس ربات خبر می‌دهد: تأیید یا رد رسید، جواب "
-#                       "تیکت، ۸۰٪ و ۹۵٪ حجم، تمام شدن حجم، نزدیک شدن و تمام شدن دوره. "
-#                       "هر خبر یک متن فارسی آماده دارد که ربات می‌تواند عیناً برای "
-#                       "مشتری بفرستد.</p><table><tr><th>کلید</th><th>آدرس ربات</th>"
-#                       "<th></th></tr>")
+#            out.append("<div class='card'><h2>اطلاع‌رسانی به ربات (webhook)</h2><p>پنل به این آدرس ربات خبر "
+#                       "می‌دهد: تأیید یا رد رسید، جواب تیکت، ۸۰٪ و ۹۵٪ حجم، تمام شدن حجم، نزدیک شدن و تمام شدن "
+#                       "دوره. هر خبر یک متن فارسی آماده دارد که ربات می‌تواند عیناً برای مشتری "
+#                       "بفرستد.</p><table><tr><th>کلید</th><th>آدرس ربات</th><th></th></tr>")
 #            for r in live:
 #                out.append(
-#                    "<tr><td>%s</td><td><form id='w%d' method='post'"
-#                    " action='/%s/api-webhook-save'><input type='hidden' name='id'"
-#                    " value='%d'></form><input form='w%d' name='url' value='%s' dir='ltr'"
-#                    " size='34' placeholder='https://bot.example.com/master-dns'></td>"
-#                    "<td class='acts'><button form='w%d'>ذخیره</button>%s</td></tr>"
+#                    "<tr><td>%s</td><td><form id='w%d' method='post' action='/%s/api-webhook-save'><input type='hidden' name='id' value='%d'></form><input form='w%d' name='url' value='%s' dir='ltr' size='34' placeholder='https://bot.example.com/master-dns'></td><td class='acts'><button form='w%d'>ذخیره</button>%s</td></tr>"
 #                    % (html.escape(r["name"]), r["id"], p, r["id"], r["id"],
 #                       html.escape(r["webhook_url"] or "", quote=True), r["id"],
 #                       ("<form method='post' action='/%s/api-webhook-test'>"
@@ -29588,20 +29408,16 @@ exit 0
 #                        "<button class='del'>حذف</button></form>"
 #                        % (p, r["id"], p, r["id"])) if r["webhook_url"] else ""))
 #            bot = STORE.one("SELECT value FROM settings WHERE key = 'bot_link'")
-#            out.append("</table><form method='post' action='/%s/bot-link-save'"
-#                       " class='row' style='margin-top:12px'>"
-#                       "<label style='margin:0'>آدرس ربات برای مشتری‌ها</label>"
-#                       "<input name='link' value='%s' dir='ltr' size='30'"
-#                       " placeholder='https://t.me/MyBot'><button class='ghost'>ذخیره"
-#                       "</button></form><p class='muted'>با این آدرس، دکمهٔ «اتصال به "
-#                       "تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند و کد اتصال را "
+#            out.append("</table><form method='post' action='/%s/bot-link-save' class='row' style='margin-top:12px'><label style='margin:0'>آدرس "
+#                       "ربات برای "
+#                       "مشتری‌ها</label><input name='link' value='%s' dir='ltr' size='30' placeholder='https://t.me/MyBot'><button class='ghost'>ذخیره</button></form><p class='muted'>با "
+#                       "این آدرس، دکمهٔ «اتصال به تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند و کد اتصال را "
 #                       "خودش می‌فرستد (<code>/start link_...</code>).</p>"
 #                       % (p, html.escape(bot["value"] if bot and bot["value"] else "",
 #                                         quote=True)))
-#            out.append("<p class='muted'>آدرس باید https باشد (یا http روی همین "
-#                       "سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود "
-#                       "تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس "
-#                       "نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.</p>")
+#            out.append("<p class='muted'>نشانی باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک "
+#                       "رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در "
+#                       "دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.</p>")
 #            recent = STORE.q("SELECT o.*, k.name FROM webhook_outbox o"
 #                             " LEFT JOIN api_tokens k ON k.id = o.token_id"
 #                             " ORDER BY o.id DESC LIMIT 15")
@@ -29627,22 +29443,17 @@ exit 0
 #                                  state))
 #                out.append("</table>")
 #            out.append("</div>")
-#        out.append("<div class='card'><h2>کلید تازه</h2>"
-#                   "<form method='post' action='/%s/api-key-new'>"
-#                   "<div class='f'><label>نام (برای خودتان، مثلاً «ربات فروش»)</label>"
-#                   "<input name='name' required maxlength='40'></div>"
-#                   "<div class='f'><label>فقط از این آدرس‌ها (اختیاری، با ویرگول جدا)"
-#                   "</label><input name='allow_ips' maxlength='200' dir='ltr'"
-#                   " placeholder='مثلاً 203.0.113.7'></div>"
-#                   "<div class='f'><label style='display:inline'>"
-#                   "<input type='checkbox' name='admin' value='1'> دسترسی ادمین</label>"
-#                   "<div class='muted'>ربات با این کلید رسید تأیید یا رد می‌کند، کاربر مسدود "
-#                   "می‌کند، پلن می‌دهد و به تیکت جواب می‌دهد، و رسید و تیکت تازه و گزارش "
-#                   "روزانه را خبر می‌گیرد. فقط برای ربات خودتان.</div></div>"
-#                   "<button>ساختن کلید</button></form>"
-#                   "<p class='muted'>اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی "
-#                   "که لو برود از جای دیگر کار نمی‌کند. برای کلید ادمین این کار را حتماً "
-#                   "بکنید.</p></div>" % p)
+#        out.append("<div class='card'><h2>ساخت "
+#                   "کلید</h2><form method='post' action='/%s/api-key-new'><div class='f'><label>نام (برای "
+#                   "خودتان، مثلاً «ربات "
+#                   "فروش»)</label><input name='name' required maxlength='40'></div><div class='f'><label>فقط "
+#                   "از این آدرس‌ها (اختیاری، با ویرگول "
+#                   "جدا)</label><input name='allow_ips' maxlength='200' dir='ltr' placeholder='مثلاً 203.0.113.7'></div><div class='f'><label style='display:inline'><input type='checkbox' name='admin' value='1'> دسترسی "
+#                   "ادمین</label><div class='muted'>ربات با این کلید رسید تأیید یا رد می‌کند، کاربر مسدود "
+#                   "می‌کند، پلن می‌دهد و به تیکت جواب می‌دهد، و رسید و تیکت تازه و گزارش روزانه را خبر "
+#                   "می‌گیرد. فقط برای ربات خودتان.</div></div><button>ساختن "
+#                   "کلید</button></form><p class='muted'>اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی "
+#                   "که لو برود از جای دیگر کار نمی‌کند. برای کلید ادمین این کار را حتماً بکنید.</p></div>" % p)
 #        return "".join(out)
 #
 #    def templates(self):
@@ -29668,9 +29479,8 @@ exit 0
 #        default = STORE.one("SELECT id FROM templates WHERE is_default = 1")
 #        did = default["id"] if default else 0
 #        p = CFG["ADMIN_PATH"]
-#        out = ["<div class='card'><h2>قالب‌ها</h2>"
-#               "<table><tr><th>نام</th><th>کاربر</th><th>سرویس‌ها</th>"
-#               "<th>دامنه‌ها</th><th></th></tr>"]
+#        out = ["<div class='card'><h2>قالب‌های "
+#               "سرویس</h2><table><tr><th>نام</th><th>کاربر</th><th>سرویس‌ها</th><th>دامنه‌ها</th><th></th></tr>"]
 #        for t in tpls:
 #            # A seller counts their own customers only.
 #            extra, more = mine()
@@ -29703,17 +29513,15 @@ exit 0
 #        if s is not None:
 #            made = sum(1 for t in tpls if t["owner_admin"] == s["id"])
 #            if s["templates_mode"] != "own":
-#                return "".join(out) + ("<div class='card'><p class='muted'>این‌ها قالب‌هایی "
-#                                       "است که می‌توانید به مشتری‌ها و پلن‌هایتان بدهید.</p>"
-#                                       "</div>")
+#                return "".join(out) + ("<div class='card'><p class='muted'>قالب‌های زیر را می‌توانید به مشتری‌ها و پلن‌هایتان "
+#                                       "اختصاص دهید.</p></div>")
 #            if made >= (s["templates_max"] or 1):
-#                return "".join(out) + ("<div class='card'><p class='muted'>به سقف %d قالب "
-#                                       "رسیده‌اید.</p></div>" % (s["templates_max"] or 1))
-#        out.append("<div class='card'><h2>قالب تازه</h2>"
-#                   "<form method='post' action='/%s/template-new' class='row'>"
-#                   "<input name='name' placeholder='نام قالب'><button>ساختن</button>"
-#                   "</form><p class='muted'>قالب تازه با همهٔ سرویس‌ها ساخته می‌شود؛ "
-#                   "بعد تیک‌ها را بردارید.</p>%s</div>"
+#                return "".join(out) + ("<div class='card'><p class='muted'>به سقف %d قالب رسیده‌اید و قالب دیگری نمی‌توانید "
+#                                       "بسازید.</p></div>" % (s["templates_max"] or 1))
+#        out.append("<div class='card'><h2>ساخت "
+#                   "قالب</h2><form method='post' action='/%s/template-new' class='row'><input name='name' placeholder='نام "
+#                   "قالب'><button>ساختن</button></form><p class='muted'>قالب تازه با همهٔ سرویس‌ها ساخته "
+#                   "می‌شود؛ سپس تیک سرویس‌های ناخواسته را بردارید.</p>%s</div>"
 #                   % (p, templates_in_use_note(did) if s is None else ""))
 #        return "".join(out)
 #
@@ -29741,14 +29549,10 @@ exit 0
 #               "<div class='card'><h2>%s</h2>" % html.escape(t["name"]),
 #               "<form method='post' action='/%s/template-save'>"
 #               "<input type='hidden' name='id' value='%d'>" % (p, t["id"]),
-#               "<p class='muted'>هر ردیف یک تیک دارد: زدنش یعنی همهٔ دامنه‌های آن "
-#               "از رله می‌رود، از جمله دامنه‌هایی که بعداً اضافه شوند. کشو را باز "
-#               "کنید تا خود دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.</p>",
-#               "<div class='row gtools'>"
-#               "<input class='gsearch' type='search' autocomplete='off' "
-#               "placeholder='جستجوی بازی یا دامنه…'>"
-#               "<button type='button' data-all-rows='1'>همه</button>"
-#               "<button type='button' data-all-rows='0'>هیچ‌کدام</button></div>"]
+#               "<p class='muted'>هر ردیف یک تیک دارد و روشن بودنش یعنی همهٔ دامنه‌های آن از رله عبور "
+#               "می‌کند، از جمله دامنه‌هایی که بعداً اضافه شوند. کشو را باز کنید تا خود دامنه‌ها را "
+#               "ببینید و یکی‌یکی انتخاب کنید.</p>",
+#               "<div class='row gtools'><input class='gsearch' type='search' autocomplete='off' placeholder='جستجوی بازی یا دامنه…'><button type='button' data-all-rows='1'>همه</button><button type='button' data-all-rows='0'>هیچ‌کدام</button></div>"]
 #
 #        in_group = games_by_group()
 #        logos = set()
@@ -29806,7 +29610,7 @@ exit 0
 #                out.append("<p class='alsoneed'>برای کار کردن، این‌ها هم باید "
 #                           "روشن باشند: %s</p>" % html.escape("، ".join(needs)))
 #            if not g["domains"]:
-#                out.append("<p class='muted'>دامنه‌ای ندارد.</p>")
+#                out.append("<p class='muted'>دامنه‌ای در این بخش نیست.</p>")
 #            out.append("<div class='doms'>")
 #            for d in sorted(g["domains"]):
 #                # A tick on this page means "routed". Inside a group that
@@ -29821,8 +29625,8 @@ exit 0
 #            out.append("</div></details>")
 #
 #        out.append("<div style='margin-top:16px'><button>ذخیره</button> "
-#                   "<button class='danger' formaction='/%s/template-delete' "
-#                   "formnovalidate>حذف قالب</button></div></form>%s</div>"
+#                   "<button class='danger' formaction='/%s/template-delete' formnovalidate>حذف "
+#                   "قالب</button></div></form>%s</div>"
 #                   % (p, logo_sprite(logos)))
 #        # Convenience only. Every checkbox above is a plain form control, so
 #        # the page works with this script blocked or broken - it just means
@@ -29934,11 +29738,7 @@ exit 0
 #                              for g in groups))
 #        out = [custom_groups_card(p, groups, rows),
 #               "<div class='card'><h2>دامنه‌های شما (%d)</h2>" % len(rows),
-#               "<form method='post' action='/%s/domain-add' class='row' "
-#               "style='margin-bottom:14px'>"
-#               "<input name='domain' placeholder='example.com' style='min-width:220px'>"
-#               "<input name='note' placeholder='یادداشت (اختیاری)'>%s"
-#               "<button>افزودن</button></form>" % (p, pick)]
+#               "<form method='post' action='/%s/domain-add' class='row' style='margin-bottom:14px'><input name='domain' placeholder='example.com' style='min-width:220px'><input name='note' placeholder='یادداشت (اختیاری)'>%s<button>افزودن</button></form>" % (p, pick)]
 #        if rows:
 #            out.append("<table><tr><th>دامنه</th><th>گروه</th><th>یادداشت</th><th>افزوده</th>"
 #                       "<th></th></tr>")
@@ -29957,11 +29757,10 @@ exit 0
 #                           % (html.escape(r["domain"]), where, html.escape(r["note"] or ""),
 #                              show_date(r["added_at"] or ""), p, html.escape(r["domain"])))
 #            out.append("</table>")
-#        out.append("<p class='muted'>زیردامنه‌ها خودکار شامل می‌شوند. دامنه‌های بدون گروه "
-#                   "در سرویس «دامنه‌های دلخواه» جمع می‌شوند و هر گروه در قالب‌ها یک ردیف "
-#                   "جداست، پس در هر قالب می‌شود تیکشان را برداشت. دامنه‌ای را که هست "
-#                   "دوباره با گروه دیگری اضافه کنید تا به آن گروه برود. به‌علاوهٔ %d "
-#                   "دامنه‌ای که با نصاب می‌آید.</p></div>" % shipped)
+#        out.append("<p class='muted'>زیردامنه‌ها به‌طور خودکار شامل می‌شوند. دامنه‌های بدون گروه در سرویس "
+#                   "«دامنه‌های دلخواه» جمع می‌شوند و هر گروه در قالب‌ها یک ردیف جداست، پس در هر قالب می‌شود "
+#                   "تیکشان را برداشت. دامنه‌ای را که هست دوباره با گروه دیگری اضافه کنید تا به آن گروه "
+#                   "برود. به‌علاوهٔ %d دامنه‌ای که با نصاب می‌آید.</p></div>" % shipped)
 #        out.append(blocked_card(p))
 #        out.append(forwards_card(p))
 #        return "".join(out)
@@ -29970,20 +29769,14 @@ exit 0
 #        p = CFG["ADMIN_PATH"]
 #        out = []
 #        out.append(
-#            "<div class='card'><h2>نسخهٔ پشتیبان</h2>"
-#            "<p class='muted'>یک فایل sqlite با همهٔ کاربران، آی‌پی‌ها، قالب‌ها، "
-#            "تراکنش‌ها و تنظیمات. آمار سلامت سرورها داخلش نیست — حجم زیادی است "
-#            "و ارزشی در بازگردانی ندارد.</p>"
-#            "<p><a class='dl' href='/%s/backup.db'>دانلود نسخهٔ پشتیبان</a></p>"
-#            "<h2 style='margin-top:22px'>بازگردانی</h2>"
-#            "<form method='post' action='/%s/restore' enctype='multipart/form-data' "
-#            "class='row'><input type='file' name='file' accept='.db,.enc' required>"
-#            "<input name='password' type='password' autocomplete='off' dir='ltr' "
-#            "placeholder='رمز، برای بکاپ تلگرام'>"
-#            "<button class='ghost'>بررسی فایل</button></form>"
-#            "<p class='muted'>فایل اول فقط بررسی و توصیف می‌شود؛ جایگزینی جدا "
-#            "تأیید می‌خواهد. بکاپی که ربات فرستاده (<code>.enc</code>) با رمز بکاپش "
-#            "باز می‌شود.</p>%s</div>" % (p, p, sealing_note(p)))
+#            "<div class='card'><h2>فایل پشتیبان</h2><p class='muted'>یک فایل sqlite شامل همهٔ "
+#            "کاربران، آی‌پی‌ها، قالب‌ها، تراکنش‌ها و تنظیمات. آمار سلامت سرورها داخلش نیست — حجم "
+#            "زیادی است و ارزشی در بازگردانی ندارد.</p><p><a class='dl' href='/%s/backup.db'>دانلود "
+#            "نسخهٔ پشتیبان</a></p><h2 style='margin-top:22px'>بازیابی از نسخهٔ "
+#            "پشتیبان</h2><form method='post' action='/%s/restore' enctype='multipart/form-data' class='row'><input type='file' name='file' accept='.db,.enc' required><input name='password' type='password' autocomplete='off' dir='ltr' placeholder='رمز، "
+#            "برای بکاپ تلگرام'><button class='ghost'>بررسی فایل</button></form><p class='muted'>فایل "
+#            "ابتدا فقط بررسی و توصیف می‌شود؛ جایگزینی‌اش تأیید جداگانه می‌خواهد. بکاپی که ربات "
+#            "فرستاده (<code>.enc</code>) با رمز بکاپش باز می‌شود.</p>%s</div>" % (p, p, sealing_note(p)))
 #        out.append(backup_card(p))
 #        out.append(github_card(p))
 #        out.append(public_dns_card(p))
@@ -29992,42 +29785,35 @@ exit 0
 #            out.append(customer_servers_card(p))
 #
 #        cal = calendar()
-#        out.append("<div class='card'><h2>تاریخ</h2>"
-#                   "<form method='post' action='/%s/calendar-save' class='row'>"
-#                   "<label style='display:inline'><input type='radio' name='cal' value='gregorian'%s>"
-#                   " میلادی (2026-09-29)</label> "
-#                   "<label style='display:inline'><input type='radio' name='cal' value='jalali'%s>"
-#                   " شمسی (1405/07/07)</label> <button class='ghost'>ذخیره</button></form>"
-#                   "<p class='muted'>همهٔ تاریخ‌ها این‌طور نشان داده می‌شوند، به وقت تهران: پنل "
-#                   "ادمین، پنل مشتری و پیام‌های ربات.</p></div>"
+#        out.append("<div class='card'><h2>تقویم</h2><form method='post' action='/%s/calendar-save' class='row'><label style='display:inline'><input type='radio' name='cal' value='gregorian'%s> میلادی (2026-09-29)</label> <label style='display:inline'><input type='radio' name='cal' value='jalali'%s> شمسی (1405/07/07)</label> <button class='ghost'>ذخیره</button></form><p class='muted'>همهٔ "
+#                   "تاریخ‌ها به همین شکل و به وقت تهران نشان داده می‌شود: در پنل ادمین، پنل مشتری و "
+#                   "پیام‌های ربات.</p></div>"
 #                   % (p, " checked" if cal != "jalali" else "",
 #                      " checked" if cal == "jalali" else ""))
 #
 #        opened = STORE.one("SELECT value FROM settings WHERE key = 'portal_open'")
 #        opened = not (opened and opened["value"] == "0")
-#        out.append("<div class='card'><h2>پنل مشتری برای کسی که سرویس ندارد</h2>"
-#                   "<form method='post' action='/%s/portal-open'>"
-#                   "<label style='display:inline'><input type='checkbox' name='on' value='1'%s>"
-#                   " باز کردن خودکار پنل مشتری برای کسی که سرویس ندارد</label> "
-#                   "<button class='ghost'>ذخیره</button></form>"
-#                   "<p class='muted'>روشن: کسی که پلنش تمام شده، آی‌پی‌اش ثبت نیست یا عوض "
-#                   "شده، هر سایتی باز کند پنل مشتری برایش باز می‌شود. خاموش: اینترنتش از راه "
-#                   "رله فقط کار نمی‌کند و صفحه‌ای خودش باز نمی‌شود؛ اگر خودش آدرس پنل مشتری "
-#                   "را باز کند، هنوز وارد می‌شود. برای همهٔ سرورها، تا یک دقیقه دیگر.</p></div>"
+#        out.append("<div class='card'><h2>صفحهٔ ورود برای مشتریِ بدون "
+#                   "سرویس</h2><form method='post' action='/%s/portal-open'><label style='display:inline'><input type='checkbox' name='on' value='1'%s> باز "
+#                   "کردن خودکار پنل مشتری برای کسی که سرویس "
+#                   "ندارد</label> <button class='ghost'>ذخیره</button></form><p class='muted'>روشن: اگر پلن "
+#                   "کسی تمام شده باشد یا آی‌پی‌اش ثبت نشده یا عوض شده باشد، با باز کردن هر سایتی پنل مشتری "
+#                   "برایش نمایش داده می‌شود. خاموش: اینترنتش از راه رله فقط کار نمی‌کند و صفحه‌ای خودش باز "
+#                   "نمی‌شود؛ اگر خودش آدرس پنل مشتری را باز کند، هنوز وارد می‌شود. برای همهٔ سرورها، تا یک "
+#                   "دقیقه دیگر.</p></div>"
 #                   % (p, " checked" if opened else ""))
 #
 #        need = STORE.one("SELECT value FROM settings WHERE key = 'require_telegram'")
 #        bot = STORE.one("SELECT 1 FROM api_tokens WHERE revoked_at IS NULL"
 #                        " AND COALESCE(webhook_url, '') != ''")
 #        on = bool(need and need["value"] == "1")
-#        out.append("<div class='card'><h2>تلگرام اجباری</h2>"
-#                   "<form method='post' action='/%s/telegram-required'>"
-#                   "<label style='display:inline'><input type='checkbox' name='on' value='1'%s>"
-#                   " مشتری‌های پنل وب برای خرید و تمدید باید تلگرامشان را به ربات وصل کنند"
-#                   "</label> <button class='ghost'>ذخیره</button></form>"
-#                   "<p class='muted'>هر تلگرام فقط به یک حساب وصل می‌شود، پس هر کس به سختی "
-#                   "بیش از یک حساب می‌سازد. سرویس کسی قطع نمی‌شود؛ فقط خرید تازه و تمدید "
-#                   "منتظر وصل شدن می‌ماند. تیکت آزاد است.</p>%s</div>"
+#        out.append("<div class='card'><h2>الزام اتصال "
+#                   "تلگرام</h2><form method='post' action='/%s/telegram-required'><label style='display:inline'><input type='checkbox' name='on' value='1'%s> مشتری‌های "
+#                   "پنل وب برای خرید و تمدید باید تلگرامشان را به ربات وصل "
+#                   "کنند</label> <button class='ghost'>ذخیره</button></form><p class='muted'>هر تلگرام فقط "
+#                   "به یک حساب وصل می‌شود، پس ساختن چند حساب برای یک نفر دشوار می‌شود. سرویس هیچ‌کس قطع "
+#                   "نمی‌شود؛ فقط خرید و تمدید تا اتصال تلگرام در انتظار می‌ماند. ارسال تیکت آزاد "
+#                   "است.</p>%s</div>"
 #                   % (p, " checked" if on else "",
 #                      "" if bot else "<p class='bad'>هنوز رباتی به پنل وصل نیست (صفحهٔ API)؛ "
 #                      "تا وقتی نباشد این قانون اعمال نمی‌شود تا کسی گیر نیفتد.</p>"))
@@ -30035,54 +29821,41 @@ exit 0
 #        out.append(upstream_card())
 #        out.append(doh_name_card(p))
 #
-#        out.append("<div class='card'><h2>آدرس این پنل</h2>"
-#                   "<p class='muted'>همین حالا: <code>https://%s:%s/%s/</code></p>"
-#                   "<div class='f'><label>پورت</label>"
-#                   "<form method='post' action='/%s/panel-port' class='row'>"
-#                   "<input name='port' value='%s' size='6'>"
-#                   "<button class='ghost'>تغییر پورت</button></form></div>"
-#                   "<div class='f'><label>مسیر مخفی</label>"
-#                   "<form method='post' action='/%s/panel-path' class='row'>"
-#                   "<input name='path' value='%s' style='min-width:280px'>"
-#                   "<button class='ghost'>تغییر مسیر</button>"
-#                   "<button class='ghost' name='random' value='1'>مسیر تصادفی</button>"
-#                   "</form></div>"
-#                   "<div class='msg err'>پورت را که عوض کنید، پنل روی پورت تازه "
-#                   "بالا می‌آید — ولی اگر سرور فایروال یا security group دارد "
-#                   "(روی AWS، Hetzner و مانندش) باید پورت تازه را <b>اول</b> "
-#                   "آنجا باز کنید، وگرنه از بیرون در دسترس نخواهد بود. اگر "
-#                   "بیرون ماندید، از روی خود سرور: <code>smartdns-access port "
-#                   "9443</code></div></div>"
+#        out.append("<div class='card'><h2>نشانی همین پنل</h2><p class='muted'>نشانی "
+#                   "فعلی: <code>https://%s:%s/%s/</code></p><div class='f'><label>پورت</label><form method='post' action='/%s/panel-port' class='row'><input name='port' value='%s' size='6'><button class='ghost'>تغییر "
+#                   "پورت</button></form></div><div class='f'><label>مسیر "
+#                   "مخفی</label><form method='post' action='/%s/panel-path' class='row'><input name='path' value='%s' style='min-width:280px'><button class='ghost'>تغییر "
+#                   "مسیر</button><button class='ghost' name='random' value='1'>مسیر "
+#                   "تصادفی</button></form></div><div class='msg err'>پورت را که عوض کنید، پنل روی پورت تازه "
+#                   "بالا می‌آید — ولی اگر سرور فایروال یا security group دارد (روی AWS، Hetzner و "
+#                   "مانندش) باید پورت تازه را <b>اول</b> آنجا باز کنید، وگرنه از بیرون در دسترس نخواهد "
+#                   "بود. اگر بیرون ماندید، از روی خود "
+#                   "سرور: <code>smartdns-access port 9443</code></div></div>"
 #                   % (html.escape(panel_host()), html.escape(CFG["ADMIN_PORT"]),
 #                      html.escape(CFG["ADMIN_PATH"]),
 #                      p, html.escape(CFG["ADMIN_PORT"]),
 #                      p, html.escape(CFG["ADMIN_PATH"])))
 #
-#        out.append("<div class='card'><h2>نام کاربری این پنل</h2>"
-#                   "<form method='post' action='/%s/owner-name-save' class='row'>"
-#                   "<input name='username' dir='ltr' required value='%s'>"
-#                   "<button>تغییر نام کاربری</button></form>"
-#                   "<p class='muted'>۳ تا ۳۲ حرف انگلیسی کوچک، عدد، نقطه، خط تیره یا زیرخط. "
-#                   "از روی سرور هم: <code>smartdns-access username</code></p></div>"
+#        out.append("<div class='card'><h2>شناسهٔ ورود به "
+#                   "پنل</h2><form method='post' action='/%s/owner-name-save' class='row'><input name='username' dir='ltr' required value='%s'><button>تغییر "
+#                   "نام کاربری</button></form><p class='muted'>میان ۳ تا ۳۲ نویسه: حرف کوچک انگلیسی، عدد، "
+#                   "نقطه، خط تیره یا زیرخط. از روی سرور هم: <code>smartdns-access username</code></p></div>"
 #                   % (p, html.escape(owner_name(), quote=True)))
-#        out.append("<div class='card'><h2>رمز این پنل</h2>"
-#                   "<form method='post' action='/%s/password'>"
-#                   "<div class='f'><label>رمز تازه (دست‌کم ۸ نویسه)</label>"
-#                   "<input type='password' name='password' style='width:100%%'>"
-#                   "</div>"
-#                   "<div class='f'><label>تکرار رمز تازه</label>"
-#                   "<input type='password' name='password_again' style='width:100%%'>"
-#                   "</div><button>تغییر رمز</button></form>"
-#                   "<p class='muted'>رمز ذخیره نمی‌شود، فقط هشش. با تغییر آن "
-#                   "همهٔ نشست‌های دیگر بسته می‌شوند.</p></div>" % p)
+#        out.append("<div class='card'><h2>گذرواژهٔ "
+#                   "پنل</h2><form method='post' action='/%s/password'><div class='f'><label>رمز "
+#                   "تازه (دست‌کم ۸ "
+#                   "نویسه)</label><input type='password' name='password' style='width:100%%'></div><div class='f'><label>تکرار "
+#                   "رمز "
+#                   "تازه</label><input type='password' name='password_again' style='width:100%%'></div><button>تغییر "
+#                   "رمز</button></form><p class='muted'>خودِ گذرواژه ذخیره نمی‌شود و فقط هش آن نگه داشته "
+#                   "می‌شود. با تغییرش همهٔ نشست‌های دیگر بسته می‌شوند.</p></div>" % p)
 #        return "".join(out)
 #
 #    def logs(self):
 #        """Everything in one place: this machine's two services, the bot if
 #        there is one, and what each relay last sent of its own."""
 #        token = read_env(BOT_ENV).get("BOT_TOKEN", "")
-#        box = ("<pre dir='ltr' style='overflow-x:auto;font-size:12px;color:var(--dim);"
-#               "white-space:pre-wrap;max-height:60vh;overflow-y:auto'>%s</pre>")
+#        box = ("<pre dir='ltr' style='overflow-x:auto;font-size:12px;color:var(--dim);white-space:pre-wrap;max-height:60vh;overflow-y:auto'>%s</pre>")
 #
 #        def pre(text):
 #            # The bot's token, masked wherever it might turn up on this page.
@@ -30152,9 +29925,9 @@ exit 0
 #        STORE.run("DELETE FROM relay_logs WHERE relay NOT IN (%s)"
 #                  % ",".join("?" * len(hosts)), tuple(hosts))
 #        if not rows:
-#            out.append("<div class='card'><h2>سرورهای ایران</h2><p class='muted'>هنوز لاگی "
-#                       "نفرستاده‌اند. هر سرور ایران لاگش را هر ۵ دقیقه یک بار می‌فرستد؛ "
-#                       "سرورهای قدیمی‌تر بعد از ارتقا.</p></div>")
+#            out.append("<div class='card'><h2>سرورهای داخل ایران</h2><p class='muted'>هنوز گزارشی نرسیده "
+#                       "است. هر سرور ایران هر ۵ دقیقه گزارش خود را می‌فرستد؛ سرورهای قدیمی‌تر بعد از "
+#                       "ارتقا.</p></div>")
 #        for r in rows:
 #            out.append(server_logs_card(r, pre))
 #        return "".join(out)
@@ -32140,15 +31913,12 @@ exit 0
 #    for r in rows:
 #        gid = r["group_id"] if "group_id" in r.keys() else None
 #        count[gid] = count.get(gid, 0) + 1
-#    out = ["<div class='card'><h2>گروه‌های من</h2>"
-#           "<p class='muted'>دامنه‌های دلخواهتان را گروه کنید، مثلاً «سایت‌های دانشگاه». "
-#           "هر گروه در صفحهٔ قالب‌ها یک ردیف جدا با آیکون خودش است و یک تیک دارد. "
-#           "آیکون: SVG تا ۱۶ کیلوبایت یا PNG تا ۶۴ کیلوبایت و ۵۱۲×۵۱۲.</p>"
-#           "<form method='post' action='/%s/group-add' enctype='multipart/form-data' "
-#           "class='row' style='margin-bottom:14px'>"
-#           "<input name='name' placeholder='اسم گروه' maxlength='40' required>"
-#           "<input type='file' name='icon' accept='.svg,.png,image/svg+xml,image/png'>"
-#           "<button>ساختن گروه</button></form>" % p]
+#    out = ["<div class='card'><h2>گروه‌های اختصاصی</h2><p class='muted'>دامنه‌های دلخواه را "
+#           "دسته‌بندی کنید، مثلاً «سایت‌های دانشگاه». هر گروه در صفحهٔ قالب‌ها یک ردیف جدا با آیکون "
+#           "خودش است و یک تیک دارد. آیکون: SVG تا ۱۶ کیلوبایت یا PNG تا ۶۴ کیلوبایت و "
+#           "۵۱۲×۵۱۲.</p><form method='post' action='/%s/group-add' enctype='multipart/form-data' class='row' style='margin-bottom:14px'><input name='name' placeholder='اسم "
+#           "گروه' maxlength='40' required><input type='file' name='icon' accept='.svg,.png,image/svg+xml,image/png'><button>ساختن "
+#           "گروه</button></form>" % p]
 #    if groups:
 #        out.append("<table><tr><th>گروه</th><th>دامنه</th><th>اسم و آیکون تازه</th>"
 #                   "<th></th></tr>")
@@ -32158,24 +31928,14 @@ exit 0
 #                    else "<span class='logo letter'>%s</span>"
 #                    % html.escape(g["name"].strip()[:1].upper() or "?"))
 #            out.append(
-#                "<tr><td>%s%s</td><td>%d</td>"
-#                "<td><form method='post' action='/%s/group-save' "
-#                "enctype='multipart/form-data' class='row'>"
-#                "<input type='hidden' name='id' value='%d'>"
-#                "<input name='name' value='%s' maxlength='40' required size='14'>"
-#                "<input type='file' name='icon' accept='.svg,.png,image/svg+xml,image/png'>"
-#                "%s<button class='ghost'>ذخیره</button></form></td>"
-#                "<td><form method='post' action='/%s/group-del' "
-#                "onsubmit=\"return confirm('این گروه و همهٔ %d دامنهٔ داخلش پاک شوند؟')\">"
-#                "<input type='hidden' name='id' value='%d'>"
-#                "<button class='danger'>حذف</button></form></td></tr>"
+#                "<tr><td>%s%s</td><td>%d</td><td><form method='post' action='/%s/group-save' enctype='multipart/form-data' class='row'><input type='hidden' name='id' value='%d'><input name='name' value='%s' maxlength='40' required size='14'><input type='file' name='icon' accept='.svg,.png,image/svg+xml,image/png'>%s<button class='ghost'>ذخیره</button></form></td><td><form method='post' action='/%s/group-del' onsubmit=\"return confirm('این گروه و همهٔ %d دامنهٔ داخلش پاک شوند؟')\"><input type='hidden' name='id' value='%d'><button class='danger'>حذف</button></form></td></tr>"
 #                % (icon, html.escape(g["name"]), count.get(g["id"], 0), p, g["id"],
 #                   html.escape(g["name"]),
-#                   "<label style='display:inline'><input type='checkbox' name='drop' "
-#                   "value='1'> بدون آیکون</label> " if uri else "",
+#                   "<label style='display:inline'><input type='checkbox' name='drop' value='1'> بدون "
+#                   "آیکون</label> " if uri else "",
 #                   p, count.get(g["id"], 0), g["id"]))
 #        out.append("</table>")
-#        out.append("<p class='muted'>حذف گروه دامنه‌های داخلش را هم پاک می‌کند.</p>")
+#        out.append("<p class='muted'>با حذف یک گروه، دامنه‌های داخل آن هم پاک می‌شود.</p>")
 #    out.append("</div>")
 #    return "".join(out)
 #
@@ -32192,7 +31952,7 @@ exit 0
 #    # The ones in a group are that group's row, above.
 #    custom = [r["domain"] for r in STORE.q(
 #        "SELECT domain FROM custom_domains WHERE group_id IS NULL ORDER BY domain")]
-#    out = ["<div class='card'><h2>دامنه‌های دلخواه، مسدودها و DNS جداگانهٔ این قالب</h2>"]
+#    out = ["<div class='card'><h2>دامنه‌های دلخواه، مسدودی‌ها و DNS اختصاصیِ این قالب</h2>"]
 #    if not blocked and not forwards and not custom:
 #        out.append("<p class='muted'>هنوز دامنهٔ دلخواه، مسدود یا DNS جداگانه‌ای نساخته‌اید؛ از "
 #                   "<a href='/%s/domains'>صفحهٔ دامنه‌ها</a>.</p></div>" % p)
@@ -32200,17 +31960,16 @@ exit 0
 #    out.append("<form method='post' action='/%s/template-rules'>"
 #               "<input type='hidden' name='id' value='%d'>" % (p, t["id"]))
 #    if custom:
-#        out.append("<h3 class='chart-h'>دامنه‌های دلخواه — از رله می‌روند</h3>")
+#        out.append("<h3 class='chart-h'>دامنه‌های دلخواه — عبور از رله</h3>")
 #        if t["is_default"]:
-#            out += ["<label style='display:block;margin:4px 0'><input type='checkbox' checked "
-#                    "disabled> <code>%s</code></label>" % html.escape(d) for d in custom]
-#            out.append("<p class='muted'>قالب پیش‌فرض همیشه همهٔ دامنه‌های دلخواه را از رله "
-#                       "می‌برد.</p>")
+#            out += ["<label style='display:block;margin:4px 0'><input type='checkbox' checked disabled> "
+#                    "<code>%s</code></label>" % html.escape(d) for d in custom]
+#            out.append("<p class='muted'>قالب پیش‌فرض همیشه همهٔ دامنه‌های دلخواه را از رله عبور می‌دهد.</p>")
 #        else:
 #            on = ("custom", "main") in STORE.template_groups(t["id"])
 #            off = STORE.template_domains_off(t["id"])
-#            out += ["<label style='display:block;margin:4px 0'><input type='checkbox' name='c' "
-#                    "value='%s'%s> <code>%s</code></label>"
+#            out += ["<label style='display:block;margin:4px 0'><input type='checkbox' name='c' value='%s'%s> "
+#                    "<code>%s</code></label>"
 #                    % (html.escape(d), " checked" if on and d not in off else "",
 #                       html.escape(d)) for d in custom]
 #            out.append("<p class='muted'>دامنهٔ دلخواهی که بعداً اضافه کنید، در قالبی که "
@@ -32219,15 +31978,15 @@ exit 0
 #    def box(name, table, domain, extra):
 #        every, ids = rule_templates(table, domain)
 #        on = every or t["id"] in ids
-#        return ("<label style='display:block;margin:4px 0'><input type='checkbox' name='%s' "
-#                "value='%s'%s> <code>%s</code>%s <span class='muted'>— %s</span></label>"
+#        return ("<label style='display:block;margin:4px 0'><input type='checkbox' name='%s' value='%s'%s> "
+#                "<code>%s</code>%s <span class='muted'>— %s</span></label>"
 #                % (name, html.escape(domain), " checked" if on else "", html.escape(domain),
 #                   extra, html.escape(scope_text(table, domain))))
 #    if blocked:
-#        out.append("<h3 class='chart-h'>دامنه‌های مسدود</h3>")
+#        out.append("<h3 class='chart-h'>دامنه‌های بسته‌شده</h3>")
 #        out += [box("b", "blocked_domains", r["domain"], "") for r in blocked]
 #    if forwards:
-#        out.append("<h3 class='chart-h'>DNS جداگانه</h3>")
+#        out.append("<h3 class='chart-h'>DNS اختصاصی</h3>")
 #        out += [box("f", "dns_forwards", r["domain"],
 #                    " ← <code dir='ltr'>%s</code>" % html.escape(r["servers"]))
 #                for r in forwards]
@@ -32305,12 +32064,11 @@ exit 0
 #    services above, and under each kind its full list."""
 #    on_rows, off = block_pick(t["id"])
 #    lists = {b[0]: b for b in BLOCKLISTS}
-#    out = ["<div class='card blocks'><h2>🚫 مسدودی‌ها</h2>"
-#           "<form method='post' action='/%s/template-blocklists'>"
-#           "<input type='hidden' name='id' value='%d'>"
-#           "<p class='muted'>تیک یعنی بسته: مشتری‌های این قالب نمی‌توانند آن دامنه‌ها را "
-#           "باز کنند (جواب «چنین سایتی وجود ندارد» می‌گیرند)، حتی اگر آن دامنه جزو سرویسی باشد "
-#           "که از رله می‌رود. کشو را باز کنید تا دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.</p>" % (p, t["id"])]
+#    out = ["<div class='card blocks'><h2>🚫 فهرست "
+#           "مسدودها</h2><form method='post' action='/%s/template-blocklists'><input type='hidden' name='id' value='%d'><p class='muted'>تیک "
+#           "یعنی مسدود: مشتری‌های این قالب نمی‌توانند آن دامنه‌ها را باز کنند (جواب «چنین سایتی "
+#           "وجود ندارد» می‌گیرند)، حتی اگر آن دامنه جزو سرویسی باشد که از رله می‌رود. کشو را باز "
+#           "کنید تا دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.</p>" % (p, t["id"])]
 #    for sec in BLOCK_SECTIONS:
 #        rows = [b for b in BLOCKS if b.get("section") == sec.get("key")]
 #        if not rows and sec.get("list") not in lists:
@@ -32407,11 +32165,8 @@ exit 0
 #    except sqlite3.OperationalError:
 #        return ""          # a panel that has not made the table yet
 #    out = ["<div class='card'><h2>مسدودی‌های دستی (%d)</h2>" % len(rows),
-#           "<form method='post' action='/%s/blocked-add' class='row' "
-#           "style='margin-bottom:14px'>"
-#           "<input name='domain' placeholder='example.com' style='min-width:220px'>"
-#           "<input name='note' placeholder='یادداشت (اختیاری)'>"
-#           "<button class='danger'>مسدود کن</button></form>" % p]
+#           "<form method='post' action='/%s/blocked-add' class='row' style='margin-bottom:14px'><input name='domain' placeholder='example.com' style='min-width:220px'><input name='note' placeholder='یادداشت (اختیاری)'><button class='danger'>مسدود "
+#           "کن</button></form>" % p]
 #    if rows:
 #        out.append("<table><tr><th>دامنه</th><th>قالب‌ها</th><th>یادداشت</th><th>افزوده</th>"
 #                   "<th></th></tr>")
@@ -32426,13 +32181,12 @@ exit 0
 #                          html.escape(r["note"] or ""),
 #                          show_date(r["added_at"] or ""), p, html.escape(r["domain"])))
 #        out.append("</table>")
-#    out.append("<p class='muted'>این‌ها برای مشتری‌های قالب‌های انتخاب‌شده بالا نمی‌آیند: DNS "
-#               "جواب «چنین اسمی نیست» می‌دهد، با همهٔ زیردامنه‌ها. دامنه‌ای که خود سرویس "
-#               "از رله می‌برد هم بسته می‌شود. تا یک دقیقه بعد روی رله‌ها اعمال می‌شود؛ "
-#               "دستگاهی که جواب قبلی را نگه داشته ممکن است چند دقیقه دیرتر ببیند. "
-#               "فقط جلوی DNS ما را می‌گیرد: کسی که DNS دیگری بگذارد یا مستقیم با آی‌پی "
-#               "وصل شود از این رد می‌شود. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ "
-#               "در صفحهٔ هر قالب می‌شود تیکش را برداشت.</p></div>")
+#    out.append("<p class='muted'>این‌ها برای مشتری‌های قالب‌های انتخاب‌شده بالا نمی‌آیند: DNS جواب "
+#               "«چنین اسمی نیست» می‌دهد، با همهٔ زیردامنه‌ها. دامنه‌ای که خود سرویس از رله می‌برد هم "
+#               "بسته می‌شود. تا یک دقیقه بعد روی رله‌ها اعمال می‌شود؛ دستگاهی که جواب قبلی را نگه داشته "
+#               "ممکن است چند دقیقه دیرتر ببیند. فقط روی DNS خودمان اثر دارد: اگر کسی DNS دیگری بگذارد "
+#               "یا مستقیم با آی‌پی وصل شود، از این مسدودی عبور می‌کند. هر دامنهٔ تازه برای همهٔ "
+#               "قالب‌هاست؛ در صفحهٔ هر قالب می‌شود تیکش را برداشت.</p></div>")
 #    return "".join(out)
 #
 #
@@ -32475,12 +32229,7 @@ exit 0
 #        except ValueError:
 #            continue
 #    out = ["<div class='card'><h2>DNS جداگانه برای دامنه‌ها (%d)</h2>" % len(rows),
-#           "<form method='post' action='/%s/forward-add' class='row' "
-#           "style='margin-bottom:14px'>"
-#           "<input name='domain' placeholder='example.com' style='min-width:200px'>"
-#           "<input name='servers' placeholder='1.1.1.1' dir='ltr' style='min-width:160px'>"
-#           "<input name='note' placeholder='یادداشت (اختیاری)'>"
-#           "<button>افزودن</button></form>" % p]
+#           "<form method='post' action='/%s/forward-add' class='row' style='margin-bottom:14px'><input name='domain' placeholder='example.com' style='min-width:200px'><input name='servers' placeholder='1.1.1.1' dir='ltr' style='min-width:160px'><input name='note' placeholder='یادداشت (اختیاری)'><button>افزودن</button></form>" % p]
 #    if rows:
 #        out.append("<table><tr><th>دامنه</th><th>DNS</th><th>قالب‌ها</th>%s<th>یادداشت</th>"
 #                   "<th></th></tr>"
@@ -32507,14 +32256,13 @@ exit 0
 #                          html.escape(scope_text("dns_forwards", r["domain"])), "".join(cells),
 #                          html.escape(r["note"] or ""), p, html.escape(r["domain"])))
 #        out.append("</table>")
-#    out.append("<p class='muted'>این دامنه و همهٔ زیردامنه‌هایش برای مشتری‌های قالب‌های "
-#               "انتخاب‌شده از همین DNS "
-#               "پرسیده می‌شوند، نه از DNS بالادستی. اگر جزو دامنه‌هایی باشد که سرویس از رله "
-#               "می‌برد، دیگر از رله نمی‌رود و جواب همین DNS به مشتری داده می‌شود. چند DNS را با "
-#               "فاصله بنویسید؛ پورت غیر ۵۳ با #، مثل <code dir='ltr'>10.0.0.2#5353</code>. "
-#               "ستون هر رله می‌گوید آن DNS از خود رله جواب می‌دهد یا نه (هر ده دقیقه). "
-#               "دامنهٔ مسدود بر این مقدم است. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ در صفحهٔ "
-#               "هر قالب می‌شود تیکش را برداشت.</p></div>")
+#    out.append("<p class='muted'>این دامنه و همهٔ زیردامنه‌هایش برای مشتری‌های قالب‌های انتخاب‌شده از "
+#               "همین DNS پرسیده می‌شود و نه از DNS بالادستی. اگر جزو دامنه‌هایی باشد که سرویس از رله "
+#               "می‌برد، دیگر از رله نمی‌رود و جواب همین DNS به مشتری داده می‌شود. چند DNS را با فاصله "
+#               "بنویسید؛ پورت غیر ۵۳ با #، مثل <code dir='ltr'>10.0.0.2#5353</code>. ستون هر رله "
+#               "می‌گوید آن DNS از خود رله جواب می‌دهد یا نه (هر ده دقیقه). دامنهٔ مسدود بر این مقدم "
+#               "است. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ در صفحهٔ هر قالب می‌شود تیکش را "
+#               "برداشت.</p></div>")
 #    return "".join(out)
 #
 #
@@ -41652,18 +41400,13 @@ exit 0
 #"BackPack یا سرویس تونل روی این سرور نصب نیست؛ نصب‌کنندهٔ نسخهٔ تازه را یک بار دیگر روی همین سرور اجرا کنید": "BackPack or the tunnel service is not installed on this server; run the new version’s installer on this server once more",
 #"Cloudflare — بدون بدافزار": "Cloudflare — no malware",
 #"Cloudflare — خانواده": "Cloudflare — family",
-#"DNS امن (DoH و DoT)": "Secure DNS (DoH and DoT)",
-#"DNS امن (DoH و DoT) — ۷ روز اخیر": "Secure DNS (DoH and DoT) — last 7 days",
 #"DNS امن تا یک دقیقه دیگر به نام خود رله برمی‌گردد": "Secure DNS goes back to the relay’s own name within a minute",
 #"DNS امن — DoH و DoT": "Secure DNS — DoH and DoT",
 #"DNS اول": "DNS 1",
-#"DNS بالادستی": "Upstream DNS",
 #"DNS بالادستی:": "Upstream DNS:",
-#"DNS جداگانه": "Separate DNS",
 #"DNS جداگانه برای دامنه‌ها (": "Separate DNS for domains (",
 #"DNS دوم": "DNS 2",
 #"DNS رمزگذاری‌شده": "Encrypted DNS",
-#"DNS عمومی": "Public DNS",
 #"DNS عمومی خاموش شد؛ تا یک دقیقه دیگر فقط آی‌پی‌های ثبت‌شده سرویس می‌گیرند": "Public DNS is off; within a minute only registered IPs get the service",
 #"DNS عمومی روشن شد؛ تا یک دقیقه دیگر رله‌ها برای همه باز می‌شوند": "Public DNS is on; within a minute the relays open to everyone",
 #"DNS عمومی روشن شود؟ هر کسی آدرس رله را بگذارد، بدون ثبت‌نام و بدون هیچ محدودیتی سرویس می‌گیرد و مصرفش جایی شمرده نمی‌شود.": "Turn public DNS on? Anyone who sets the relay’s address gets the service with no sign-up and no limit, and their usage is not counted anywhere.",
@@ -41742,7 +41485,6 @@ exit 0
 #"، آدرس ربات را برای دکمهٔ «اتصال به تلگرام» پنل مشتری می‌گذارد، و ربات را روشن می‌کند.": ", puts the bot’s address behind the customer panel’s “Connect Telegram” button, and turns the bot on.",
 #"، آپلود": ", upload",
 #"، آپلود تا": ", upload up to",
-#"، از هر رله و از همان راهی که ترافیک مشتری می‌رود. اگر از سرور خارج نشود، آن سرویس آن سرور را قبول نمی‌کند و از دست ما کاری برنمی‌آید؛ اگر از سرور خارج بشود و از مسیر مشتری نه، مشکل از راه ایران تا خارج است. فقط ۴۴۳ آزموده می‌شود؛ بازی‌هایی که روی پورت‌های دیگر یا UDP بازی می‌کنند این‌جا نیستند.": ", from each relay and along the same path customer traffic takes. If it fails from the exit server, that service does not accept that server and there is nothing we can do; if it works from the exit server but not along the customer’s path, the problem is on the way from Iran to abroad. Only 443 is tested; games that play on other ports or UDP are not here.",
 #"، با کد": ", with code",
 #"، بعد بقیه یکی‌یکی": ", then the rest one by one",
 #"، در انتظار پلن": ", waiting for a plan",
@@ -41763,9 +41505,7 @@ exit 0
 #"آخرین استفاده": "Last used",
 #"آخرین بار": "Last seen",
 #"آخرین ترافیک": "Last traffic",
-#"آخرین تست:": "Last test:",
 #"آخرین تغییر": "Last change",
-#"آخرین خریدها": "Latest purchases",
 #"آخرین رله را نمی‌شود برداشت": "The last relay cannot be removed",
 #"آخرین نسخه در گیت‌هاب:": "Latest on GitHub:",
 #"آخرین پیام‌های ربات:": "The bot’s latest messages:",
@@ -41774,8 +41514,6 @@ exit 0
 #"آدرس API:": "API address:",
 #"آدرس DNS": "DNS address",
 #"آدرس DoH شخصی": "Personal DoH address",
-#"آدرس این پنل": "This panel’s address",
-#"آدرس باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.": "The address must be https (or http on this same server). When you save a new address, a signing secret is shown once so the bot can be sure a message comes from this panel. If the bot cannot be reached, a message is resent for about a day.",
 #"آدرس باید با https:// شروع شود (یا http فقط روی همین سرور)": "The address must start with https:// (or http only on this same server)",
 #"آدرس تازه": "New address",
 #"آدرس تازه را از": "Get the new address from",
@@ -41788,7 +41526,6 @@ exit 0
 #"آدرس سرور خارج معلوم نیست": "The exit server’s address is not known",
 #"آدرس سرور در کانفیگ": "Server address in the config",
 #"آدرس فعلی از کار می‌افتد و باید آدرس تازه را روی دستگاه‌هایتان بگذارید. ادامه می‌دهید؟": "The current address stops working and you must put the new one on your devices. Continue?",
-#"آدرس پنل عوض شد": "Panel address changed",
 #"آدرس پنل مشتری هنوز معلوم نیست؛ چند دقیقه دیگر": "The customer panel address is not known yet; in a few minutes",
 #"آدرس:": "Address:",
 #"آدرسی ندارد": "has no address",
@@ -41812,7 +41549,6 @@ exit 0
 #"آنلاین الان": "online now",
 #"آنلاین الان:": "Online now:",
 #"آنلاین و آخرین فعالیت": "Online and last seen",
-#"آنلاین یعنی در ۳ دقیقهٔ اخیر از راه رله ترافیک داشته. فقط سرویس‌هایی که قالبش از رله می‌برد شمرده می‌شوند؛ کسی که فقط چیزهای دیگر را باز کرده این‌جا نمی‌آید.": "Online means traffic through a relay in the last 3 minutes. Only the services their template routes through the relay count; someone who has opened only other things does not show here.",
 #"آنچه برای مشتری‌ها مهم است ستون رله‌هاست: سؤال‌هایشان از آن‌جا پرسیده می‌شود.": "What matters for customers is the relays column: that is where their questions are asked from.",
 #"آپدیت": "Upgrade",
 #"آپدیت این سرور به": "Upgrading this server to",
@@ -41824,7 +41560,6 @@ exit 0
 #"آپدیت همه به": "Upgrade everything to",
 #"آپدیت همین سرور نشد (کد": "Upgrading this server failed (code",
 #"آپلود": "Upload",
-#"آیدی عددی تلگرام خودتان را از": "Get your numeric Telegram ID from",
 #"آیدی عددی تلگرام خودتان را بنویسید": "Write your own numeric Telegram ID",
 #"آیدی عددی تلگرام شما (چند تا با ویرگول)": "Your numeric Telegram ID (several, separated by commas)",
 #"آیدی کانال درست نیست؛ مثل @my_channel": "That is not a channel id; like @my_channel",
@@ -41872,7 +41607,6 @@ exit 0
 #"ادمین متوقفش کرد (": "The admin stopped it (",
 #"ادمین مسدودش کرده": "Blocked by the admin",
 #"ادمینی با این نام کاربری هست": "An admin with this username exists",
-#"ادمین‌ها": "Admins",
 #"ادمین‌ها (": "Admins (",
 #"ارسال آزمایشی": "Send test",
 #"ارسال پیام آزمایشی": "Send a test message",
@@ -41881,7 +41615,6 @@ exit 0
 #"از DNS تعیین‌شدهٔ ادمین پرسیده می‌شود": "asked of the DNS server the admin set",
 #"از DNS مخصوص این دامنه پرسیده می‌شود": "asked of the DNS set for this domain",
 #"از امروز چند روز دیگر": "How many days from today",
-#"از این به بعد اینجاست — همین حالا ذخیره‌اش کنید:": "lives here from now on — save it right now:",
 #"از این به بعد خرید و تمدید در پنل وب تلگرام وصل‌شده می‌خواهد": "From now on, buying and renewing in the web panel needs a linked Telegram",
 #"از این رله جواب نداد؛ بدون آن اعمال شد": "did not answer from this relay; applied without it",
 #"از این رله جواب نداد؛ همان قبلی ماند": "did not answer from this relay; the previous one stayed",
@@ -41934,7 +41667,6 @@ exit 0
 #"اضافه شد": "added",
 #"اضافه شد؛ حالا دستور نصبش را روی آن اجرا کنید": "added; now run its install command on it",
 #"اضافه شد؛ حالا نصب‌کننده را روی آن اجرا کنید": "added; now run the installer on it",
-#"اطلاعات پرداخت": "Payment details",
 #"اطلاعات پرداخت ذخیره شد؛ در پنل مشتری و ربات دیده می‌شود": "Payment details saved; they show in the customer panel and the bot",
 #"اطلاعات پرداخت پاک شد": "Payment details cleared",
 #"اعمال": "Apply",
@@ -41949,7 +41681,6 @@ exit 0
 #"الان نشد": "Not now",
 #"الان نشد، چند دقیقه دیگر": "Not now, in a few minutes",
 #"الان پلن فعال دارید؛ تست رایگان برای وقتی است که پلنی ندارید": "You have an active plan right now; the free trial is for when you have no plan",
-#"الان کسی آنلاین نیست.": "Nobody is online right now.",
 #"الدر اسکرولز آنلاین": "Elder Scrolls Online",
 #"الدن رینگ": "Elden Ring",
 #"امروز": "Today",
@@ -41957,7 +41688,6 @@ exit 0
 #"امروز بیش از سقف آی‌پی وصل شده و تا فردا قطع است": "connected from more addresses than allowed today; off until tomorrow",
 #"انتخاب رله و سرور خارج برای حساب شما باز نیست": "Picking relays and exit servers is not open to your account",
 #"انتخاب پلن…": "Choose a plan…",
-#"انتقال پنل — سرور پشتیبان": "Move the panel — standby server",
 #"اندازه‌گیری دوباره": "Measure again",
 #"اندازه‌گیری شروع شد؛ تا یک دقیقه دیگر صفحه را تازه کنید": "Measuring started; refresh this page in a minute",
 #"اندازه‌گیری نشد": "Could not be measured",
@@ -41968,7 +41698,6 @@ exit 0
 #"اورواچ ۲": "Overwatch 2",
 #"اول": "First",
 #"اول حسابتان را کامل کنیم 🙂": "Let’s finish setting up your account first 🙂",
-#"اول ربات را در صفحهٔ «ربات» راه بیندازید و آی‌دی تلگرام ادمین را تعیین کنید؛ بکاپ برای ادمین‌های ربات فرستاده می‌شود.": "First set up the bot on the “Bot” page and set the admin’s Telegram ID; the backup is sent to the bot’s admins.",
 #"اول ربات را راه‌اندازی کنید": "Set up the bot first",
 #"اول رمز خودتان را انتخاب کنید": "Choose your own password first",
 #"اول پلن را انتخاب کنید": "Choose a plan first",
@@ -42019,7 +41748,6 @@ exit 0
 #"این حساب پیدا نشد": "This account was not found",
 #"این دامنه درست نیست یا برای دو سرور نوشته شده:": "This domain is not valid or is written for two servers:",
 #"این دامنه را نمی‌شود مسیر داد": "This domain cannot be routed",
-#"این دامنه و همهٔ زیردامنه‌هایش برای مشتری‌های قالب‌های انتخاب‌شده از همین DNS پرسیده می‌شوند، نه از DNS بالادستی. اگر جزو دامنه‌هایی باشد که سرویس از رله می‌برد، دیگر از رله نمی‌رود و جواب همین DNS به مشتری داده می‌شود. چند DNS را با فاصله بنویسید؛ پورت غیر ۵۳ با #، مثل": "This domain and all its subdomains are asked of this DNS for customers of the chosen templates, not of the upstream DNS. If it is one of the domains the service routes through the relay, it no longer goes through the relay and the customer gets this DNS’s answer. Write several DNS servers separated by spaces; a port other than 53 with #, like",
 #"این را در تنظیمات شبکهٔ کنسول، گوشی یا مودم به‌عنوان": "Put this in the network settings of your console, phone or router as",
 #"این را نگه دارید؛ رمز را در پنل هر وقت خواستید عوض کنید.": "Keep this; you can change the password in the panel whenever you like.",
 #"این ربات برای حساب دیگری روی همین پنل کار می‌کند؛ یک ربات تازه از @BotFather بگیرید": "This bot already works for another account on this panel; get a new bot from @BotFather",
@@ -42030,15 +41758,12 @@ exit 0
 #"این رسید پیدا نشد": "Receipt not found",
 #"این رله در فهرست نیست": "This relay is not in the list",
 #"این رله دیگر به این سرور راه ندارد و مشتری‌هایی که DNS را رویش گذاشته‌اند قطع می‌شوند. ادامه؟": "This relay no longer has a way to this server and customers who set their DNS to it are cut off. Continue?",
-#"این رمز را برای مشتری بفرستید. فقط همین یک بار نشان داده می‌شود.": "Send this password to the customer. It is shown only this once.",
 #"این رمز را در تنظیمات ربات بگذارید.": "Put this secret in the bot’s settings.",
 #"این سرور": "This server",
 #"این سرور از پنل جدا می‌شود و رله‌هایی که از آن می‌روند به این سرور برمی‌گردند. ادامه؟": "This server is detached from the panel and the relays that go through it come back to this server. Continue?",
-#"این سرور تک‌سرور است و رلهٔ جدایی ندارد.": "This is a single server and has no separate relay.",
 #"این سرور خارج در فهرست نیست": "This exit server is not in the list",
 #"این سرور در فهرست نیست": "This server is not in the list",
 #"این سرور و بعد همهٔ رله‌ها، نودها و تک‌سرورها به نسخهٔ": "Upgrade this server, then every relay, node and single server, to",
-#"این سرور پیدا نشد.": "Server not found.",
 #"این سرور — پنل": "This server — panel",
 #"این سرور:": "This server:",
 #"این صفحه را با همان اینترنتی باز کنید که می‌خواهید سرویس رویش کار کند.": "Open this page on the internet connection you want the service to work on.",
@@ -42047,7 +41772,6 @@ exit 0
 #"این عکس روی این سرور باز نمی‌شود": "This picture cannot be opened on this server",
 #"این عکس پیدا نشد": "Picture not found",
 #"این فایل SVG نیست": "this file is not an SVG",
-#"این فایل جایگزین دیتابیس فعلی شود؟": "Replace the current database with this file?",
 #"این فایل نسخهٔ پشتیبان سالمی نیست:": "This file is not a sound backup:",
 #"این فروشنده غیرفعال است": "This seller is disabled",
 #"این فروشنده غیرفعال شود؟ دیگر نمی‌تواند وارد شود، سرویس همهٔ": "Disable this seller? They will not be able to sign in, the service of all",
@@ -42071,7 +41795,6 @@ exit 0
 #"این پلن مال شما نیست": "This plan is not yours",
 #"این پلن مشتری دارد؛ به جای حذف، خاموشش کنید": "This plan has customers; turn it off instead of deleting it",
 #"این پلن پیدا نشد": "Plan not found",
-#"این پنل هم دارد ری‌استارت می‌شود تا دیتابیس تازه را باز کند. چند ثانیه دیگر خودش برمی‌گردد.": "This panel is restarting too, to open the new database. It will be back by itself in a few seconds.",
 #"این پیام برای همه‌ی کسانی که انتخاب کرده‌اید فرستاده شود؟": "Send this message to everyone you chose?",
 #"این کار با این روش نمی‌شود": "This cannot be done this way",
 #"این کار فقط با مالک پنل است": "Only the panel’s owner can do this",
@@ -42079,7 +41802,6 @@ exit 0
 #"این کاربر برای همهٔ رله‌ها کانفیگ دارد": "This customer has a config for every relay",
 #"این کاربر مال شما نیست": "This customer is not yours",
 #"این کاربر پیدا نشد": "User not found",
-#"این کاربر پیدا نشد.": "User not found.",
 #"این کانفیگ حذف شود؟ گوشی‌ای که با آن وصل است قطع می‌شود.": "Delete this config? A phone connected with it is cut off.",
 #"این کانفیگ پیدا نشد": "That config was not found",
 #"این کد تخفیف برای این پلن نیست": "This discount code is not for this plan",
@@ -42090,27 +41812,21 @@ exit 0
 #"این کلید آدرس ربات ندارد": "This key has no bot address",
 #"این کلید از این آدرس پذیرفته نمی‌شود": "This key is not accepted from this address",
 #"این کلید دسترسی ادمین ندارد": "This key does not have admin access",
-#"این کلید را در تنظیمات ربات بگذارید.": "Put this key in the bot’s settings.",
 #"این کلید پیدا نشد": "Key not found",
 #"این کلید پیدا نشد یا قبلاً باطل شده": "Key not found, or already revoked",
 #"این گروه و همهٔ": "Delete this group and all",
 #"این گروه کسی با تلگرام ندارد": "Nobody in this group has Telegram",
 #"اینسرجنسی": "Insurgency",
-#"این‌ها برای مشتری‌های قالب‌های انتخاب‌شده بالا نمی‌آیند: DNS جواب «چنین اسمی نیست» می‌دهد، با همهٔ زیردامنه‌ها. دامنه‌ای که خود سرویس از رله می‌برد هم بسته می‌شود. تا یک دقیقه بعد روی رله‌ها اعمال می‌شود؛ دستگاهی که جواب قبلی را نگه داشته ممکن است چند دقیقه دیرتر ببیند. فقط جلوی DNS ما را می‌گیرد: کسی که DNS دیگری بگذارد یا مستقیم با آی‌پی وصل شود از این رد می‌شود. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ در صفحهٔ هر قالب می‌شود تیکش را برداشت.": "These do not load for customers of the templates picked above: the DNS answers “no such name”, with all subdomains. A domain the service routes through the relay is closed too. It is applied on the relays within a minute; a device holding the old answer may see it a few minutes later. It only stops our DNS: someone who sets another DNS or connects straight by IP gets past it. Every new domain is for all templates; on each template’s page you can untick it.",
 #"این‌ها را در تنظیمات شبکهٔ کنسول، گوشی یا مودم بگذارید: اولی را به‌عنوان": "Put these in the network settings of your console, phone or router: the first as",
-#"این‌ها قالب‌هایی است که می‌توانید به مشتری‌ها و پلن‌هایتان بدهید.": "These are the templates you can give your customers and plans.",
 #"ایپکس لجندز": "Apex Legends",
 #"ایکس‌باکس و گیم‌پس": "Xbox / Game Pass",
 #"ای‌فوتبال": "eFootball",
 #"با": "with",
 #"با «دامنهٔ رله»، اگر آی‌پی رله عوض شود کانفیگ مشتری‌ها کار می‌کند - فقط رکورد دامنه را عوض کنید؛ رله‌ای که دامنه ندارد با آی‌پی می‌ماند. پورت و آدرس در کانفیگ‌های ساخته‌شده هم هست: بعد از عوض کردنشان، مشتری‌ها باید کانفیگ را دوباره بگیرند. MTU خالی یعنی پیش‌فرض اپ (۱۴۲۰)؛ اگر روی بعضی اینترنت‌ها سایت‌ها نیمه باز می‌شوند ۱۲۸۰ را امتحان کنید. Keepalive صفر یعنی خاموش. اینترنت موبایل گاهی آی‌پی را عوض می‌کند، پس سقف آی‌پی روزانه را کم نگیرید. کانفیگی که حذف خودکار شود، مشتری می‌تواند دوباره بگیرد. با «فقط روی آی‌پی‌های ثبت‌شده»، کانفیگ مثل DNS فقط از اینترنتی کار می‌کند که مشتری آی‌پی‌اش را ثبت کرده؛ کسی که کانفیگ را از کس دیگری گرفته وصل نمی‌شود، و آی‌پی مشتری‌ای که با کانفیگ دیگری وصل شود ۱۰ دقیقه از وایرگارد بسته می‌شود. خاموشش کنید تا کانفیگ روی هر اینترنتی و بدون ثبت آی‌پی کار کند.": "With the relay's domain, customers' configs keep working if the relay's IP changes - change only the domain's record; a relay without a domain stays on its IP. The port and address are in configs already made too: after changing them, customers must fetch their config again. An empty MTU is the app's default (1420); if sites half-load on some connections, try 1280. A keepalive of zero is off. Mobile internet sometimes changes address, so do not set the daily address limit low. A customer can get a config deleted for disuse again. With “only from registered addresses”, a config works, like the DNS, only on connections whose address the customer registered; somebody given a config by another does not connect, and a customer's address that connects with somebody else's config is kept off WireGuard for 10 minutes. Untick it for configs that work on any connection without registering.",
 #"با اتصال به تلگرام، اگر رمز را فراموش کنید خودتان با یک کد بازیابی‌اش می‌کنید.": "With Telegram linked, if you forget your password you recover it yourself with a code.",
-#"با اجازهٔ خود مشتری؛ هر اسم یک ساعت بعد از آخرین بار پاک می‌شود. «مستقیم» یعنی از رله رد نشد؛ ستون «چرا» می‌گوید به خاطر قالبش است یا اسم در فهرست نیست.": "With the customer’s own permission; each name is deleted an hour after it was last seen. “Direct” means it did not go through the relay; the “Why” column says whether that is because of their template or because the name is not in the list.",
-#"با اولین ورود باید رمز خودش را انتخاب کند؛ بعد از آن این رمز دیگر کار نمی‌کند.": "On first sign-in they must choose their own password; after that this one no longer works.",
 #"با این آدرس، دکمهٔ «اتصال به تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند و کد اتصال را خودش می‌فرستد (": "With this address, the “Link to Telegram” button in the customer panel opens the bot directly and sends the link code itself (",
 #"با بستن": "Blocking",
 #"با تأیید، خودکار فعال می‌شود": "Activated automatically on approval",
-#"با تأیید، پلنی که مشتری انتخاب کرده خودکار روی حسابش می‌نشیند: قالب، حجم، مدت و سرعتش. رسیدِ بدون پلن فقط ثبت می‌شود و سهمیه و زمان را خودتان در صفحهٔ کاربران می‌گذارید. عکس رسید بعد از تصمیم پاک می‌شود.": "On approval, the plan the customer chose is put on their account automatically: its template, quota, length and speed. A receipt without a plan is only recorded, and you set the quota and time yourself on the users page. The receipt picture is deleted after the decision.",
 #"با دعوت:": "Invited by:",
 #"با رمز موقت وارد شده‌اید. برای ادامه یک رمز تازه بگذارید؛ بعد از آن رمز موقت دیگر کار نمی‌کند.": "You signed in with a temporary password. To continue, set a new password; after that the temporary one no longer works.",
 #"با مصرف هفتهٔ اخیر، حجم باقی‌مانده حدود": "At last week’s usage, the quota left is about",
@@ -42120,7 +41836,6 @@ exit 0
 #"باز کردن خودکار پنل مشتری برای کسی که سرویس ندارد": "Open the customer panel by itself for those without service",
 #"باز کردن دوباره": "Reopen",
 #"باز کردن ربات و اتصال": "Open the bot and link",
-#"بازگردانی": "Restore",
 #"بازگردانی شد": "Restored",
 #"بازگردانی لغو شد": "Restore cancelled",
 #"بازگردانی نشد:": "Restore failed:",
@@ -42163,17 +41878,14 @@ exit 0
 #"برای خرید یا تمدید، اول حسابتان را به تلگرام وصل کنید. هر تلگرام فقط به یک حساب وصل می‌شود.": "To buy or renew, first link your account to Telegram. Each Telegram links to only one account.",
 #"برای خرید، اول حسابتان را به تلگرام وصل کنید": "To buy, first link your account to Telegram",
 #"برای دیدن حساب و ثبت آی‌پی وارد شوید.": "Sign in to see your account and register your IP.",
-#"برای روزی که نام فعلی در ایران فیلتر شود. اول یک رکورد A برای نام تازه بسازید که به آی‌پی رله اشاره کند؛ بعد اینجا ذخیره کنید. رله برای نام تازه گواهی می‌گیرد (حدود بیست ثانیه پورت ۸۰ به Let": "For the day the current name is filtered in Iran. First make an A record for the new name pointing at the relay’s IP; then save it here. The relay gets a certificate for the new name (for about twenty seconds port 80 is given to Let’",
 #"برای روش پرداخت با پشتیبانی تماس بگیرید.": "Contact support for how to pay.",
 #"برای شارژ کیف پول": "to top up the wallet",
 #"برای فعال شدن سرویس، رسید پرداختتان را از پایین همین صفحه بفرستید — بعد از تأیید، پلن برایتان ثبت می‌شود.": "To activate the service, send your payment receipt from the bottom of this page — after it is approved, your plan is set.",
 #"برای مسیری که TCP وصل می‌شود و بعد می‌میرد": "For a path where TCP connects and then dies",
 #"برای هر سرور یک کانفیگ. در برنامهٔ WireGuard هر کدام را جدا اضافه کنید: + ← Scan from QR code، یا فایلش را باز کنید. اگر یکی کار نکرد، دیگری را روشن کنید.": "One config for each server. Add each to the WireGuard app on its own: + → Scan from QR code, or open its file. If one does not work, turn the other on.",
 #"برای هر سرور یک کانفیگ؛ هر کدام را جدا در برنامهٔ WireGuard اضافه کنید. اگر یکی کار نکرد، دیگری را روشن کنید.": "One config for each server; add each to the WireGuard app on its own. If one does not work, turn the other on.",
-#"برای هر سرویسی که از سرور می‌رود، چند دامنه‌اش امتحان می‌شود: یک اتصال امن روی ۴۴۳ با گواهی خود سرویس. دو جا:": "For every service that goes through the server, a few of its domains are tested: a secure connection on 443 with the service’s own certificate. In two places:",
 #"برای همهٔ سرورها کانفیگ دارید": "You have a config for every server",
 #"برای همهٔ قالب‌ها مسدود است (": "is blocked for every template (",
-#"برای پیدا کردن اینکه یک سرویس چه دامنه‌ای لازم دارد: مشتری را انتخاب کنید، دکمه را بزنید و از او بخواهید در همین مدت سرویسی را که کار نمی‌کند باز کند. «via relay» یعنی از سرور رد شد، «direct» یعنی مستقیم رفت (اگر سرویس ایران را قبول نمی‌کند، همین دامنه‌ها را در صفحهٔ دامنه‌ها اضافه کنید)، «filtered» یعنی فیلتر خود ایران است. کوئری‌های DoH و DoT هم دیده می‌شوند، با علامت (DOH) یا (DOT) جلویشان.": "To find which domain a service needs: pick the customer, press the button and ask them to open the service that does not work during that time. “via relay” means it went through the server, “direct” means it went directly (if the service does not accept Iran, add those domains on the domains page), “filtered” means Iran’s own filter. DoH and DoT queries show too, marked (DOH) or (DOT).",
 #"برای کار کردن، این‌ها هم باید روشن باشند:": "For it to work, these must be on too:",
 #"برای کانال خصوصی، لینک دعوت کانال را هم بنویسید (مثل https://t.me/+AbCd...)": "For a private channel, write its invitation link too (like https://t.me/+AbCd...)",
 #"برای کدام خریدها": "For which purchases",
@@ -42184,7 +41896,6 @@ exit 0
 #"بررسی فایل": "Check file",
 #"برش گردانید.": "brought it back.",
 #"برنامه‌نویسی و ابزار": "Development and tools",
-#"بروید،": "go to",
 #"برگرداندن": "Restore",
 #"برگشت": "Back",
 #"برگشت به API": "Back to API",
@@ -42194,7 +41905,6 @@ exit 0
 #"برگشت به نام خود رله": "Back to the relay’s own name",
 #"برگشت به ورود": "Back to sign in",
 #"برگشت به کاربران": "Back to users",
-#"بزنید و توکن را بگیرید.": "press it and get the token.",
 #"بستن تیکت": "Close ticket",
 #"بسته": "Closed",
 #"بعد از جدا کردن، می‌توانید تلگرام تازه را وصل کنید.": "After unlinking, you can link a new Telegram.",
@@ -42222,7 +41932,6 @@ exit 0
 #"بوم بیچ": "Boom Beach",
 #"بکاپ برای ادمین‌های ربات فرستاده شد (": "Backup sent to the bot’s admins (",
 #"بکاپ خودکار خاموش شد": "Automatic backup turned off",
-#"بکاپ خودکار در تلگرام": "Automatic backup to Telegram",
 #"بکاپ خودکار روشن شد: هر": "Automatic backup turned on: every",
 #"بکاپ نشد:": "Backup failed:",
 #"بکاپ پشتیبان ساخته نشد:": "Standby backup not made:",
@@ -42279,7 +41988,6 @@ exit 0
 #"تصمیم": "Decision",
 #"تصمیم باید approve یا reject باشد": "The decision must be approve or reject",
 #"تصمیم نامعتبر": "Invalid decision",
-#"تصمیم‌های قبلی": "Earlier decisions",
 #"تعداد ثبت‌نام از این اینترنت زیاد بوده.": "Too many sign-ups from this internet connection.",
 #"تعداد دستگاه": "Number of devices",
 #"تعداد دستگاه باید از ۱ تا": "The number of devices must be from 1 to",
@@ -42302,7 +42010,6 @@ exit 0
 #"تلاش‌های ناموفق زیاد. چند دقیقه صبر کنید.": "Too many failed attempts. Wait a few minutes.",
 #"تلگرام": "Telegram",
 #"تلگرام «": "Telegram “",
-#"تلگرام اجباری": "Telegram required",
 #"تلگرام از حساب جدا شد": "Telegram unlinked from the account",
 #"تلگرام از حساب جدا شد؛ مشتری می‌تواند تلگرام تازه را وصل کند": "Telegram unlinked from the account; the customer can link a new Telegram",
 #"تلگرام این توکن را نمی‌شناسد": "Telegram does not know this token",
@@ -42325,7 +42032,6 @@ exit 0
 #"تنظیمات وایرگارد ذخیره شد؛ تا یک دقیقه دیگر روی رله‌ها اعمال می‌شود": "WireGuard settings saved; the relays take them within a minute",
 #"توضیح": "Description",
 #"توضیح برای مشتری": "Description for customers",
-#"توضیح سرورها برای مشتری‌های شما": "Server notes for your customers",
 #"توضیح سرورها ذخیره شد": "Server notes saved",
 #"توضیح مالک پنل": "The panel owner’s note",
 #"توضیح کنار هر آدرس می‌گوید کدام برای شما بهتر است. همان را در تنظیمات شبکهٔ کنسول، گوشی یا مودم، هم به‌عنوان": "The note beside each address says which suits you best. Put that one in your console, phone or modem’s network settings as both",
@@ -42363,7 +42069,6 @@ exit 0
 #"تونل‌ها": "Tunnels",
 #"توکن درست نیست؛ از @BotFather کپی کنید": "The token is not valid; copy it from @BotFather",
 #"توکن را فقط به خودتان بدهید — با آن هر کسی می‌تواند رله‌ای بسازد که به این پنل وصل شود.": "Give the token only to yourself — with it anyone can make a relay that connects to this panel.",
-#"توکن را فقط به خودتان بدهید.": "Give the token only to yourself.",
 #"توکن ربات": "Bot token",
 #"تکرار رمز تازه": "Repeat the new password",
 #"تکرار رمز عبور": "Repeat password",
@@ -42371,7 +42076,6 @@ exit 0
 #"تک‌سرور": "Single server",
 #"تک‌سرور یک سرور در کشوری دیگر است که هم ورودی است و هم خروجی: مشتری DNS را مستقیم روی خودش می‌گذارد و رله لازم ندارد. مشتری‌ها، حجمشان و تنظیمات همین پنل را دارد؛ مصرف روی آن از همان حجم مشترک کم می‌شود.": "A single server is a server in another country that is both the way in and the way out: the customer sets their DNS straight to it, and it needs no relay. It has this panel’s customers, their quotas and settings; usage on it comes off the same shared quota.",
 #"تک‌سرورها (": "Single servers (",
-#"تیک یعنی بسته: مشتری‌های این قالب نمی‌توانند آن دامنه‌ها را باز کنند (جواب «چنین سایتی وجود ندارد» می‌گیرند)، حتی اگر آن دامنه جزو سرویسی باشد که از رله می‌رود. کشو را باز کنید تا دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.": "A tick means blocked: this template’s customers cannot open those domains (they get “no such site”), even when the domain belongs to a service that goes through the relay. Open the drawer to see the domains and pick them one by one.",
 #"تیکت #": "Ticket #",
 #"تیکت باز": "Open tickets",
 #"تیکت باز دارید؛ در همان‌ها بنویسید یا یکی را ببندید": "open tickets; write in those or close one",
@@ -42381,9 +42085,7 @@ exit 0
 #"تیکت ثبت شد؛ جواب همین‌جا می‌آید": "Ticket sent; the reply comes here",
 #"تیکت دوباره باز شد": "Ticket reopened",
 #"تیکت منتظر جواب:": "Tickets waiting for a reply:",
-#"تیکتی نیامده. مشتری‌ها از پنل خودشان یا از ربات تیکت می‌فرستند.": "No tickets yet. Customers send tickets from their own panel or from the bot.",
 #"تیکت‌ها": "Tickets",
-#"تیکت‌ها (": "Tickets (",
 #"تیکت‌های شما:": "Your tickets:",
 #"تیکِ مسدودها و DNS جداگانه یعنی برای مشتری‌های این قالب. برداشتن تیکِ ردیفی که «همهٔ قالب‌ها» است آن را فقط برای قالب‌های دیگر نگه می‌دارد. اگر دامنه‌ای در این قالب هم مسدود باشد هم DNS جداگانه داشته باشد، مسدود بودن برنده است.": "A tick on a block or a separate DNS means it is for this template’s customers. Unticking a row that is “All templates” keeps it for the other templates only. If a domain in this template is both blocked and has a separate DNS, the block wins.",
 #"ثانیه —": "seconds —",
@@ -42400,7 +42102,6 @@ exit 0
 #"ثبت نشده ⚠️": "not registered ⚠️",
 #"ثبت‌نام": "Sign up",
 #"ثبت‌نام امروز:": "Sign-ups today:",
-#"ثبت‌نام تازه با وضعیت «در انتظار پلن» می‌آید و تا وقتی برایش پلن ذخیره نکنید هیچ ترافیکی نمی‌گیرد؛ اولین ذخیرهٔ همین سطر فعالش می‌کند. صفر در سهمیه یا سرعت یعنی بی‌حد. «زمان» خالی یعنی بدون تغییر؛ عددی که بنویسید تاریخ پایان را از امروز همان‌قدر روز جلو می‌برد، و رنگ خاکستریِ داخلش روزهای باقی‌مانده است. سرعت فقط دانلود را محدود می‌کند و تا ۳۰ ثانیه دیگر روی رله‌ها اعمال می‌شود.": "A new sign-up arrives as “Waiting for a plan” and gets no traffic until you save a plan for it; the first save of its row activates it. Zero in quota or speed means no limit. An empty “Time” means no change; a number you write moves the end date that many days on from today, and the grey number inside it is the days left. Speed only limits downloads and is applied on the relays within 30 seconds.",
 #"ثبت‌نام کرده‌اند ولی هیچ‌وقت پلن نگرفته‌اند": "signed up but never took a plan",
 #"ثبت‌نام کنید": "sign up",
 #"ثبت‌نام:": "Joined:",
@@ -42420,7 +42121,6 @@ exit 0
 #"جواب داده شد": "Answered",
 #"جواب فرستاده شد": "Reply sent",
 #"جواب نداد": "Did not answer",
-#"جوابی از رله‌ها نیامد. رله‌ها باید روی نسخهٔ تازه باشند.": "No answer from the relays. The relays must be on the new version.",
 #"جوابی نیامد": "No answer",
 #"حالا اگر رمز پنل را فراموش کنید، کد بازیابی همین‌جا می‌آید.": "Now if you forget your panel password, the recovery code will come here.",
 #"حالت مستقیم فقط xdi، pck، sni، udp و quic را دارد": "Direct has xdi, pck, sni, udp and quic only",
@@ -42446,7 +42146,6 @@ exit 0
 #"حذف همیشگی این کاربر": "Delete this user for good",
 #"حذف کاربر": "Delete user",
 #"حذف کانفیگی که چند روز وصل نشده": "Delete a config unused for this many days",
-#"حذف گروه دامنه‌های داخلش را هم پاک می‌کند.": "Deleting a group deletes the domains in it too.",
 #"حساب": "Account",
 #"حساب این مشتری ←": "This customer’s account →",
 #"حساب خود": "your account",
@@ -42458,9 +42157,6 @@ exit 0
 #"حساب شما ساخته شد.": "Your account has been created.",
 #"حساب شما سر جایش است؛ برای وصل شدن دوباره با فروشنده‌تان تماس بگیرید.": "Your account is safe; contact your seller to get connected again.",
 #"حساب شما غیرفعال است.": "Your account is inactive.",
-#"حساب فروشنده": "Seller account",
-#"حساب من": "My account",
-#"حساب من —": "My account —",
 #"حساب ندارید؟": "No account?",
 #"حساب پنل وب دارید؟ در پنل «اتصال حساب به تلگرام» را بزنید و کد را همین‌جا بفرستید.": "Have a web panel account? In the panel press “Link account to Telegram” and send the code here.",
 #"حسابی که دیگر نیست": "An account that no longer exists",
@@ -42473,8 +42169,6 @@ exit 0
 #"خالی = فروخته نمی‌شود": "Empty = not sold",
 #"خالی است": "is empty",
 #"خاموش": "Off",
-#"خاموش است. اگر مشتری مشکلی دارد، از او بخواهید در پنل خودش «گزارش DNS برای پشتیبانی» را روشن کند و همان سرویس را دوباره باز کند؛ بعد این‌جا دیده می‌شود. زنده دیدن در همان لحظه:": "is off. If a customer has a problem, ask them to turn on “DNS report for support” in their own panel and open that same service again; it then shows here. Watching live, right now:",
-#"خاموش است: فقط آی‌پی‌هایی که مشتری‌ها ثبت کرده‌اند سرویس می‌گیرند.": "Off: only the IPs customers registered get the service.",
 #"خاموش شد؛ تا یک دقیقه دیگر مستقیم وصل می‌شود": "turned off; it connects directly within a minute",
 #"خاموش شد؛ رله تا یک دقیقه دیگر مستقیم وصل می‌شود": "turned off; the relay connects directly within a minute",
 #"خاموش کردن": "Turn off",
@@ -42482,11 +42176,9 @@ exit 0
 #"خاموش کردن و پاک کردن": "Turn off and clear",
 #"خاموش — رله مستقیم به سرور خارج وصل شود": "Off — the relay connects straight to the exit server",
 #"خاموش — مستقیم": "Off — direct",
-#"خانه": "Home",
 #"خبر": "Message",
 #"خبر آزمایشی در صف است؛ چند ثانیه دیگر وضعیتش پایین همین صفحه دیده می‌شود": "A test message is queued; its status shows at the bottom of this page in a few seconds",
 #"خبر دادن به این ربات خاموش شد": "Messages to this bot turned off",
-#"خبر دادن به ربات (webhook)": "Telling the bot (webhook)",
 #"خبرها به": "Messages to",
 #"خروج": "Sign out",
 #"خروج از حساب": "Sign out",
@@ -42499,7 +42191,6 @@ exit 0
 #"خطا": "Error",
 #"خطاهای nginx — اگر مشتری به سایتی وصل نمی‌شود، دلیلش معمولاً این‌جاست": "nginx errors — if a customer cannot reach a site, the reason is usually here",
 #"خطاهای nginx — سرور خارج": "nginx errors — exit server",
-#"خلاصه": "Summary",
 #"خوب": "Good",
 #"خودش قالب بسازد، تا": "Makes their own templates, up to",
 #"خودکار": "Automatic",
@@ -42515,17 +42206,12 @@ exit 0
 #"دامنهٔ دلخواهی که بعداً اضافه کنید، در قالبی که دست‌کم یکی از این‌ها تیک خورده، خودکار از رله می‌رود.": "A custom domain you add later goes through the relay automatically in a template where at least one of these is ticked.",
 #"دامنهٔ رله": "the relay's domain",
 #"دامنه‌اش پاک شد": "of its domains were deleted",
-#"دامنه‌ای ندارد.": "Has no domains.",
 #"دامنه‌ای که با نصاب می‌آید.": "domains that come with the installer.",
 #"دامنه‌ها": "Domains",
 #"دامنه‌های دلخواه ادمین": "the admin’s custom domains",
 #"دامنه‌های دلخواه شما": "Your custom domains",
-#"دامنه‌های دلخواه — از رله می‌روند": "Custom domains — go through the relay",
-#"دامنه‌های دلخواه، مسدودها و DNS جداگانهٔ این قالب": "This template’s custom domains, blocks and separate DNS",
-#"دامنه‌های دلخواهتان را گروه کنید، مثلاً «سایت‌های دانشگاه». هر گروه در صفحهٔ قالب‌ها یک ردیف جدا با آیکون خودش است و یک تیک دارد. آیکون: SVG تا ۱۶ کیلوبایت یا PNG تا ۶۴ کیلوبایت و ۵۱۲×۵۱۲.": "Put your own domains in groups, “university sites” say. Each group is a row of its own on the templates page, with its own icon and one tick. Icon: an SVG up to 16 KB, or a PNG up to 64 KB and 512×512.",
 #"دامنه‌های شما": "Your domains",
 #"دامنه‌های شما (": "Your domains (",
-#"دامنه‌های مسدود": "Blocked domains",
 #"دامنه‌های مشتری": "Customer’s domains",
 #"دامنه‌هایی که مشتری باز می‌کند": "Domains the customer opens",
 #"دانلود": "Download",
@@ -42548,7 +42234,6 @@ exit 0
 #"در برنامهٔ WireGuard: + ← Scan from QR code": "In the WireGuard app: + → Scan from QR code",
 #"در برنامهٔ WireGuard: + ← Scan from QR code، یا فایل را باز کنید.": "In the WireGuard app: + → Scan from QR code, or open the file.",
 #"در برنامهٔ WireGuard: + ← اسکن QR، یا فایل را باز کنید.": "In the WireGuard app: + → scan the QR, or open the file.",
-#"در تلگرام به": "in Telegram to",
 #"در تیکت «": "in ticket “",
 #"در حال آوردن کاربرهای بعدی…": "Loading more users…",
 #"در حال آپدیت همین سرور به": "Upgrading this server to",
@@ -42571,7 +42256,6 @@ exit 0
 #"در کروم: تنظیمات ← حریم خصوصی و امنیت ← استفاده از DNS امن ← سفارشی، و آدرس DoH را بگذارید. یا برای کل گوشی: تنظیمات ← Private DNS ← نام میزبان، و نام DoT بالا را بگذارید.": "In Chrome: Settings ← Privacy and security ← Use secure DNS ← Custom, and enter the DoH address. Or for the whole phone: Settings ← Private DNS ← Hostname, and enter the DoT name above.",
 #"در کنسول، مودم یا گوشی، هم DNS اول و هم دوم را روی آدرس یکی از این سرورها بگذارید. اگر یکی کند یا فیلتر شد، سراغ دیگری بروید.": "On a console, modem or phone, set both the first and the second DNS to one of these servers. If one is slow or filtered, use another.",
 #"در ۲۴ ساعت گذشته": "In the last 24 hours you have registered a new IP",
-#"در ۷ روز اخیر کسی از DNS امن استفاده نکرده.": "Nobody has used secure DNS in the last 7 days.",
 #"درآمد ۷ روز:": "Income, 7 days:",
 #"درخواست برای": "Request for",
 #"درخواست بیش از حد بزرگ است": "The request is too large",
@@ -42681,7 +42365,6 @@ exit 0
 #"را آپدیت کنید": "first",
 #"را از App Store یا Google Play نصب کنید.": "app from the App Store or Google Play.",
 #"را با عدد بنویسید؛ خالی یعنی خاموش": "must be a number; empty means off",
-#"را بزنید؛ وگرنه ربات نمی‌تواند به شما پیام بدهد.": "; otherwise the bot cannot message you.",
 #"را بنویسید یا عکس بفرستید:": "- write it or send a picture:",
 #"را به آی‌پی": "to the IP",
 #"را تونل رلهٔ": "as the tunnel of relay",
@@ -42710,7 +42393,6 @@ exit 0
 #"ربات راه‌اندازی نشده": "The bot is not set up",
 #"ربات راه‌اندازی نشده (صفحهٔ «ربات»).": "The bot is not set up (the “Bot” page).",
 #"ربات روشن شد": "Bot turned on",
-#"ربات فروش (مال خودتان یا کس دیگری) از این در به پنل وصل می‌شود: ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن پلن‌ها و فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما می‌مانند.": "A sales bot (your own or someone else’s) connects to the panel through this door: signing customers up by Telegram ID, seeing their account, registering an IP, seeing the plans and sending receipts. Receipts wait for your approval on the receipts page as always.",
 #"ربات و API": "Bot and API",
 #"ربات کلید را در سرآیند": "The bot sends the key in the header",
 #"ربات یا ادمین آن تعیین نشده (صفحهٔ «ربات»)": "The bot or its admin is not set (the “Bot” page)",
@@ -42744,13 +42426,10 @@ exit 0
 #"رسید پرداخت شما تأیید شد؛ به‌زودی حسابتان شارژ می‌شود.": "Your payment receipt was approved; your account will be topped up soon.",
 #"رسید پرداخت شما تأیید نشد. اگر فکر می‌کنید اشتباهی شده، با پشتیبانی در تماس باشید.": "Your payment receipt was not approved. If you think this is a mistake, please contact support.",
 #"رسیده به ربات": "Reached the bot",
-#"رسیدها": "Receipts",
 #"رسیدها و کیف پول": "Receipts and wallets",
 #"رسیدهای در انتظار (": "Receipts waiting (",
 #"رسیدی برای این پلن در انتظار است؛ اول آن را بررسی کنید": "A receipt for this plan is waiting; review it first",
 #"رسیدی در انتظار نیست.": "No receipts waiting.",
-#"رسیدی نرسیده.": "No receipts have come in.",
-#"رفتن به کاربران": "Go to users",
 #"رله": "Relay",
 #"رله هنوز نگرفته است": "the relay has not got it yet",
 #"رله و سرور خارج مشتری‌هایش را خودش انتخاب کند": "Picks the relays and exit servers of their customers",
@@ -42764,11 +42443,9 @@ exit 0
 #"رله‌ها و سرورهای دیگر": "Relays and other servers",
 #"رله‌ها و نودها ظرف یک دقیقه خودشان پنل تازه را پیدا می‌کنند و از آن به بعد فقط با آن حرف می‌زنند؛ این سرور اگر برگردد، دیگر کسی سراغش نمی‌آید.": "The relays and nodes find the new panel by themselves within a minute and from then on only talk to it; if this server comes back, nobody goes to it any more.",
 #"رله‌هایی که از آن می‌روند": "Relays that go through it",
-#"رله‌هایی که وایرگارد دارند": "Relays with WireGuard",
 #"رمز": "Password",
 #"رمز امضای webhook": "Webhook signing secret",
 #"رمز امضای webhook «": "Webhook signing secret “",
-#"رمز این پنل": "This panel’s password",
 #"رمز باید حداقل ۸ نویسه باشد": "The password must be at least 8 characters",
 #"رمز باید دست‌کم ۸ نویسه باشد": "The password must be at least 8 characters",
 #"رمز بکاپ تعیین نشده": "No backup password set",
@@ -42785,7 +42462,6 @@ exit 0
 #"رمز خودتان را انتخاب کنید": "Choose your own password",
 #"رمز درست نیست، یا این فایل بکاپ پنل نیست": "The password is wrong, or this file is not a panel backup",
 #"رمز دست‌کم ۸ نویسه باشد": "The password must be at least 8 characters",
-#"رمز ذخیره نمی‌شود، فقط هشش. با تغییر آن همهٔ نشست‌های دیگر بسته می‌شوند.": "The password is not stored, only its hash. Changing it closes every other session.",
 #"رمز را فراموش کرده‌اید؟": "Forgot your password?",
 #"رمز را فراموش کرده‌اید؟ «رمز تازه» را بزنید.": "Forgot your password? Press “New password”.",
 #"رمز شما ذخیره شد": "Your password has been saved",
@@ -42812,7 +42488,6 @@ exit 0
 #"روز دیگر منقضی می‌شود و هنوز تمدید نشده؛ لاگ «تمدید گواهی» را ببینید.": "days and has not been renewed; see the “certificate renewal” log.",
 #"روز قبل از پایان دوره": "days before the period ends",
 #"روز مانده": "Days left",
-#"روز و ساعت به وقت تهران. روی نام هر مشتری بزنید تا نمودار خودش را ببینید.": "Day and hour in Tehran time. Click a customer’s name to see their own chart.",
 #"روز و سقف استفاده را با عدد بنویسید": "Write the days and the use limit as numbers",
 #"روز پیش": "days ago",
 #"روز یک بار": "days",
@@ -42840,7 +42515,6 @@ exit 0
 #"روشن کردنش چت و دوستان لیگ و والورانت را قطع می‌کند — این‌ها روی ۵۲۲۲ و ۵۲۲۳ و ۲۰۹۹ هستند و رله فقط ۸۰ و ۴۴۳ را می‌برد. اگر روزی این پورت‌ها روی رله باز شوند، این گروه می‌تواند روشن شود": "turning it on cuts League and Valorant chat and friends — these are on 5222, 5223 and 2099 and the relay only carries 80 and 443. If those ports are ever opened on the relay, this group can be turned on",
 #"روشن کردنش چیزی را می‌شکند": "turning it on breaks something",
 #"روشن کردنش کالاف و وارزون را از سرور جدا می‌کند — این‌ها روی ۴۴۳ نیستند": "turning it on cuts CoD and Warzone off from their servers — these are not on 443",
-#"روشن: کسی که پلنش تمام شده، آی‌پی‌اش ثبت نیست یا عوض شده، هر سایتی باز کند پنل مشتری برایش باز می‌شود. خاموش: اینترنتش از راه رله فقط کار نمی‌کند و صفحه‌ای خودش باز نمی‌شود؛ اگر خودش آدرس پنل مشتری را باز کند، هنوز وارد می‌شود. برای همهٔ سرورها، تا یک دقیقه دیگر.": "On: someone whose plan ended, whose IP is not registered or has changed, gets the customer panel whatever site they open. Off: their internet simply does not work through the relay and no page opens by itself; if they open the customer panel's address themselves, they still get in. For every server, within a minute.",
 #"روی": "on",
 #"روی UDP — در آزمایش ما وصل نشد": "Over UDP — did not connect in our test",
 #"روی UDP، برای مسیری که بسته گم می‌کند": "Over UDP, for a path that loses packets",
@@ -42850,9 +42524,6 @@ exit 0
 #"روی رله نصب‌کننده را اجرا کنید و «relay» را انتخاب کنید؛ آدرس این سرور": "Run the installer on the relay and choose “relay”; this server’s address",
 #"روی رله.": "on the relay.",
 #"روی سرور هم:": "On the server too:",
-#"روی نام هر ادمین بزنید تا آمار و کارهایش را ببینید.": "Click an admin’s name to see their stats and actions.",
-#"روی نام هر سرور بزنید تا نمودارها و مشتری‌هایش را ببینید. مصرف مشتری‌های ثبت‌شده: روی رله از شمارندهٔ خود رله (همانی که حجم مشتری از آن کم می‌شود)، و روی سرور خارج از روی اینکه رله‌ها هر اتصال را از کدام سرور فرستاده‌اند. روز به وقت تهران.": "Click a server’s name to see its charts and customers. Registered customers’ usage: on a relay from the relay’s own counter (the one the customer’s quota comes off), and on the exit server from which server the relays sent each connection through. Days in Tehran time.",
-#"روی هر سرور بزنید تا نمودارهای خودش را ببینید. روز به وقت تهران.": "Click a server to see its own charts. Days in Tehran time.",
 #"روی همان اینترنت (مودم یا سیم‌کارت) یک سایت «آی‌پی من چیست» را باز کنید تا پیدایش کنید. مثال: 5.123.45.67": "On that same connection (router or SIM card) open a “what is my IP” website to find it. Example: 5.123.45.67",
 #"روی همان اینترنت‌هایی کار می‌کند که آی‌پی‌شان را ثبت کرده‌اید، مثل DNS.": "It works on the connections whose address you registered, as the DNS does.",
 #"رویدادهای اخیر": "Recent events",
@@ -42867,12 +42538,9 @@ exit 0
 #"زمان": "Time",
 #"زمان باقی‌مانده": "Time left",
 #"زمان باقی‌مانده:": "Time left:",
-#"زمان جواب": "Response time",
-#"زمان جواب هنوز اندازه گرفته نشده؛ رله‌ها چند دقیقه بعد از این نسخه اولین اندازه‌گیری را می‌فرستند.": "Response time has not been measured yet; the relays send the first measurement a few minutes after this version.",
 #"زنده، با": "Live, with",
 #"زنلس زون زیرو": "Zenless Zone Zero",
 #"زیر ده‌ها بازی است؛ روی ۴۴۳ کار می‌کند و از سرور رد می‌شود": "underlies dozens of games; it works on 443 and goes through the server",
-#"زیردامنه‌ها خودکار شامل می‌شوند. دامنه‌های بدون گروه در سرویس «دامنه‌های دلخواه» جمع می‌شوند و هر گروه در قالب‌ها یک ردیف جداست، پس در هر قالب می‌شود تیکشان را برداشت. دامنه‌ای را که هست دوباره با گروه دیگری اضافه کنید تا به آن گروه برود. به‌علاوهٔ": "Subdomains are included automatically. Domains in no group are gathered in the “your own domains” service, and each group is a row of its own in the templates, so in any template they can be unticked. Add a domain that is already here again with another group to move it there. On top of the",
 #"زیرساخت و شبکه": "Infrastructure and network",
 #"زیرشبکهٔ ایرانی رله را به سرویس‌ها می‌گوید: PUBG Mobile و بقیهٔ بازی‌های Tencent برای مشتری‌ها باز نمی‌شوند. Cloudflare یا Quad9 را بگذارید.": "tells services the relay's Iranian subnet: PUBG Mobile and the other Tencent games do not open for customers. Pick Cloudflare or Quad9.",
 #"زیرشبکهٔ پرسنده (ECS) را به سرویس‌ها می‌گوید. سرویس‌هایی که ایران را در DNS رد می‌کنند — بازی‌های Tencent مثل PUBG Mobile — آی‌پی ایرانی رله را می‌بینند و جواب نمی‌دهند.": "passes the asker’s subnet (ECS) on to services. Services that refuse Iran in DNS — Tencent games like PUBG Mobile — see the relay’s Iranian IP and do not answer.",
@@ -42892,7 +42560,6 @@ exit 0
 #"ساعت": "Hour",
 #"ساعت دیگر دوباره امتحان کنید": "hours, try again",
 #"ساعت پیش": "hours ago",
-#"ساعت یک بار گیت‌هاب master-dns را چک می‌کند. با زدن دکمه، نصب‌کننده از خود ریلیز دانلود می‌شود و فقط وقتی نصب می‌شود که هشش با هشی که گیت‌هاب منتشر کرده یکی باشد. اول همین سرور آپدیت می‌شود و بعد بقیهٔ سرورها یکی‌یکی. نسخهٔ قدیمی‌تر هیچ‌وقت نصب نمی‌شود.": "hours the panel checks master-dns on GitHub. With the button, the installer is downloaded from the release itself and installed only when its hash matches the one GitHub published. This server is upgraded first, then the others one by one. An older version is never installed.",
 #"ساعت‌های پرمصرف": "Busiest hours",
 #"ساعت‌های پرمصرف — ۷ روز اخیر": "Busiest hours — last 7 days",
 #"سایبرپانک ۲۰۷۷": "Cyberpunk 2077",
@@ -42908,7 +42575,6 @@ exit 0
 #"سرعت الان": "Speed now",
 #"سرعت باید عدد باشد؛ خالی یعنی بی‌حد": "Speed must be a number; empty means no limit",
 #"سرعت منفی نمی‌شود": "Speed cannot be negative",
-#"سرعت کل ۲۴ ساعت اخیر": "Total speed, last 24 hours",
 #"سرعت ۲۴ ساعت": "Speed, 24 hours",
 #"سرعت ۲۴ ساعت اخیر": "Speed, last 24 hours",
 #"سرعت، ۱۰ دقیقهٔ اخیر": "Speed, last 10 minutes",
@@ -42920,16 +42586,13 @@ exit 0
 #"سرور خارج این مشتری برای هر رله ذخیره شد": "This customer’s exit server saved for each relay",
 #"سرور خارج — پنل": "Exit server — panel",
 #"سرور دیگر به نسخهٔ": "other servers to",
-#"سرور پشتیبان یکی از نودهاست؛ اول یک نود اضافه کنید.": "The standby server is one of the nodes; add a node first.",
 #"سرور پشتیبان:": "Standby server:",
 #"سرور پشتیبانی تعیین نشده": "No standby server set",
 #"سرورها": "Servers",
-#"سرورها برای مشتری": "Servers for customers",
 #"سرورها برای مشتری ذخیره شد": "Servers for customers saved",
 #"سرورها: برای هر سرور انتخاب کنید پلن روی آن باشد یا نه، و مشتری از آن رله از کدام سرور خارج بیرون برود. «—» یعنی پلن روی این سرور نیست: مشتری DNS آن را نمی‌بیند و اگر بزند، پنل مشتری برایش باز می‌شود. «خودکار» یعنی سرور خارج خود آن رله. یک سرور خارج مشخص یعنی مشتری از آن رله فقط از همان بیرون می‌رود، و اگر از کار بیفتد، تا برگشتنش از بقیه. روی/نبودن پلن همان لحظه برای همهٔ دارندگانش اعمال می‌شود؛ سرور خارج از خرید یا تمدید بعدی.": "Servers: for each server, pick whether the plan is on it, and which server abroad its customers go out of from that relay. \"—\" is not on it: the customer is not shown its DNS, and one who uses it is shown the customer panel. \"Automatic\" is that relay's own server abroad. A particular server abroad is the only one they go out of from that relay, and while it is down, the others. Being on a server or not applies at once to everyone on the plan; the server abroad from the next purchase or renewal.",
 #"سرورهای ایران": "Iran servers",
 #"سرورهای خارج (": "Exit servers (",
-#"سرورهای دیگر": "The other servers",
 #"سروری": "server",
 #"سرویس": "Service",
 #"سرویس تا تمدید کار نمی‌کند.": "The service does not work until renewed.",
@@ -42941,7 +42604,6 @@ exit 0
 #"سرویس روی همین آی‌پی باز می‌شود.": "The service opens on this IP.",
 #"سرویس فروشندهٔ شما موقتاً قطع است.": "Your seller’s service is paused for now.",
 #"سرویس‌ها": "Services",
-#"سرویس‌هایی که مشکل دارند بالاترند. «گواهی نامعتبر» یعنی جواب از جایی جز خود سرویس آمد — مثلاً صفحهٔ فیلتر. هر اسمی که خراب شد یک بار دیگر آرام‌تر آزموده می‌شود، و فقط اگر بار دوم هم خراب بود این‌جا می‌آید. گروه‌های «پیش‌فرض خاموش» فقط وقتی آزموده می‌شوند که در قالبی روشن باشند. یک دامنهٔ خراب در سرویسی بزرگ همیشه یعنی خرابی نیست؛ جزئیات هر سرویس را باز کنید.": "Services with problems are at the top. “Invalid certificate” means the answer came from somewhere other than the service itself — a filter page, for example. Every name that failed is tried once more, more slowly, and only shows here if it failed the second time too. “Off by default” groups are only tested when they are on in some template. One broken domain in a big service does not always mean an outage; open each service’s details.",
 #"سقف آی‌پی روزانه": "The daily address limit",
 #"سقف استفادهٔ کل": "Total use limit",
 #"سقف باید بیشتر از صفر و روز بین ۱ و ۲۸ باشد": "The cap must be more than zero and the day between 1 and 28",
@@ -42953,7 +42615,6 @@ exit 0
 #"سقف و روز را عددی بنویسید": "Write the cap and the day as numbers",
 #"سلام! 👋 به ربات خوش آمدید.": "Hello! 👋 Welcome to the bot.",
 #"سهم": "Share",
-#"سهم هر کدام": "Each one’s share",
 #"سهم ۳۰ روز": "30-day share",
 #"سهمیه": "Quota",
 #"سهمیه GB": "Quota GB",
@@ -42993,7 +42654,6 @@ exit 0
 #"عالی": "Excellent",
 #"عدد سرعت درست نیست": "The speed number is not valid",
 #"عدد سهمیه درست نیست": "The quota number is not valid",
-#"عدد مثبت به موجودی اضافه می‌کند و عدد منفی از آن کم می‌کند؛ موجودی کمتر از صفر نمی‌شود. به مشتری هم پیام می‌رود.": "A positive number adds to the balance and a negative one takes from it; the balance never goes below zero. The customer is told too.",
 #"عددها را درست بنویسید": "Write the numbers correctly",
 #"عضویت اجباری در کانال (اختیاری)": "Channel to join first (optional)",
 #"عوض می‌شود": "changes",
@@ -43016,10 +42676,7 @@ exit 0
 #"عکس پیدا نشد": "Picture not found",
 #"عکس یا فیلم": "photos or videos",
 #"عکس یا فیلم (اختیاری)": "Photo or video (optional)",
-#"عکس‌ها رمزگذاری نمی‌شوند: کتابخانهٔ OpenSSL روی این سرور پیدا نشد.": "Pictures are not encrypted: the OpenSSL library was not found on this server.",
 #"عکس‌ها و فیلم‌ها روی هم بیشتر از ۵۰ مگابایت است": "The photos and videos come to more than 50 MB together",
-#"عیب‌یابی": "Diagnose",
-#"عیب‌یابی سرویس‌ها": "Service diagnosis",
 #"غیرفعال": "Inactive",
 #"غیرفعال شد": "Disabled",
 #"غیرفعال کردن": "Disable",
@@ -43030,7 +42687,6 @@ exit 0
 #"فال گایز": "Fall Guys",
 #"فایرفاکس": "Firefox",
 #"فایل": "File",
-#"فایل اول فقط بررسی و توصیف می‌شود؛ جایگزینی جدا تأیید می‌خواهد. بکاپی که ربات فرستاده (": "The file is only checked and described first; replacing needs its own confirmation. A backup the bot sent (",
 #"فایل این پیام همگانی نیست": "This broadcast's file is not here",
 #"فایل باز شد ولی خراب است:": "The file opened but is broken:",
 #"فایل بزرگ‌تر از": "The file is larger than",
@@ -43044,7 +42700,6 @@ exit 0
 #"فایل ربات روی این سرور نیست؛ نصب‌کننده را دوباره اجرا کنید": "The bot file is not on this server; run the installer again",
 #"فایل، روی هم تا ۵۰ مگابایت؛ چند فایل با هم به شکل یک آلبوم می‌رسند. متن زیر عکس یا فیلم می‌آید؛ اگر بیشتر از": "files, 50 MB together; several files arrive together as one album. The text goes under the photo or video; if it is longer than",
 #"فایلی انتخاب نشده بود": "No file was chosen",
-#"فایلی برای بازگردانی منتظر نیست. از": "No file is waiting to be restored. From",
 #"فایلی فرستاده نشد": "No file was sent",
 #"فاینال فانتزی XIV": "Final Fantasy XIV",
 #"فرستادن": "Send",
@@ -43056,14 +42711,11 @@ exit 0
 #"فرستاده شد (": "Sent (",
 #"فرستاده شد.": "sent.",
 #"فرستاده می‌شوند.": "are sent.",
-#"فرستاده‌شده‌ها": "Sent",
 #"فروش این ماه (تومان)": "Sales this month (Toman)",
 #"فروش کل (تومان)": "All sales (Toman)",
 #"فروشنده": "seller",
 #"فروشنده است": "Is a seller",
-#"فروشنده فقط مشتری‌هایی را می‌بیند که خودش آورده (با لینک یا ربات خودش)، همراه با رسیدها، تیکت‌ها و کیف پولشان. پلن‌ها و قیمت‌هایش را هم خودش می‌سازد. اگر مصرف مشتری‌هایش روی هم به سقف حجم برسد یا روزهایش تمام شود، سرویس همهٔ مشتری‌هایش قطع می‌شود تا تمدیدش کنید. هر تغییری در این صفحه، آن ادمین را از همهٔ دستگاه‌ها بیرون می‌برد.": "A seller sees only the customers they brought (through their own link or bot), with their receipts, tickets and wallets. They make their own plans and prices too. When their customers’ total usage reaches the traffic cap or their days run out, all their customers’ service is cut until you renew it. Any change on this page signs that admin out of every device.",
 #"فروشندهٔ شما فعلاً غیرفعال است؛ با خودش تماس بگیرید": "Your seller is disabled for now; contact them",
-#"فروشنده‌ها": "Sellers",
 #"فروشگاه و انجمن": "Store and community",
 #"فروشگاه و لانچر. ورود و چت استیم مستقیم می‌ماند": "Store and launcher. Steam sign-in and chat stay direct",
 #"فروشگاه، اکانت و بازی آنلاین": "Store, account and online play",
@@ -43082,7 +42734,6 @@ exit 0
 #"فقط اولین خرید": "First purchase only",
 #"فقط این‌ها:": "Only these:",
 #"فقط برای این پلن‌ها (هیچ‌کدام = همه):": "Only for these plans (none = all):",
-#"فقط تعداد؛ اینکه چه اسمی پرسیده شد جایی نگه داشته نمی‌شود. روز به وقت تهران.": "Counts only; which names were asked is not kept anywhere. Days in Tehran time.",
 #"فقط خروجی": "Outgoing only",
 #"فقط خطاها). توکن ربات همه‌جا با": "errors only). The bot token everywhere as",
 #"فقط خودتان این را می‌بینید. چیزی که نگه داشته می‌شود فقط «کدام سرویس، کدام روز، چقدر» است — نه اینکه چه سایتی را کِی باز کرده‌اید — و بعد از ۳۰ روز پاک می‌شود. «دانلود کنسول و HTTP» بیشتر دانلود بازی‌های پلی‌استیشن و ایکس‌باکس است.": "Only you see this. All that is kept is “which service, which day, how much” — not which site you opened when — and it is deleted after 30 days. “Console downloads and HTTP” is mostly PlayStation and Xbox game downloads.",
@@ -43092,7 +42743,6 @@ exit 0
 #"فقط عکس (JPG، PNG، WEBP) یا PDF قبول می‌شود": "Only a picture (JPG, PNG, WEBP) or PDF is accepted",
 #"فقط عکس JPG، PNG یا WEBP": "Only JPG, PNG or WEBP pictures",
 #"فقط عکس JPG، PNG، WEBP یا فیلم MP4": "Only a JPG, PNG or WEBP photo, or an MP4 video",
-#"فقط مشتری‌های شما این‌ها را می‌بینند. خالی بگذارید تا توضیح مالک پنل (خاکستری) نشان داده شود.": "Only your customers see these. Leave one empty to show the panel owner’s note (in grey).",
 #"فقط هشدار": "Alert only",
 #"فقط همین یک بار": "Only this once",
 #"فهرست کامل": "Full list",
@@ -43104,12 +42754,9 @@ exit 0
 #"فیلم بزرگ‌تر از ۲۰ مگابایت است": "The video is larger than 20 MB",
 #"قاعدهٔ فایروال تونل بار نشد؛ درگاه": "The tunnel firewall rule did not load; port",
 #"قالب": "Template",
-#"قالب تازه": "New template",
-#"قالب تازه با همهٔ سرویس‌ها ساخته می‌شود؛ بعد تیک‌ها را بردارید.": "A new template is made with every service; then untick what you do not want.",
 #"قالب حذف شد و کاربرانش به پیش‌فرض برگشتند": "Template deleted and its users went back to the default",
 #"قالب دامنه درست نیست": "The domain format is not valid",
 #"قالب رسیده‌اید": "templates",
-#"قالب رسیده‌اید.": "templates.",
 #"قالب ساخته شد با همهٔ سرویس‌ها": "Template created with every service",
 #"قالب عوض شد؛ تا ۳۰ ثانیه دیگر روی رله‌ها اعمال می‌شود": "Template changed; applied on the relays within 30 seconds",
 #"قالب مشتری دارند؛ یعنی حدود": "templates have customers; that is about",
@@ -43117,7 +42764,6 @@ exit 0
 #"قالب پیدا نشد": "Template not found",
 #"قالب پیش‌فرض حذف نمی‌شود": "The default template cannot be deleted",
 #"قالب پیش‌فرض قابل تغییر نیست": "The default template cannot be changed",
-#"قالب پیش‌فرض همیشه همهٔ دامنه‌های دلخواه را از رله می‌برد.": "The default template always routes all custom domains through the relay.",
 #"قالب پیش‌فرض همیشه همهٔ سرویس‌ها را از رله می‌برد، از جمله سرویس‌هایی که بعداً اضافه شوند. برای همین قابل ویرایش نیست — یک قالب تازه بسازید.": "The default template always routes every service through the relay, including services added later. So it cannot be edited — make a new template.",
 #"قالبی با این نام هست": "A template with this name exists",
 #"قالب‌ها": "Templates",
@@ -43142,7 +42788,6 @@ exit 0
 #"لغو شد.": "Cancelled.",
 #"لیست اپراتورها — سرور خارج": "Operators list — exit server",
 #"لینک ثبت‌نام در همین سایت": "Sign-up link on this site",
-#"لینک ثبت‌نام مشتری‌های شما": "Sign-up link for your customers",
 #"لینک دعوت (فقط برای کانال خصوصی)": "Invitation link (private channel only)",
 #"لینک دعوت ربات": "Bot invitation link",
 #"لینک دعوت سایت": "Site invitation link",
@@ -43151,7 +42796,6 @@ exit 0
 #"مارول رایولز": "Marvel Rivals",
 #"مال": "belongs to",
 #"مال همین پنل است": "belongs to this panel",
-#"مالک پنل هنوز آدرس پنل مشتری را نگذاشته.": "The panel’s owner has not set the customer panel address yet.",
 #"مانده.": "left.",
 #"مانستر هانتر": "Monster Hunter",
 #"ماه": "Month",
@@ -43183,7 +42827,6 @@ exit 0
 #"مثلاً مخصوص ایرانسل": "e.g. for Irancell",
 #"مثلاً گیمینگ ماهانه": "e.g. Gaming monthly",
 #"مجموع مصرف": "Total usage",
-#"محدودیت‌ها": "Limits",
 #"مدت باید عدد درستِ روز باشد، از ۱ تا ۳۶۵۰": "The length must be a whole number of days, from 1 to 3650",
 #"مرتب‌سازی:": "Sort:",
 #"مستقیم": "Direct",
@@ -43207,17 +42850,12 @@ exit 0
 #"مسیر مخفی": "Secret path",
 #"مسیری نیست": "No path",
 #"مشتری": "Customer",
-#"مشتری از همهٔ دستگاه‌ها بیرون آمد. اینترنتش قطع نشده.": "The customer was signed out of every device. Their internet was not cut.",
-#"مشتری این را می‌بیند": "The customer sees this",
 #"مشتری با رسیدها و تیکت‌هایشان، و پلن‌ها، قالب‌ها و رباتش پاک می‌شوند و قابل برگشت نیست.": "customers with their receipts and tickets, and their plans, templates and bot are deleted, with no undo.",
 #"مشتری با کانفیگ": "customers with a config",
 #"مشتری بتواند کیف پولش را شارژ کند": "Customers can top up their wallet",
 #"مشتری تازه از ربات:": "New customer from the bot:",
 #"مشتری تازه از پنل وب:": "New customer from the web panel:",
-#"مشتری جواب را در پنل خودش یا در ربات می‌بیند. اگر در تیکت بسته بنویسد، دوباره باز می‌شود. عکس‌های تیکت بسته": "The customer sees the reply in their own panel or in the bot. If they write in a closed ticket, it reopens. Pictures of a closed ticket",
 #"مشتری خودش در پنل و ربات کانفیگ بسازد و حذف کند": "Customers make and delete their own configs, on their page and in the bot",
-#"مشتری سرورها را به همین ترتیب می‌بیند، با شماره و توضیح هر کدام (در ربات و پنل خودش، کنار DNS، DoT و DoH آن سرور)؛ اولی را معمولاً برمی‌دارد. «پنهان» سرور را از فهرست همهٔ مشتری‌ها برمی‌دارد، مثلاً وقتی در حال تعمیر است، بدون اینکه تیک مشتری‌ها عوض شود. سرور پنهان هنوز کار می‌کند؛ فقط نشان داده نمی‌شود. فروشنده‌ای که اجازهٔ انتخاب رله دارد، می‌تواند برای مشتری‌های خودش توضیح خودش را بنویسد.": "Customers see the servers in this order, each with its number and note (in the bot and in their panel, beside that server’s DNS, DoT and DoH); they usually take the first. “Hidden” takes a server off every customer’s list, for example while it is being repaired, without changing anyone’s ticks. A hidden server still works; it is only not shown. A seller allowed to pick relays can write their own notes for their own customers.",
-#"مشتری مبلغی را که می‌خواهد می‌نویسد و عکس رسید واریز را می‌فرستد. این رسید در صفحهٔ رسیدها با برچسب «شارژ کیف پول» می‌آید و با تأیید شما، همان مبلغ به کیف پولش اضافه می‌شود (اگر مبلغ رسید فرق داشت، همان‌جا درستش کنید). بعد مشتری با موجودی کیف پول، پلن را بدون رسید و فوری می‌خرد. خرید از کیف پول همیشه باز است، حتی وقتی شارژ بسته باشد؛ چون پورسانت دعوت و پولی که خودتان به کیف پول کسی اضافه کرده‌اید هم قابل خرج است.": "The customer writes the amount they want and sends a photo of the payment slip. The receipt appears on the receipts page marked “Wallet top-up”, and once you approve it that amount is added to their wallet (if the slip says otherwise, correct it there). The customer then buys a plan from the wallet at once, with no receipt. Buying from the wallet is always open, even when top-ups are closed, since referral commission and money you add to someone’s wallet can be spent too.",
 #"مشتری و همهٔ پلن‌ها، قالب‌ها و رباتش": "customers and all their plans, templates and bot",
 #"مشتری کد را موقع خرید (در پنل خودش یا ربات) وارد می‌کند و قیمت تخفیف‌خورده را می‌بیند؛ همان مبلغ را واریز می‌کند یا از کیف پول می‌پردازد. هر استفاده فقط وقتی شمرده می‌شود که خرید تأیید شود. پورسانت دعوت هم از مبلغی حساب می‌شود که واقعاً پرداخت شده.": "The customer enters the code when buying (in their panel or the bot) and sees the discounted price; they pay that or pay from the wallet. A use is counted only when the purchase is approved. Referral commission is also worked out from what was actually paid.",
 #"مشتری‌اش قطع می‌شود، چیزی از او فروخته نمی‌شود و رباتش خاموش می‌شود. با «فعال کردن» همه‌چیز برمی‌گردد.": "of their customers is cut, nothing of theirs is sold and their bot is turned off. “Enable” brings everything back.",
@@ -43232,7 +42870,6 @@ exit 0
 #"مصرف این فروشنده صفر شود؟": "Reset this seller’s usage?",
 #"مصرف این کاربر صفر شود؟": "Reset this user’s usage to zero?",
 #"مصرف این کاربر هر": "This customer’s usage is reset every",
-#"مصرف به تفکیک سرور": "Usage by server",
 #"مصرف تا حالا:": "Usage so far:",
 #"مصرف روزانه": "Daily usage",
 #"مصرف شما": "Your usage",
@@ -43241,7 +42878,6 @@ exit 0
 #"مصرف مشتری‌های": "Usage of the customers of",
 #"مصرف مشتری‌های خودم": "My own customers’ usage",
 #"مصرف مشتری‌های من": "My customers’ usage",
-#"مصرف و آمار هر سرور": "Usage and stats per server",
 #"مصرف کاربر": "User usage",
 #"مصرف کل — مشتری‌های شما و فروشنده‌ها": "Total usage — your customers and the sellers’",
 #"مصرف کل — همهٔ مشتری‌ها": "Total usage — all customers",
@@ -43291,12 +42927,10 @@ exit 0
 #"می‌فرستد.": "sends.",
 #"نام": "Name",
 #"نام (برای خودتان، مثلاً «ربات فروش»)": "Name (for yourself, e.g. “Sales bot”)",
-#"نام DNS امن (DoH و DoT)": "Secure DNS name (DoH and DoT)",
 #"نام DoT": "DoT name",
 #"نام قالب": "Template name",
 #"نام لازم است": "A name is required",
 #"نام کاربری": "Username",
-#"نام کاربری این پنل": "This panel’s username",
 #"نام کاربری باید ۳ تا ۳۲ نویسه باشد — حروف انگلیسی، عدد، و . _ -": "The username must be 3 to 32 characters — English letters, digits, and . _ -",
 #"نام کاربری شما": "Your username is",
 #"نام کاربری همان چیزی است که با آن وارد می‌شوید — حروف انگلیسی، عدد، و . _ - ؛ بزرگ و کوچک فرقی ندارد. اگر قبلاً کسی گرفته باشدش، پیغام می‌دهد.": "The username is what you sign in with — English letters, digits, and . _ - ; upper and lower case are the same. If someone already has it, you are told.",
@@ -43310,14 +42944,10 @@ exit 0
 #"نامحدود": "Unlimited",
 #"نامعلوم": "Unknown",
 #"نامی که الان به مشتری‌ها داده می‌شود:": "The name customers are given now:",
-#"نتیجه": "Result",
 #"ندارد": "none",
 #"نرسید": "Did not arrive",
 #"نزدیک پر شدن است:": "is nearly full:",
 #"نسخه": "Version",
-#"نسخهٔ قبلی اینجا نگه داشته شد:": "The previous copy was kept here:",
-#"نسخهٔ پشتیبان": "Backup",
-#"نشان داده می‌شود و بعداً خوانده نمی‌شود؛ اگر گمش کردید، یکی تازه بسازید و این را باطل کنید.": "is shown and cannot be read later; if you lose it, make a new one and revoke this one.",
 #"نشان داده می‌شود؛ اگر گمش کردید، آدرس را دوباره ذخیره کنید تا رمز تازه بسازد.": "is shown; if you lose it, save the address again to make a new secret.",
 #"نشد": "Failed",
 #"نشد:": "Failed:",
@@ -43359,13 +42989,11 @@ exit 0
 #"هر اسمی که رله‌ها مسیریابی نمی‌کنند": "Any name the relays do not route",
 #"هر اسمی که رله‌ها مسیریابی نمی‌کنند از این‌ها پرسیده می‌شود، و nginx همین سرور هم برای پیدا کردن آدرس سرویس‌ها از آن‌ها می‌پرسد. پیش از ذخیره از همین سرور آزموده می‌شوند، و هر رله هم پیش از اعمال، خودش از ایران امتحان می‌کند — اگر جواب ندهد همان قبلی را نگه می‌دارد.": "Any name the relays do not route is asked of these, and this server’s nginx asks them too to find services’ addresses. They are tested from this server before saving, and each relay also tries them from Iran before applying — if they do not answer, it keeps the previous ones.",
 #"هر اسمی که سرور مسیریابی نمی‌کند": "Any name the server does not route",
-#"هر تلگرام فقط به یک حساب وصل می‌شود، پس هر کس به سختی بیش از یک حساب می‌سازد. سرویس کسی قطع نمی‌شود؛ فقط خرید تازه و تمدید منتظر وصل شدن می‌ماند. تیکت آزاد است.": "Each Telegram account links to only one account, so it is hard for anyone to make more than one account. Nobody’s service is cut; only new purchases and renewals wait until they link. Tickets stay open.",
 #"هر جا با رمز قبلی وارد بودید، خارج شدید.": "You have been signed out everywhere you used the old password.",
 #"هر خبر سرآیند": "Each message has the header",
 #"هر خرید": "every purchase",
 #"هر خرید و تمدیدش": "every purchase and renewal",
 #"هر خریدش": "every purchase",
-#"هر ردیف یک تیک دارد: زدنش یعنی همهٔ دامنه‌های آن از رله می‌رود، از جمله دامنه‌هایی که بعداً اضافه شوند. کشو را باز کنید تا خود دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.": "Each row has one tick: ticking it means all its domains go through the relay, including domains added later. Open the drawer to see the domains themselves and pick them one by one.",
 #"هر رله از سرور خارجی که برایش انتخاب شده می‌رود؛ اگر آن سرور در دسترس نباشد، خودکار از بقیه می‌رود. مشتری‌ها و حجمشان بین همه مشترک است.": "Each relay goes through the exit server chosen for it; if that server cannot be reached, it goes through the others automatically. Customers and their quotas are shared by all.",
 #"هر رله هر نیم دقیقه از راه هر سرور خارج یک سایت را امتحان می‌کند؛ اگر دو بار پشت هم جواب نگیرد، آن سرور را برای مشتری‌هایش آخر صف می‌گذارد تا وقتی دوباره جواب بدهد. این‌ها هم این‌جا می‌آیند: سروری که ۳ دقیقه گزارش ندهد، دیسک بالای ۹۰٪، جدول اتصال‌ها بالای ۸۰٪، گواهی HTTPS که کمتر از ۱۴ روز مانده و تمدید نشده، و رم یا پردازندهٔ بالای ۹۰٪ در ۱۰ دقیقه. هر تغییر یک بار به ادمین‌های ربات هم فرستاده می‌شود.": "Every half minute each relay tries a site through each exit server; if it gets no answer twice in a row, it puts that server last for its customers until it answers again. These also show here: a server silent for 3 minutes, a disk over 90%, a connection table over 80%, an HTTPS certificate with less than 14 days left and not renewed, and RAM or CPU over 90% for 10 minutes. Each change is also sent once to the bot’s admins.",
 #"هر رله یک در ورود مشتری‌هاست؛ همهٔ رله‌ها مشتری‌ها و حجم مشترک دارند. مشتری می‌تواند یکی را DNS اول و دیگری را DNS دوم بگذارد.": "Each relay is a way in for customers; all relays share the customers and their quotas. A customer can set one as DNS 1 and another as DNS 2.",
@@ -43376,14 +43004,11 @@ exit 0
 #"هر مشتری لینک دعوت خودش را بگیرد": "Every customer gets their own invitation link",
 #"هر وقت خواستید دوباره یکی از دکمه‌ها را بزنید.": "Press one of the buttons again whenever you like.",
 #"هر پلن تعداد دستگاه خودش را دارد (ستون «دستگاه»)، یعنی چند آی‌پی هم‌زمان می‌توانند وصل باشند. اگر آی‌پی تازه‌ای بیاید و جا نباشد، قدیمی‌ترین آی‌پی حذف می‌شود. مشتری روی پلن فعالش می‌تواند از پنل یا ربات دستگاه اضافه بخرد، با رسید یا از کیف پول. دستگاه اضافه تا وقتی همان پلن را تمدید کند می‌ماند و با خرید پلن دیگر از بین می‌رود. حداکثر": "Each plan has its own number of devices (the “Devices” column): how many IPs can be connected at once. When a new IP comes and there is no room, the oldest one is removed. On an active plan, a customer can buy extra devices from the panel or the bot, by receipt or from the wallet. An extra device lasts while the same plan is renewed and ends when another plan is bought. At most",
-#"هر پلن یعنی یک قالب، برای چند روز، با یک حجم و یک قیمت. مشتری در پنل خودش پلن را انتخاب می‌کند و رسید می‌فرستد؛ با تأیید رسید همه‌چیز خودکار روی حسابش می‌نشیند. خرید دوبارهٔ همان پلن پیش از تمام شدنش تمدید است: روزها و حجم روی باقی‌مانده اضافه می‌شوند. خرید پلن دیگر از همان لحظه از نو شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ این را پیش از خرید به مشتری می‌گوییم. «نامحدود» فقط با تیک خودش؛ خانهٔ خالیِ حجم پذیرفته نمی‌شود.": "Each plan is a template, for a number of days, with a quota and a price. The customer picks a plan in their own panel and sends a receipt; on approval everything is put on their account automatically. Buying the same plan again before it ends is a renewal: the days and quota are added to what is left. Buying another plan starts over from that moment and what was left is lost; the customer is told this before buying. “Unlimited” only by its own tick; an empty quota box is not accepted.",
 #"هر چند روز: عددی بین ۱ و ۶۰": "Every how many days: a number from 1 to 60",
 #"هر کانفیگ از چند آی‌پی در روز": "Addresses a config may connect from in a day",
-#"هر کس با این لینک ثبت‌نام کند، مشتری شما می‌شود و پلن‌ها و اطلاعات پرداخت شما را می‌بیند.": "Whoever signs up with this link becomes your customer and sees your plans and payment details.",
 #"هر کس با لینک شما حساب بسازد و پلن بخرد،": "When someone makes an account with your link and buys a plan,",
 #"هرگز": "Never",
 #"هست": "exists",
-#"هشدارها": "Alerts",
 #"هشدارهای هستهٔ لینوکس — سرور خارج": "Linux kernel warnings — exit server",
 #"هشدارهای هستهٔ لینوکس — کم آمدن حافظه، پر شدن جدول اتصال‌ها": "Linux kernel warnings — running out of memory, the connection table filling up",
 #"هفتهٔ": "Week",
@@ -43400,7 +43025,6 @@ exit 0
 #"همه (": "All (",
 #"همه، از جمله سرویس‌هایی که بعداً اضافه شوند": "All, including services added later",
 #"همهٔ این‌ها فقط روی اینترنتی کار می‌کنند که آی‌پی‌اش را ثبت کرده‌اید.": "All of these work only on the internet connection whose IP you registered.",
-#"همهٔ تاریخ‌ها این‌طور نشان داده می‌شوند، به وقت تهران: پنل ادمین، پنل مشتری و پیام‌های ربات.": "Every date is shown this way, in Tehran time: the admin panel, the customer panel and the bot’s messages.",
 #"همهٔ تیکت‌ها": "All tickets",
 #"همهٔ خریدها و تمدیدها": "Every purchase and renewal",
 #"همهٔ رله‌ها": "All relays",
@@ -43417,16 +43041,12 @@ exit 0
 #"همین آی‌پی را ثبت کن": "Register this IP",
 #"همین الان": "Just now",
 #"همین حالا بفرست": "Send now",
-#"همین حالا:": "Right now:",
 #"همین سرویس، ولی رمزگذاری‌شده. مثل DNS معمولی، فقط روی اینترنتی کار می‌کند که آی‌پی‌اش را ثبت کرده‌اید. این آدرس مخصوص حساب شماست و به رله می‌گوید قالب شما کدام است.": "The same service, encrypted. Like plain DNS, it works only on the internet connection whose IP you registered. This address is your account’s own and tells the relay which template is yours.",
 #"همین سرویس، ولی رمزگذاری‌شده. مثل DNS معمولی، فقط روی اینترنتی کار می‌کند که آی‌پی‌اش را ثبت کرده‌اید. هر سرور آدرس‌های خودش را دارد؛ اگر یکی فیلتر شد، سراغ دیگری بروید. آدرس‌های DoH مخصوص حساب شماست.": "The same service, encrypted. Like plain DNS, it works only on the internet connection whose IP you registered. Each server has its own addresses; if one is filtered, use another. The DoH addresses are your account’s own.",
 #"همین مبلغ را واریز کنید و رسیدش را بفرستید؛ بعد از تأیید، به کیف پولتان اضافه می‌شود. حداقل": "Pay exactly this amount and send its receipt; after it is approved, it is added to your wallet. At least",
 #"هنوز آدرس DoH ندارید؛ پروفایل آیفون با آن ساخته می‌شود.": "You do not have a DoH address yet; the iPhone profile is made with it.",
 #"هنوز آماده نیست:": "Not ready yet:",
-#"هنوز آماری نرسیده": "No stats yet",
-#"هنوز آماری نرسیده.": "No stats yet.",
 #"هنوز آنلاین نشده": "Not online yet",
-#"هنوز ادمینی نساخته‌اید.": "You have not made any admins yet.",
 #"هنوز تمام نشده؛ این پلن رزرو می‌شود و بعد از تمام شدن آن خودکار فعال می‌شود.": "has not ended; this plan is reserved and starts by itself when it ends.",
 #"هنوز تیکتی ندارید.": "You have no tickets yet.",
 #"هنوز تیکتی نفرستاده‌اید.": "You have not sent any tickets yet.",
@@ -43435,22 +43055,16 @@ exit 0
 #"هنوز رله‌ای نیست": "No relay yet",
 #"هنوز عضو کانال نشده‌اید.": "You have not joined the channel yet.",
 #"هنوز قالبی نیست": "No templates yet",
-#"هنوز لاگی نفرستاده‌اند. هر سرور ایران لاگش را هر ۵ دقیقه یک بار می‌فرستد؛ سرورهای قدیمی‌تر بعد از ارتقا.": "They have not sent logs yet. Each Iran server sends its log every 5 minutes; older servers after they are upgraded.",
 #"هنوز مصرفی از این سرور ثبت نشده.": "No usage recorded from this server yet.",
-#"هنوز مصرفی ثبت نشده. نمودارها از اولین همگام‌سازی رله بعد از این نسخه پر می‌شوند.": "No usage recorded yet. The charts fill from the relays’ first sync after this version.",
 #"هنوز نه": "not yet",
 #"هنوز وصل نشده": "not connected yet",
 #"هنوز پلن نخریده‌اند": "Have not bought a plan yet",
-#"هنوز پلنی نساخته‌اید. تا وقتی پلنی نباشد، مشتری رسید را بدون انتخاب پلن می‌فرستد و سهمیه را خودتان می‌گذارید.": "You have not made any plans yet. Until there is a plan, the customer sends a receipt without choosing one and you set the quota yourself.",
 #"هنوز پلنی نیست": "No plans yet",
 #"هنوز چیزی نرسیده.": "Nothing has arrived yet.",
 #"هنوز چیزی ننوشته‌اید؛ مشتری موقع خرید نمی‌داند کجا واریز کند.": "You have not written anything yet; at purchase the customer does not know where to pay.",
-#"هنوز چیزی نیامده و نرفته.": "Nothing has come in or gone out yet.",
 #"هنوز چیزی نیست": "Nothing yet",
 #"هنوز چیزی نیست. چند دقیقه بعد از اولین استفاده این‌جا پر می‌شود.": "Nothing yet. This fills up a few minutes after first use.",
 #"هنوز کانفیگی ندارید.": "You have no config yet.",
-#"هنوز کسی ثبت‌نام نکرده.": "Nobody has signed up yet.",
-#"هنوز کلیدی نساخته‌اید.": "You have not made any keys yet.",
 #"هنوز گزارشی نداده": "Has not reported yet",
 #"هوش مصنوعی": "AI",
 #"هونکای استار ریل": "Honkai: Star Rail",
@@ -43458,7 +43072,6 @@ exit 0
 #"هیلو": "Halo",
 #"هیچ": "nothing",
 #"هیچ رله‌ای تیک نخورده بود؛ همه به این مشتری نشان داده می‌شوند": "No relay was ticked; all are shown to this customer",
-#"هیچ رله‌ای هنوز DNS امن را روشن نکرده؛ رله برای این کار به دامنه و گواهی نیاز دارد.": "No relay has turned secure DNS on yet; a relay needs a domain and a certificate for it.",
 #"هیچ قالبی": "No template",
 #"هیچ‌کدام": "None",
 #"و دومی را": "and the second as",
@@ -43512,12 +43125,8 @@ exit 0
 #"وضعیت:": "Status:",
 #"وقتی به سقف رسید:": "When the cap is reached:",
 #"وقتی توکن جفت‌کردن خواست، این را بدهید:": "When it asks for the pairing token, give it this:",
-#"وقتی در این جدول «وصل» شد، از ستون «سرور خارج» جدول رله‌ها رله‌هایی را که باید از آن بروند انتخاب کنید. توکن را فقط به خودتان بدهید.": "When it shows “Connected” in this table, pick in the relays table’s “Exit server” column the relays that should go through it. Give the token only to yourself.",
 #"وقتی رله در جدول «وصل» شد، اگر تونل می‌خواهد، از ستون «تونل» روشنش کنید؛ رله تا یک دقیقه بعد خودش آن را برپا می‌کند.": "When the relay shows “Connected” in the table, if it needs a tunnel, turn it on from the “Tunnel” column; the relay sets it up by itself within a minute.",
-#"وقتی روشن باشد، DNS برای همه باز است: کسی لازم نیست ثبت‌نام کند یا آی‌پی ثبت کند، و سهمیه، تاریخ پایان و مسدود بودن مشتری‌ها هم جلوی کسی را نمی‌گیرد. مصرف کسانی که آی‌پی ثبت نکرده‌اند جایی شمرده نمی‌شود. تا یک دقیقه روی همهٔ رله‌ها و تک‌سرورها اعمال می‌شود؛ با خاموش کردنش همه‌چیز مثل قبل می‌شود. DoH و DoT همچنان فقط برای مشتری‌ها کار می‌کنند.": "When it is on, the DNS is open to everyone: nobody needs to sign up or register an IP, and quotas, end dates and blocked customers stop no one. The usage of those without a registered IP is not counted anywhere. It reaches every relay and single server within a minute; turning it off puts everything back as it was. DoH and DoT still work only for customers.",
 #"وقتی سرویسی باز نمی‌شود، این را روشن کنید و همان سرویس را دوباره باز کنید: این‌جا می‌بینید دستگاه‌هایتان چه اسم‌هایی پرسیدند، هر کدام از رله رفت یا مستقیم، و چرا. پشتیبانی هم همین را می‌بیند. فقط تا یک ساعت نگه داشته می‌شود و خاموشش که کنید همان لحظه پاک می‌شود.": "When a service does not open, turn this on and open that service again: here you see which names your devices asked, whether each went through the relay or directly, and why. Support sees the same. It is kept for up to an hour, and when you turn it off it is deleted at once.",
-#"وقتی مشتری پلن را انتخاب می‌کند، در پنل خودش و در ربات همین را می‌بیند: کجا و به نام چه کسی واریز کند. عوض کردنش فوراً همه‌جا عوض می‌شود.": "When a customer picks a plan, they see exactly this in their own panel and in the bot: where and in whose name to pay. Changing it changes it everywhere at once.",
-#"وقتی کسی با لینک دعوت یک مشتری (لینک ربات یا لینک ثبت‌نام) حساب بسازد و پلن بخرد، این درصد از قیمت پلن به کیف پول همان مشتری اضافه می‌شود؛ فرقی نمی‌کند با رسید خریده باشد یا از کیف پول. شارژ کیف پول پورسانت ندارد، تا یک پول دو بار حساب نشود. دعوت‌کننده فقط موقع ساختن حساب ثبت می‌شود و بعداً عوض نمی‌شود، و هیچ‌کس نمی‌تواند خودش را دعوت کند. هر مشتری لینک دعوتش را در ربات (بخش کیف پول) و در پنل خودش می‌بیند.": "When someone signs up with a customer’s invitation link (the bot link or the sign-up link) and buys a plan, this percent of the plan’s price is added to that customer’s wallet, whether they paid by receipt or from the wallet. Wallet top-ups earn no commission, so the same money is not counted twice. The inviter is recorded only when the account is made and never changes, and nobody can invite themselves. Each customer sees their invitation link in the bot (under Wallet) and in their own panel.",
 #"ووترینگ ویوز": "Wuthering Waves",
 #"ویرایش": "Edit",
 #"ویرایش حساب این کاربر ←": "Edit this user’s account →",
@@ -43550,11 +43159,9 @@ exit 0
 #"پث آو اگزایل": "Path of Exile",
 #"پر شده است:": "is full:",
 #"پراکسی": "Proxy",
-#"پرداخت": "Payment",
 #"پرسیده می‌شود": "is asked",
 #"پرش به:": "Jump to:",
 #"پرفکت ورلد": "Perfect World",
-#"پرمصرف‌ترین‌ها — ۷ روز اخیر": "Top users — last 7 days",
 #"پروفایل آیفون این سرور": "iPhone profile for this server",
 #"پروفایل را از فهرست انتخاب کنید": "Pick a preset from the list",
 #"پروفایل سرعت:": "Performance preset:",
@@ -43572,7 +43179,6 @@ exit 0
 #"پلن انتخاب‌شده فوراً فعال می‌شود و قیمتش از کیف پول کم می‌شود؛ رسید لازم نیست.": "The chosen plan is activated at once and its price comes off the wallet; no receipt needed.",
 #"پلن این حساب وایرگارد ندارد": "This account's plan has no WireGuard",
 #"پلن این کاربر وایرگارد ندارد؛ در تب وایرگارد پلن‌ها را عوض کنید": "This customer's plan has no WireGuard; change the plans on the WireGuard tab",
-#"پلن تازه": "New plan",
 #"پلن تست رایگان ساخته شد؛ مشتری‌ها با تلگرام وصل‌شده یک بار می‌گیرندش": "Free trial plan created; customers with a linked Telegram get it once",
 #"پلن حذف شد": "Plan deleted",
 #"پلن دست‌کم روی یک سرور باشد": "A plan has to be on at least one server",
@@ -43595,7 +43201,6 @@ exit 0
 #"پلن‌ها (": "Plans (",
 #"پلن‌ها و پرداخت": "Plans and payment",
 #"پلن‌هایی این قالب را می‌فروشند؛ اول آن‌ها را حذف کنید یا قالبشان را عوض کنید": "Plans sell this template; delete them or change their template first",
-#"پلن‌هایی که وایرگارد دارند": "Plans with WireGuard",
 #"پلی‌استیشن": "PlayStation Network",
 #"پنل ادمین — سرور خارج": "Admin panel — exit server",
 #"پنل به این آدرس ربات خبر می‌دهد: تأیید یا رد رسید، جواب تیکت، ۸۰٪ و ۹۵٪ حجم، تمام شدن حجم، نزدیک شدن و تمام شدن دوره. هر خبر یک متن فارسی آماده دارد که ربات می‌تواند عیناً برای مشتری بفرستد.": "The panel tells the bot at this address about: a receipt approved or rejected, a ticket reply, 80% and 95% of the quota, the quota running out, the period ending soon and ending. Each message has a ready text the bot can send to the customer as it is.",
@@ -43603,9 +43208,7 @@ exit 0
 #"پنل جواب درستی نداد (HTTP": "The panel did not answer properly (HTTP",
 #"پنل را همان‌طور ببینید که او می‌بیند": "See the panel as they see it",
 #"پنل فهرست کامل را از سازنده‌اش می‌گیرد، دامنه‌هایی را که خود سرویس لازم دارد یا از رله می‌روند از آن کنار می‌گذارد، و هر رله فقط یک بار دریافتش می‌کند؛ روشن شدنش چند دقیقه طول می‌کشد. توجه: بعضی بازی‌های موبایل برای دیدن تبلیغ جایزه می‌دهند؛ اگر تبلیغ بسته شود، آن جایزه هم دیگر نمی‌آید.": "The panel takes the full list from its maker, leaves out the domains the service itself needs or that go through the relay, and each relay downloads it once; turning it on takes a few minutes. Note: some mobile games reward watching ads; with ads blocked, that reward stops too.",
-#"پنل مدیریت": "Admin panel",
 #"پنل مشتری": "Customer panel",
-#"پنل مشتری برای کسی که سرویس ندارد": "The customer panel for those without service",
 #"پنل مشتری برای کسی که سرویس ندارد خودش باز می‌شود": "The customer panel opens by itself for those without service",
 #"پنل مشتری دیگر خودش باز نمی‌شود": "The customer panel no longer opens by itself",
 #"پنل مشتری: هر سروری که دامنه دارد، پنل مشتری را هم روی همان دامنه نشان می‌دهد. تیکش را بردارید تا هر کس آن را باز کند به پنل یکی از سرورهای دیگر فرستاده شود؛ DoH و DoT همان سرور مثل قبل کار می‌کنند. دست‌کم یک سرور باید پنل داشته باشد. سروری که دامنه ندارد پنلی هم ندارد.": "Customer panel: every server with a domain also shows the customer panel on it. Untick it and whoever opens it is sent to another server's panel; that server's DoH and DoT keep working as before. At least one server must keep its panel. A server with no domain has no panel.",
@@ -43631,7 +43234,6 @@ exit 0
 #"پیام تازه از": "New message from",
 #"پیام تازه — تیکت دوباره باز می‌شود": "New message — the ticket reopens",
 #"پیام فرستاده شد": "Message sent",
-#"پیام فقط به مشتری‌هایی می‌رسد که تلگرامشان به ربات وصل است. ربات پیام‌ها را یکی‌یکی و با فاصله می‌فرستد تا تلگرام محدودش نکند؛ برای همین اگر مشتری زیاد باشد، چند دقیقه طول می‌کشد. عدد کنار هر گزینه، تعداد همین لحظه است.": "The message reaches only customers whose Telegram is linked to the bot. The bot sends them one by one, spaced out, so Telegram does not limit it; with many customers it takes a few minutes. The number beside each choice is the count right now.",
 #"پیامتان را بنویسید یا عکس بفرستید:": "Write your message or send a picture:",
 #"پیام‌هایتان زیاد شده؛ کمی بعد دوباره بنویسید": "You have sent many messages; write again a little later",
 #"پیش از ذخیره از همین سرور آزموده می‌شوند — اگر جواب ندهند، همان قبلی می‌ماند.": "They are tested from this server before saving — if they do not answer, the previous ones stay.",
@@ -43656,7 +43258,6 @@ exit 0
 #"چنین اسمی نیست": "No such name",
 #"چنین کاری نیست": "No such action",
 #"چه": "What",
-#"چه بخش‌هایی را ببیند": "Which parts they see",
 #"چیزی برای بازگردانی نیست": "Nothing to restore",
 #"چیزی نیست": "Nothing",
 #"کار آپدیت متوقف شد": "The upgrade job stopped",
@@ -43673,7 +43274,6 @@ exit 0
 #"کاربران (": "Users (",
 #"کاربران:": "Users:",
 #"کاربری با این آیدی تلگرام نیست": "No user with this Telegram ID",
-#"کارمند است و مشتری مال خودش ندارد؛ همهٔ مشتری‌ها را در بخش‌هایی که برایش تیک خورده می‌بیند. هر کاری که کرده با نام کاربری‌اش در صفحهٔ": "Staff, with no customers of their own; they see every customer in the parts ticked for them. Everything they did is recorded with their username on the",
 #"کارهای دیگر": "More actions",
 #"کال آو دیوتی": "Call of Duty",
 #"کامل": "Full",
@@ -43697,7 +43297,6 @@ exit 0
 #"کد اتصال درست نیست": "The link code is not correct",
 #"کد اتصال منقضی شده؛ یکی تازه بگیرید": "The link code has expired; get a new one",
 #"کد بازیابی رمز پنل:": "Panel password recovery code:",
-#"کد تازه": "New code",
 #"کد تخفیف": "Discount code",
 #"کد تخفیف «": "Discount code “",
 #"کد تخفیف حذف شد": "Discount code deleted",
@@ -43723,11 +43322,8 @@ exit 0
 #"کلید API معتبر نیست": "The API key is not valid",
 #"کلید «": "Key “",
 #"کلید باطل شد؛ رباتی که با آن کار می‌کرد قطع شد": "Key revoked; the bot that used it has been cut off",
-#"کلید تازه": "New key",
-#"کلید رله هنوز نرسیده؛ یک دقیقه بعد صفحه را تازه کنید.": "The relay's key has not arrived yet; refresh in a minute.",
 #"کلید رمزگذاری عکس‌ها": "Picture encryption key",
 #"کلید رمزگذاری عکس‌ها (": "Picture encryption key (",
-#"کلیدها": "Keys",
 #"کلیدی روی این سرور نیست": "There is no key on this server",
 #"کم آمدن حافظه، پر شدن جدول اتصال‌ها": "Running out of memory, the connection table filling up",
 #"کم شد": "taken away",
@@ -43760,9 +43356,7 @@ exit 0
 #"گروه پیدا نشد": "Group not found",
 #"گروهِ «پیش‌فرض خاموش» تیک نخورد": "An “off by default” group was not ticked",
 #"گروهی با این اسم هست": "There is already a group with this name",
-#"گروه‌های من": "My groups",
 #"گری زون وارفر": "Gray Zone Warfare",
-#"گزارش DNS": "DNS report",
 #"گزارش DNS خاموش و پاک شد": "DNS report turned off and cleared",
 #"گزارش DNS روشن شد؛ تا یک ساعت نگه داشته می‌شود": "DNS report turned on; kept for up to an hour",
 #"گزارش DNS —": "DNS report —",
@@ -43798,12 +43392,9 @@ exit 0
 #"یک راه دیگر برای استفاده از سرویس، کنار DNS: برنامهٔ وایرگارد را روی گوشی نصب می‌کنید و کانفیگ را به آن می‌دهید. جایی که DNS کار نمی‌کند، این کار می‌کند.": "Another way to use the service, beside DNS: you install the WireGuard app on your phone and give it the config. Where DNS does not work, this does.",
 #"یک راه دیگر برای استفاده از سرویس، کنار DNS؛ جایی که DNS کار نمی‌کند، این کار می‌کند.": "Another way to use the service, beside DNS; where DNS does not work, this does.",
 #"یک ربات تلگرام برای مشتری‌ها و خودتان: خرید پلن و فرستادن رسید، ثبت آی‌پی، تیکت، و برای شما رسید تازه با دکمهٔ تأیید. همه‌چیز روی همین سرور است.": "A Telegram bot for your customers and yourself: buying a plan and sending a receipt, registering an IP, tickets, and for you new receipts with an approve button. Everything is on this server.",
-#"یک فایل sqlite با همهٔ کاربران، آی‌پی‌ها، قالب‌ها، تراکنش‌ها و تنظیمات. آمار سلامت سرورها داخلش نیست — حجم زیادی است و ارزشی در بازگردانی ندارد.": "An sqlite file with all users, IPs, templates, transactions and settings. The servers’ health stats are not in it — they are large and not worth restoring.",
-#"یک فایل، رمزگذاری‌شده با همین رمز: دیتابیس، کلید عکس‌ها، و آنچه برای بالا آوردن همین پنل روی سرور دیگری لازم است. رمز را جایی جدا نگه دارید؛ بدون آن فایل باز نمی‌شود و این‌جا هم نشان داده نمی‌شود. برای بازگردانی، فایل را با همین رمز در کارت «نسخهٔ پشتیبان» بفرستید؛ یا روی هر سیستمی با openssl:": "One file, encrypted with this password: the database, the picture key, and what is needed to bring this panel up on another server. Keep the password somewhere separate; without it the file does not open, and it is not shown here either. To restore, upload the file with this password in the “Backup” card; or on any system with openssl:",
 #"یک نام برای کلید بنویسید": "Write a name for the key",
 #"یک نام بنویسید، نه آی‌پی": "Write a name, not an IP",
 #"یک نام کاربری انگلیسی برای ورود به پنل وب انتخاب کنید (حروف انگلیسی و عدد، مثلاً ali_gamer):": "Choose an English username for signing in to the web panel (English letters and numbers, e.g. ali_gamer):",
-#"یک نسخهٔ پشتیبان بفرستید.": "Upload a backup.",
 #"یک پلن تست رایگانِ روشن دیگر هست؛ اول آن را خاموش کنید": "Another free trial plan is on; turn it off first",
 #"یکی از رله‌هاست": "is one of the relays",
 #"یکی از سرورهای خارج است": "is one of the exit servers",
@@ -43815,7 +43406,6 @@ exit 0
 #"۲. در برنامه + را بزنید و QR کد را اسکن کنید؛ یا فایل کانفیگ را دانلود کنید و در برنامه «Import from file» / «Create from file» را بزنید.": "2. In the app tap + and scan the QR code; or download the config file and choose “Import from file” / “Create from file” in the app.",
 #"۲۰۰ خط آخر": "Last 200 lines",
 #"۳ تا ۳۲ حرف انگلیسی کوچک، عدد، . - _": "3 to 32 lower-case English letters, digits, . - _",
-#"۳ تا ۳۲ حرف انگلیسی کوچک، عدد، نقطه، خط تیره یا زیرخط. از روی سرور هم:": "3 to 32 lower-case English letters, digits, dots, dashes or underscores. From the server too:",
 #"۳. تونل را روشن کنید.": "3. Turn the tunnel on.",
 #"۳۰ روز": "30 days",
 #"۳۰ روز اخیر": "Last 30 days",
@@ -43914,14 +43504,12 @@ exit 0
 #"❓ راهنما": "❓ Help",
 #"➕ تیکت تازه": "➕ New ticket",
 #"➕ شارژ کیف پول": "➕ Top up wallet",
-#"🆕 نسخهٔ تازه از گیت‌هاب": "🆕 New version from GitHub",
 #"🌍 DNS عمومی روشن است: هر کسی آدرس رله را بگذارد، بدون ثبت‌نام و ثبت آی‌پی سرویس می‌گیرد.": "🌍 Public DNS is on: anyone who sets the relay’s address gets the service, with no sign-up and no registered IP.",
 #"🌐 DNS معمولی — در کنسول، مودم یا گوشی، هم DNS اول و هم دوم را روی یکی از این‌ها بگذارید:": "🌐 Plain DNS — on a console, modem or phone, set both the first and the second DNS to one of these:",
 #"🌐 آدرس DNS معمولی هنوز آماده نیست؛ کمی بعد دوباره بزنید.": "🌐 The plain DNS address is not ready yet; tap again in a little while.",
 #"🌐 ثبت آی‌پی": "🌐 Register IP",
 #"🌐 ثبت آی‌پی: سرویس فقط روی آی‌پی ثبت‌شده کار می‌کند": "🌐 Register IP: the service only works on a registered IP",
 #"🌐 لینک ثبت‌نام در سایت:": "🌐 Sign-up link on the website:",
-#"🎁 «تست رایگان»: فروخته نمی‌شود؛ مشتری با یک کلیک می‌گیردش، در پنل خودش یا ربات. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب فقط یک بار. کسی که همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین نرود. یک پلن تست در یک زمان.": "🎁 “Free trial”: not sold; the customer gets it with one click, in their own panel or the bot. It needs a linked Telegram, and each Telegram account and each account only once. Someone who has an active service right now does not get it, so what is left of their plan is not lost. One trial plan at a time.",
 #"🎁 با لینک دعوت یکی از دوستانتان آمده‌اید.": "🎁 You came with a friend’s invitation link.",
 #"🎁 تست رایگان": "🎁 Free trial",
 #"🎁 تست رایگان فعال شد.": "🎁 Free trial activated.",
@@ -43965,7 +43553,6 @@ exit 0
 #"📡 DNSهای شما": "📡 Your DNS",
 #"📢 تبلیغات": "📢 Ads",
 #"📢 عضویت در کانال": "📢 Join the channel",
-#"📣 پیام همگانی": "📣 Broadcast message",
 #"📥 دریافت کانفیگ وایرگارد": "📥 Get a WireGuard config",
 #"📥 کانفیگ سرورهای تازه": "📥 Configs for the new servers",
 #"📥 کانفیگ‌ها و QR کدها": "📥 Configs and QR codes",
@@ -43975,7 +43562,6 @@ exit 0
 #"📱 دستگاه اضافه ·": "📱 Extra device ·",
 #"📱 دستگاه اضافه —": "📱 Extra device —",
 #"📱 دستگاه:": "📱 Devices:",
-#"📱 دستگاه‌ها و تغییر آی‌پی": "📱 Devices and IP changes",
 #"📱 دستگاه‌های الان:": "📱 Devices now:",
 #"📲 همهٔ کانفیگ‌ها و QR کدها": "📲 All configs and QR codes",
 #"📲 پروفایل آیفون": "📲 iPhone profile",
@@ -44000,12 +43586,10 @@ exit 0
 #"🗄 بکاپ پنل —": "🗄 Panel backup —",
 #"🗑 حذف": "🗑 Delete",
 #"🚀 سرعت:": "🚀 Speed:",
-#"🚫 مسدودی‌ها": "🚫 Blocks",
 #"🛒 تمدید": "🛒 Renew",
 #"🛒 خرید / تمدید": "🛒 Buy / Renew",
 #"🛒 خرید / تمدید: انتخاب پلن و فرستادن رسید": "🛒 Buy / Renew: choose a plan and send the receipt",
 #"🛒 خرید پلن": "🛒 Buy a plan",
-#"🛡 تنظیمات وایرگارد": "🛡 WireGuard settings",
 #"🛡 وایرگارد": "🛡 WireGuard",
 #"🛡 وایرگارد آنلاین": "🛡 WireGuard online",
 #"🛡 کانفیگ وایرگارد": "🛡 WireGuard config",
@@ -44015,7 +43599,209 @@ exit 0
 #"🟢 آنلاین الان (": "🟢 Online now (",
 #"🤖 لینک ربات:": "🤖 Bot link:",
 #"🧾 رسید #": "🧾 Receipt #",
-#"🧾 پرداخت با رسید": "🧾 Pay with a receipt"
+#"🧾 پرداخت با رسید": "🧾 Pay with a receipt",
+#"نمای کلی": "Overview",
+#"درخواست پذیرفته نشد": "Request not accepted",
+#"صفحه را دوباره باز کنید و دوباره بفرستید": "Open the page again and resubmit",
+#"کمی آهسته‌تر؛ دوباره بفرستید": "A little slower; please submit again",
+#"این صفحه کهنه شده؛ دوباره بازش کنید": "This page has expired; open it again",
+#"تلاش‌ها زیاد شد؛ کمی بعد دوباره امتحان کنید": "Too many attempts; try again shortly",
+#"ارسال خودکار نسخهٔ پشتیبان به تلگرام": "Automatic backup to Telegram",
+#"دفتر پرسش‌های DNS": "DNS report",
+#"DNS رمزگذاری‌شده — هفتهٔ اخیر": "Secure DNS (DoH and DoT) — last 7 days",
+#"DNS رمزگذاری‌شده (DoH و DoT)": "Secure DNS (DoH and DoT)",
+#"ترافیک و آمار سرورها": "Usage and stats per server",
+#"ترافیک به تفکیک سرور": "Usage by server",
+#"اعلان‌های سیستم": "Alerts",
+#"سرورهایی که مشتری می‌بیند": "Servers for customers",
+#"یادداشت سرورها برای مشتری‌های شما": "Server notes for your customers",
+#"دسترسی آزاد به DNS": "Public DNS",
+#"🆕 به‌روزرسانی تازه در گیت‌هاب": "🆕 New version from GitHub",
+#"جابه‌جایی پنل — سرور آماده‌باش": "Move the panel — standby server",
+#"DNS مرجع (بالادستی)": "Upstream DNS",
+#"📱 دستگاه‌ها و آی‌پی‌های مشتری": "📱 Devices and IP changes",
+#"🛡 تونل وایرگارد": "🛡 WireGuard",
+#"🛡 پیکربندی وایرگارد": "🛡 WireGuard settings",
+#"💰 موجودی و کیف پول": "💰 Wallet",
+#"🎁 پاداش دعوت": "🎁 Invite friends",
+#"📣 ارسال پیام به همه": "📣 Broadcast message",
+#"سنجش سلامت سرویس‌ها": "Service diagnosis",
+#"خروجی تست": "Result",
+#"پروفایل فروشنده": "Seller account",
+#"فهرست فروشنده‌ها": "Sellers",
+#"این بخش برایتان باز نیست": "No access",
+#"تازه‌ترین خریدها": "Latest purchases",
+#"پروفایل من": "My account",
+#"پروفایل من —": "My account —",
+#"انتخاب‌های پیشین": "Earlier decisions",
+#"بازیابی از نسخهٔ پشتیبان": "Restore",
+#"دیتابیس فعلی با این فایل عوض شود؟": "Replace the current database with this file?",
+#"نشانی پنل تغییر کرد": "Panel address changed",
+#"بازیابی انجام شد": "Restored",
+#"روند روزانه": "Daily",
+#"سرعت در ۲۴ ساعت گذشته": "Speed, last 24 hours",
+#"ساعات اوج مصرف — هفتهٔ اخیر": "Busiest hours — last 7 days",
+#"جدول روزها": "Daily table",
+#"ساخت پلن": "New plan",
+#"آنچه مشتری می‌بیند": "The customer sees this",
+#"تراکنش‌های کیف پول": "Wallet history",
+#"رابط API ربات": "Bot API",
+#"کلیدهای دسترسی": "Keys",
+#"اطلاع‌رسانی به ربات (webhook)": "Telling the bot (webhook)",
+#"ساخت کلید": "New key",
+#"قالب‌های سرویس": "Templates",
+#"ساخت قالب": "New template",
+#"فایل پشتیبان": "Backup",
+#"تقویم": "Date",
+#"صفحهٔ ورود برای مشتریِ بدون سرویس": "The customer panel for those without service",
+#"الزام اتصال تلگرام": "Telegram required",
+#"نشانی همین پنل": "This panel’s address",
+#"شناسهٔ ورود به پنل": "This panel’s username",
+#"گذرواژهٔ پنل": "This panel’s password",
+#"سرورهای داخل ایران": "Iran servers",
+#"گروه‌های اختصاصی": "My groups",
+#"ترافیک": "Usage",
+#"مشخصات واریز": "Payment details",
+#"نودها": "Node",
+#"🚫 فهرست مسدودها": "🚫 Blocks",
+#"دامنه‌های دلخواه، مسدودی‌ها و DNS اختصاصیِ این قالب": "This template’s custom domains, blocks and separate DNS",
+#"سهم‌بندی": "Each one’s share",
+#"سرعت کل در ۲۴ ساعت گذشته": "Total speed, last 24 hours",
+#"پرمصرف‌ترین‌ها — هفتهٔ اخیر": "Top users — last 7 days",
+#"سایر سرورها": "The other servers",
+#"تأخیر پاسخ": "Response time",
+#"رله‌های دارای وایرگارد": "Relays with WireGuard",
+#"پلن‌های دارای وایرگارد": "Plans with WireGuard",
+#"پیکربندی": "configs",
+#"سقف‌ها": "Limits",
+#"ساخت کد تخفیف": "New code",
+#"ارسال‌شده‌ها": "Sent",
+#"پیوند ثبت‌نام برای مشتری‌های شما": "Sign-up link for your customers",
+#"بخش‌های قابل‌دسترس": "Which parts they see",
+#"تعویض گذرواژه": "Change password",
+#"قالب‌های مجاز": "Templates",
+#"دامنه‌های دلخواه — عبور از رله": "Custom domains — go through the relay",
+#"دامنه‌های بسته‌شده": "Blocked domains",
+#"DNS اختصاصی": "Separate DNS",
+#"نخست ربات را از صفحهٔ «ربات» فعال کنید و شناسهٔ تلگرام ادمین را بدهید؛ نسخهٔ پشتیبان برای ادمین‌های ربات ارسال می‌شود.": "First set up the bot on the “Bot” page and set the admin’s Telegram ID; the backup is sent to the bot’s admins.",
+#"در هفتهٔ اخیر هیچ‌کس از DNS رمزگذاری‌شده استفاده نکرده است.": "Nobody has used secure DNS in the last 7 days.",
+#"فقط شمارش می‌شود و اینکه چه نامی پرسیده شده هیچ‌جا ذخیره نمی‌شود. روزها به وقت تهران‌اند.": "Counts only; which names were asked is not kept anywhere. Days in Tehran time.",
+#"هنوز هیچ رله‌ای DNS رمزگذاری‌شده را فعال نکرده است؛ برای این کار رله به یک دامنه و گواهی نیاز دارد.": "No relay has turned secure DNS on yet; a relay needs a domain and a certificate for it.",
+#"هنوز ترافیکی ثبت نشده است. نمودارها پس از نخستین همگام‌سازی رله با این نسخه پر می‌شوند.": "No usage recorded yet. The charts fill from the relays’ first sync after this version.",
+#"روز و ساعت بر پایهٔ وقت تهران است. با کلیک روی نام هر مشتری، نمودار اختصاصی‌اش باز می‌شود.": "Day and hour in Tehran time. Click a customer’s name to see their own chart.",
+#"تأخیر پاسخ هنوز اندازه‌گیری نشده است؛ رله‌ها چند دقیقه پس از ارتقا به این نسخه نخستین اندازه را می‌فرستند.": "Response time has not been measured yet; the relays send the first measurement a few minutes after this version.",
+#"روی هر سرور کلیک کنید تا نمودارهای همان سرور باز شود. روزها به وقت تهران‌اند.": "Click a server to see its own charts. Days in Tehran time.",
+#"این یادداشت‌ها فقط به مشتری‌های خود شما نشان داده می‌شود. اگر خالی بماند، یادداشت مالک پنل (به رنگ خاکستری) دیده می‌شود.": "Only your customers see these. Leave one empty to show the panel owner’s note (in grey).",
+#"خاموش: فقط آی‌پی‌هایی که مشتری‌ها ثبت کرده‌اند به سرویس می‌رسند.": "Off: only the IPs customers registered get the service.",
+#"سرور آماده‌باش یکی از نودهاست؛ ابتدا یک نود اضافه کنید.": "The standby server is one of the nodes; add a node first.",
+#"این سرور به‌صورت تک‌سرور کار می‌کند و رلهٔ جداگانه‌ای ندارد.": "This is a single server and has no separate relay.",
+#"در این لحظه هیچ‌کس آنلاین نیست.": "Nobody is online right now.",
+#"توکن را فقط خودتان نگه دارید.": "Give the token only to yourself.",
+#"چنین مشتری‌ای پیدا نشد.": "User not found.",
+#"چنین سروری پیدا نشد.": "Server not found.",
+#"هنوز آماری دریافت نشده است.": "No stats yet.",
+#"تا اینجا کسی ثبت‌نام نکرده است.": "Nobody has signed up yet.",
+#"هنوز رسیدی ثبت نشده است.": "No receipts have come in.",
+#"هنوز ادمین دیگری اضافه نکرده‌اید.": "You have not made any admins yet.",
+#"هنوز کلیدی نساخته‌اید؛ اولین کلید را بسازید.": "You have not made any keys yet.",
+#"هنوز تراکنشی انجام نشده است.": "Nothing has come in or gone out yet.",
+#"دامنه‌ای در این بخش نیست.": "Has no domains.",
+#"مالک پنل هنوز نشانی پنل مشتری را تنظیم نکرده است.": "The panel’s owner has not set the customer panel address yet.",
+#"کلید رله هنوز نرسیده؛ یک دقیقه دیگر صفحه را تازه کنید.": "The relay's key has not arrived yet; refresh in a minute.",
+#"هرکس از این پیوند ثبت‌نام کند، مشتری شما حساب می‌شود و پلن‌ها و مشخصات واریز شما را می‌بیند.": "Whoever signs up with this link becomes your customer and sees your plans and payment details.",
+#"روی نام هر ادمین کلیک کنید تا آمار و فعالیت‌هایش را ببینید.": "Click an admin’s name to see their stats and actions.",
+#"یک نسخهٔ پشتیبان بارگذاری کنید.": "Upload a backup.",
+#"از این پس پنل این‌جاست؛ همین حالا ذخیره‌اش کنید:": "lives here from now on — save it right now:",
+#"نسخهٔ پیشین این‌جا نگهداری شد:": "The previous copy was kept here:",
+#"خود پنل نیز برای بارگذاری دیتابیس تازه راه‌اندازی مجدد می‌شود و چند ثانیه دیگر برمی‌گردد.": "This panel is restarting too, to open the new database. It will be back by itself in a few seconds.",
+#"برگشت به فهرست کاربران": "Go to users",
+#"آخرین آزمون:": "Last test:",
+#"پاسخی از رله‌ها نرسید. رله‌ها باید روی نسخهٔ جدید باشند.": "No answer from the relays. The relays must be on the new version.",
+#"این کلید را در تنظیمات ربات وارد کنید.": "Put this key in the bot’s settings.",
+#"نمایش داده می‌شود و بعداً قابل‌خواندن نیست؛ اگر گم شد، کلید دیگری بسازید و این را باطل کنید.": "is shown and cannot be read later; if you lose it, make a new one and revoke this one.",
+#"این رمز را به مشتری برسانید. فقط همین یک بار نمایش داده می‌شود.": "Send this password to the customer. It is shown only this once.",
+#"مشتری از همهٔ دستگاه‌ها خارج شد؛ اینترنتش قطع نشده است.": "The customer was signed out of every device. Their internet was not cut.",
+#"در نخستین ورود باید گذرواژهٔ خودش را بگذارد و پس از آن این رمز موقت دیگر کار نمی‌کند.": "On first sign-in they must choose their own password; after that this one no longer works.",
+#"در تلگرام سراغ": "in Telegram to",
+#"بروید، دستور": "go to",
+#"را بفرستید و توکن را بردارید.": "press it and get the token.",
+#"را بزنید؛ بدون این کار ربات نمی‌تواند به شما پیام بدهد.": "; otherwise the bot cannot message you.",
+#"شناسهٔ عددی تلگرام خودتان را از": "Get your numeric Telegram ID from",
+#"وقتی مشتری پلنی را برمی‌گزیند، در پنل و ربات همین متن را می‌بیند: به کجا و به نام چه کسی واریز کند. هر تغییری فوراً همه‌جا اعمال می‌شود.": "When a customer picks a plan, they see exactly this in their own panel and in the bot: where and in whose name to pay. Changing it changes it everywhere at once.",
+#"عدد مثبت به موجودی می‌افزاید و عدد منفی از آن کم می‌کند؛ موجودی هرگز زیر صفر نمی‌رود و مشتری هم پیام می‌گیرد.": "A positive number adds to the balance and a negative one takes from it; the balance never goes below zero. The customer is told too.",
+#"قالب‌های زیر را می‌توانید به مشتری‌ها و پلن‌هایتان اختصاص دهید.": "These are the templates you can give your customers and plans.",
+#"قالب رسیده‌اید و قالب دیگری نمی‌توانید بسازید.": "templates.",
+#"قالب تازه با همهٔ سرویس‌ها ساخته می‌شود؛ سپس تیک سرویس‌های ناخواسته را بردارید.": "A new template is made with every service; then untick what you do not want.",
+#"همهٔ تاریخ‌ها به همین شکل و به وقت تهران نشان داده می‌شود: در پنل ادمین، پنل مشتری و پیام‌های ربات.": "Every date is shown this way, in Tehran time: the admin panel, the customer panel and the bot’s messages.",
+#"نشانی فعلی:": "Right now:",
+#"خودِ گذرواژه ذخیره نمی‌شود و فقط هش آن نگه داشته می‌شود. با تغییرش همهٔ نشست‌های دیگر بسته می‌شوند.": "The password is not stored, only its hash. Changing it closes every other session.",
+#"هنوز گزارشی نرسیده است. هر سرور ایران هر ۵ دقیقه گزارش خود را می‌فرستد؛ سرورهای قدیمی‌تر بعد از ارتقا.": "They have not sent logs yet. Each Iran server sends its log every 5 minutes; older servers after they are upgraded.",
+#"با حذف یک گروه، دامنه‌های داخل آن هم پاک می‌شود.": "Deleting a group deletes the domains in it too.",
+#"قالب پیش‌فرض همیشه همهٔ دامنه‌های دلخواه را از رله عبور می‌دهد.": "The default template always routes all custom domains through the relay.",
+#"، از هر رله و از همان راهی که ترافیک مشتری می‌رود. اگر از سرور خارج نشود، آن سرویس آن سرور را قبول نمی‌کند و از دست ما کاری برنمی‌آید؛ اگر از سرور خارج بشود و از مسیر مشتری نه، مشکل از راه ایران تا خارج است. فقط پورت ۴۴۳ آزموده می‌شود؛ بازی‌هایی که از پورت‌های دیگر یا UDP استفاده می‌کنند در این تست نیستند.": ", from each relay and along the same path customer traffic takes. If it fails from the exit server, that service does not accept that server and there is nothing we can do; if it works from the exit server but not along the customer’s path, the problem is on the way from Iran to abroad. Only 443 is tested; games that play on other ports or UDP are not here.",
+#"نشانی باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.": "The address must be https (or http on this same server). When you save a new address, a signing secret is shown once so the bot can be sure a message comes from this panel. If the bot cannot be reached, a message is resent for about a day.",
+#"«آنلاین» یعنی در ۳ دقیقهٔ گذشته از مسیر رله ترافیک داشته است. فقط سرویس‌هایی که قالبش از رله می‌برد شمرده می‌شوند؛ کسی که فقط چیزهای دیگر را باز کرده این‌جا نمی‌آید.": "Online means traffic through a relay in the last 3 minutes. Only the services their template routes through the relay count; someone who has opened only other things does not show here.",
+#"این دامنه و همهٔ زیردامنه‌هایش برای مشتری‌های قالب‌های انتخاب‌شده از همین DNS پرسیده می‌شود و نه از DNS بالادستی. اگر جزو دامنه‌هایی باشد که سرویس از رله می‌برد، دیگر از رله نمی‌رود و جواب همین DNS به مشتری داده می‌شود. چند DNS را با فاصله بنویسید؛ پورت غیر ۵۳ با #، مثل": "This domain and all its subdomains are asked of this DNS for customers of the chosen templates, not of the upstream DNS. If it is one of the domains the service routes through the relay, it no longer goes through the relay and the customer gets this DNS’s answer. Write several DNS servers separated by spaces; a port other than 53 with #, like",
+#"این‌ها برای مشتری‌های قالب‌های انتخاب‌شده بالا نمی‌آیند: DNS جواب «چنین اسمی نیست» می‌دهد، با همهٔ زیردامنه‌ها. دامنه‌ای که خود سرویس از رله می‌برد هم بسته می‌شود. تا یک دقیقه بعد روی رله‌ها اعمال می‌شود؛ دستگاهی که جواب قبلی را نگه داشته ممکن است چند دقیقه دیرتر ببیند. فقط روی DNS خودمان اثر دارد: اگر کسی DNS دیگری بگذارد یا مستقیم با آی‌پی وصل شود، از این مسدودی عبور می‌کند. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ در صفحهٔ هر قالب می‌شود تیکش را برداشت.": "These do not load for customers of the templates picked above: the DNS answers “no such name”, with all subdomains. A domain the service routes through the relay is closed too. It is applied on the relays within a minute; a device holding the old answer may see it a few minutes later. It only stops our DNS: someone who sets another DNS or connects straight by IP gets past it. Every new domain is for all templates; on each template’s page you can untick it.",
+#"فقط با رضایت خود مشتری ثبت می‌شود و هر نام یک ساعت پس از آخرین پرسش پاک می‌شود. «مستقیم» یعنی از رله عبور نکرد؛ ستون «چرا» مشخص می‌کند دلیلش قالب مشتری بوده یا نام در فهرست نیست.": "With the customer’s own permission; each name is deleted an hour after it was last seen. “Direct” means it did not go through the relay; the “Why” column says whether that is because of their template or because the name is not in the list.",
+#"با تأیید رسید، پلن انتخابی مشتری خودکار روی حسابش اعمال می‌شود؛ یعنی قالب، حجم، مدت و سرعت. رسیدِ بدون پلن فقط ثبت می‌شود و حجم و زمان را خودتان در صفحهٔ کاربران تعیین می‌کنید. تصویر رسید پس از تصمیم‌گیری حذف می‌شود.": "On approval, the plan the customer chose is put on their account automatically: its template, quota, length and speed. A receipt without a plan is only recorded, and you set the quota and time yourself on the users page. The receipt picture is deleted after the decision.",
+#"برای روزی که نام فعلی در ایران مسدود شود. اول یک رکورد A برای نام تازه بسازید که به آی‌پی رله اشاره کند؛ بعد اینجا ذخیره کنید. رله برای نام تازه گواهی می‌گیرد (حدود بیست ثانیه پورت ۸۰ به Let": "For the day the current name is filtered in Iran. First make an A record for the new name pointing at the relay’s IP; then save it here. The relay gets a certificate for the new name (for about twenty seconds port 80 is given to Let’",
+#"برای هر سرویسی که از سرور عبور می‌کند، چند دامنه‌اش آزمایش می‌شود: یک اتصال امن روی ۴۴۳ که گواهی خود سرویس را نشان بدهد. دو جا:": "For every service that goes through the server, a few of its domains are tested: a secure connection on 443 with the service’s own certificate. In two places:",
+#"برای کشف دامنه‌های مورد نیاز یک سرویس: یک مشتری را انتخاب کنید، دکمه را بزنید و از او بخواهید در همین بازه سرویسِ ناکار را باز کند. «via relay» یعنی از سرور رد شد، «direct» یعنی مستقیم رفت (اگر سرویس ایران را قبول نمی‌کند، همین دامنه‌ها را در صفحهٔ دامنه‌ها اضافه کنید)، «filtered» یعنی فیلتر خود ایران است. کوئری‌های DoH و DoT هم دیده می‌شوند، با علامت (DOH) یا (DOT) جلویشان.": "To find which domain a service needs: pick the customer, press the button and ask them to open the service that does not work during that time. “via relay” means it went through the server, “direct” means it went directly (if the service does not accept Iran, add those domains on the domains page), “filtered” means Iran’s own filter. DoH and DoT queries show too, marked (DOH) or (DOT).",
+#"تیک یعنی مسدود: مشتری‌های این قالب نمی‌توانند آن دامنه‌ها را باز کنند (جواب «چنین سایتی وجود ندارد» می‌گیرند)، حتی اگر آن دامنه جزو سرویسی باشد که از رله می‌رود. کشو را باز کنید تا دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.": "A tick means blocked: this template’s customers cannot open those domains (they get “no such site”), even when the domain belongs to a service that goes through the relay. Open the drawer to see the domains and pick them one by one.",
+#"هنوز تیکتی ثبت نشده است. مشتری‌ها از پنل خودشان یا از ربات تیکت می‌فرستند.": "No tickets yet. Customers send tickets from their own panel or from the bot.",
+#"فعلاً غیرفعال است. برای بررسی مشکل یک مشتری، از او بخواهید در پنل خودش گزینهٔ «گزارش DNS برای پشتیبانی» را روشن کند و سرویس را دوباره باز کند؛ نتیجه همین‌جا نمایش داده می‌شود. برای تماشای زنده:": "is off. If a customer has a problem, ask them to turn on “DNS report for support” in their own panel and open that same service again; it then shows here. Watching live, right now:",
+#"دامنه‌های دلخواه را دسته‌بندی کنید، مثلاً «سایت‌های دانشگاه». هر گروه در صفحهٔ قالب‌ها یک ردیف جدا با آیکون خودش است و یک تیک دارد. آیکون: SVG تا ۱۶ کیلوبایت یا PNG تا ۶۴ کیلوبایت و ۵۱۲×۵۱۲.": "Put your own domains in groups, “university sites” say. Each group is a row of its own on the templates page, with its own icon and one tick. Icon: an SVG up to 16 KB, or a PNG up to 64 KB and 512×512.",
+#"ربات فروش (از خودتان یا شخص دیگر) از همین دروازه به پنل وصل می‌شود: ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن پلن‌ها و فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما می‌مانند.": "A sales bot (your own or someone else’s) connects to the panel through this door: signing customers up by Telegram ID, seeing their account, registering an IP, seeing the plans and sending receipts. Receipts wait for your approval on the receipts page as always.",
+#"روشن: اگر پلن کسی تمام شده باشد یا آی‌پی‌اش ثبت نشده یا عوض شده باشد، با باز کردن هر سایتی پنل مشتری برایش نمایش داده می‌شود. خاموش: اینترنتش از راه رله فقط کار نمی‌کند و صفحه‌ای خودش باز نمی‌شود؛ اگر خودش آدرس پنل مشتری را باز کند، هنوز وارد می‌شود. برای همهٔ سرورها، تا یک دقیقه دیگر.": "On: someone whose plan ended, whose IP is not registered or has changed, gets the customer panel whatever site they open. Off: their internet simply does not work through the relay and no page opens by itself; if they open the customer panel's address themselves, they still get in. For every server, within a minute.",
+#"با کلیک روی نام هر سرور، نمودارها و مشتری‌های آن را می‌بینید. مصرف مشتری‌های ثبت‌شده: روی رله از شمارندهٔ خود رله (همانی که حجم مشتری از آن کم می‌شود)، و روی سرور خارج از روی اینکه رله‌ها هر اتصال را از کدام سرور فرستاده‌اند. روز به وقت تهران.": "Click a server’s name to see its charts and customers. Registered customers’ usage: on a relay from the relay’s own counter (the one the customer’s quota comes off), and on the exit server from which server the relays sent each connection through. Days in Tehran time.",
+#"زیردامنه‌ها به‌طور خودکار شامل می‌شوند. دامنه‌های بدون گروه در سرویس «دامنه‌های دلخواه» جمع می‌شوند و هر گروه در قالب‌ها یک ردیف جداست، پس در هر قالب می‌شود تیکشان را برداشت. دامنه‌ای را که هست دوباره با گروه دیگری اضافه کنید تا به آن گروه برود. به‌علاوهٔ": "Subdomains are included automatically. Domains in no group are gathered in the “your own domains” service, and each group is a row of its own in the templates, so in any template they can be unticked. Add a domain that is already here again with another group to move it there. On top of the",
+#"ساعت یک بار گیت‌هاب master-dns را چک می‌کند. با زدن دکمه، نصب‌کننده از خود ریلیز دانلود می‌شود و فقط وقتی نصب می‌شود که هشش با هشی که گیت‌هاب منتشر کرده یکی باشد. اول همین سرور آپدیت می‌شود و بعد بقیهٔ سرورها یکی‌یکی. نسخهٔ قدیمی‌تر هرگز نصب نمی‌شود.": "hours the panel checks master-dns on GitHub. With the button, the installer is downloaded from the release itself and installed only when its hash matches the one GitHub published. This server is upgraded first, then the others one by one. An older version is never installed.",
+#"سرویس‌های دچار مشکل در بالای فهرست‌اند. «گواهی نامعتبر» یعنی پاسخ از جایی جز خود سرویس رسیده است — مثلاً صفحهٔ فیلترینگ. هر اسمی که خراب شد یک بار دیگر آرام‌تر آزموده می‌شود، و فقط اگر بار دوم هم خراب بود این‌جا می‌آید. گروه‌های «پیش‌فرض خاموش» فقط وقتی آزموده می‌شوند که در قالبی روشن باشند. خراب بودن یک دامنه در سرویسی بزرگ لزوماً به معنای اختلال نیست؛ جزئیات هر سرویس را باز کنید.": "Services with problems are at the top. “Invalid certificate” means the answer came from somewhere other than the service itself — a filter page, for example. Every name that failed is tried once more, more slowly, and only shows here if it failed the second time too. “Off by default” groups are only tested when they are on in some template. One broken domain in a big service does not always mean an outage; open each service’s details.",
+#"عکس‌ها رمزگذاری نمی‌شوند: کتابخانهٔ OpenSSL روی چنین سروری پیدا نشد.": "Pictures are not encrypted: the OpenSSL library was not found on this server.",
+#"فایل ابتدا فقط بررسی و توصیف می‌شود؛ جایگزینی‌اش تأیید جداگانه می‌خواهد. بکاپی که ربات فرستاده (": "The file is only checked and described first; replacing needs its own confirmation. A backup the bot sent (",
+#"فروشنده فقط مشتری‌هایی را می‌بیند که خودش جذب کرده (با پیوند یا ربات خودش)، به‌همراه رسیدها، تیکت‌ها و کیف پول آن‌ها. پلن‌ها و قیمت‌هایش را هم خودش می‌سازد. اگر مصرف مشتری‌هایش روی هم به سقف حجم برسد یا روزهایش تمام شود، سرویس همهٔ مشتری‌هایش قطع می‌شود تا تمدیدش کنید. هر تغییر در این صفحه، ادمین را از همهٔ دستگاه‌ها خارج می‌کند.": "A seller sees only the customers they brought (through their own link or bot), with their receipts, tickets and wallets. They make their own plans and prices too. When their customers’ total usage reaches the traffic cap or their days run out, all their customers’ service is cut until you renew it. Any change on this page signs that admin out of every device.",
+#"پاسخ شما را مشتری در پنل خودش یا در ربات می‌بیند. اگر در تیکتِ بسته‌شده پیام بدهد، تیکت دوباره باز می‌شود. عکس‌های تیکت بسته": "The customer sees the reply in their own panel or in the bot. If they write in a closed ticket, it reopens. Pictures of a closed ticket",
+#"مشتری سرورها را با همین ترتیب، همراه با شماره و یادداشت هرکدام می‌بیند (در ربات و پنل خودش، کنار DNS، DoT و DoH آن سرور)؛ اولی را معمولاً برمی‌دارد. گزینهٔ «پنهان» سرور را از فهرست همهٔ مشتری‌ها کنار می‌گذارد، مثلاً هنگام تعمیر، بی‌آنکه انتخاب‌های مشتری‌ها دستکاری شود. سرور پنهان همچنان کار می‌کند و فقط به مشتری نمایش داده نمی‌شود. فروشنده‌ای که اجازهٔ انتخاب رله دارد، می‌تواند برای مشتری‌های خودش توضیح خودش را بنویسد.": "Customers see the servers in this order, each with its number and note (in the bot and in their panel, beside that server’s DNS, DoT and DoH); they usually take the first. “Hidden” takes a server off every customer’s list, for example while it is being repaired, without changing anyone’s ticks. A hidden server still works; it is only not shown. A seller allowed to pick relays can write their own notes for their own customers.",
+#"مشتری مبلغ دلخواه را می‌نویسد و تصویر رسید واریز را می‌فرستد. این رسید در صفحهٔ رسیدها با برچسب «شارژ کیف پول» می‌آید و با تأیید شما، همان مبلغ به کیف پولش اضافه می‌شود (اگر مبلغ رسید فرق داشت، همان‌جا درستش کنید). سپس مشتری با موجودی کیف پول، بدون رسید و فوری پلن می‌خرد. خرید از کیف پول همیشه باز است، حتی وقتی شارژ بسته باشد؛ چون پورسانت دعوت و پولی که خودتان به کیف پول کسی اضافه کرده‌اید هم قابل خرج است.": "The customer writes the amount they want and sends a photo of the payment slip. The receipt appears on the receipts page marked “Wallet top-up”, and once you approve it that amount is added to their wallet (if the slip says otherwise, correct it there). The customer then buys a plan from the wallet at once, with no receipt. Buying from the wallet is always open, even when top-ups are closed, since referral commission and money you add to someone’s wallet can be spent too.",
+#"نام DNS رمزگذاری‌شده (DoH و DoT)": "Secure DNS name (DoH and DoT)",
+#"هر تلگرام فقط به یک حساب وصل می‌شود، پس ساختن چند حساب برای یک نفر دشوار می‌شود. سرویس هیچ‌کس قطع نمی‌شود؛ فقط خرید و تمدید تا اتصال تلگرام در انتظار می‌ماند. ارسال تیکت آزاد است.": "Each Telegram account links to only one account, so it is hard for anyone to make more than one account. Nobody’s service is cut; only new purchases and renewals wait until they link. Tickets stay open.",
+#"هر ردیف یک تیک دارد و روشن بودنش یعنی همهٔ دامنه‌های آن از رله عبور می‌کند، از جمله دامنه‌هایی که بعداً اضافه شوند. کشو را باز کنید تا خود دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.": "Each row has one tick: ticking it means all its domains go through the relay, including domains added later. Open the drawer to see the domains themselves and pick them one by one.",
+#"هر پلن ترکیبی است از یک قالب، چند روز مدت، یک حجم و یک قیمت. مشتری در پنل خودش پلن را برمی‌گزیند و رسید می‌فرستد؛ با تأیید شما همه‌چیز خودکار روی حسابش اعمال می‌شود. خرید دوبارهٔ همان پلن پیش از تمام شدنش تمدید است: روزها و حجم روی باقی‌مانده اضافه می‌شوند. خرید پلن دیگر از همان لحظه از نو شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ این را پیش از خرید به مشتری می‌گوییم. «نامحدود» فقط با تیک خودش؛ خانهٔ خالیِ حجم پذیرفته نمی‌شود.": "Each plan is a template, for a number of days, with a quota and a price. The customer picks a plan in their own panel and sends a receipt; on approval everything is put on their account automatically. Buying the same plan again before it ends is a renewal: the days and quota are added to what is left. Buying another plan starts over from that moment and what was left is lost; the customer is told this before buying. “Unlimited” only by its own tick; an empty quota box is not accepted.",
+#"هنوز پلنی تعریف نکرده‌اید. تا وقتی پلنی نباشد، مشتری رسید را بدون انتخاب پلن می‌فرستد و سهمیه را خودتان می‌گذارید.": "You have not made any plans yet. Until there is a plan, the customer sends a receipt without choosing one and you set the quota yourself.",
+#"وقتی در این جدول «وصل» شد، از ستون «سرور خارج» جدول رله‌ها رله‌هایی را که باید از آن بروند انتخاب کنید. توکن را فقط خودتان نگه دارید.": "When it shows “Connected” in this table, pick in the relays table’s “Exit server” column the relays that should go through it. Give the token only to yourself.",
+#"با روشن بودن این گزینه DNS روی همه باز است: نیازی به ثبت‌نام یا ثبت آی‌پی نیست، و سهمیه، تاریخ پایان و مسدود بودن مشتری‌ها هم جلوی کسی را نمی‌گیرد. ترافیک کسانی که آی‌پی ثبت نکرده‌اند در هیچ‌جا حساب نمی‌شود. تا یک دقیقه روی همهٔ رله‌ها و تک‌سرورها اعمال می‌شود؛ با خاموش کردن، همه‌چیز به حالت قبل برمی‌گردد. DoH و DoT همچنان فقط برای مشتری‌ها کار می‌کنند.": "When it is on, the DNS is open to everyone: nobody needs to sign up or register an IP, and quotas, end dates and blocked customers stop no one. The usage of those without a registered IP is not counted anywhere. It reaches every relay and single server within a minute; turning it off puts everything back as it was. DoH and DoT still work only for customers.",
+#"پیام فقط به مشتری‌هایی می‌رسد که تلگرامشان به ربات متصل است. ربات پیام‌ها را یکی‌یکی و با وقفه می‌فرستد تا تلگرام محدودیتی نگذارد؛ برای همین اگر مشتری زیاد باشد، چند دقیقه طول می‌کشد. عدد کنار هر گزینه، تعداد مخاطبان در همین لحظه است.": "The message reaches only customers whose Telegram is linked to the bot. The bot sends them one by one, spaced out, so Telegram does not limit it; with many customers it takes a few minutes. The number beside each choice is the count right now.",
+#"یک فایل sqlite شامل همهٔ کاربران، آی‌پی‌ها، قالب‌ها، تراکنش‌ها و تنظیمات. آمار سلامت سرورها داخلش نیست — حجم زیادی است و ارزشی در بازگردانی ندارد.": "An sqlite file with all users, IPs, templates, transactions and settings. The servers’ health stats are not in it — they are large and not worth restoring.",
+#"یک فایل واحد که با همین رمز قفل شده و دیتابیس، کلید عکس‌ها و هر چه برای راه‌اندازی دوبارهٔ پنل روی سروری دیگر لازم است را در خود دارد. رمز را جایی جدا نگه دارید؛ بدون آن فایل باز نمی‌شود و این‌جا هم نشان داده نمی‌شود. برای بازگردانی، فایل را با همین رمز در کارت «نسخهٔ پشتیبان» بفرستید؛ یا روی هر سیستمی با openssl:": "One file, encrypted with this password: the database, the picture key, and what is needed to bring this panel up on another server. Keep the password somewhere separate; without it the file does not open, and it is not shown here either. To restore, upload the file with this password in the “Backup” card; or on any system with openssl:",
+#"میان ۳ تا ۳۲ نویسه: حرف کوچک انگلیسی، عدد، نقطه، خط تیره یا زیرخط. از روی سرور هم:": "3 to 32 lower-case English letters, digits, dots, dashes or underscores. From the server too:",
+#"🎁 «تست رایگان» فروخته نمی‌شود؛ مشتری با یک کلیک آن را از پنل خودش یا ربات برمی‌دارد. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب فقط یک بار. کسی که همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین نرود. یک پلن تست در یک زمان.": "🎁 “Free trial”: not sold; the customer gets it with one click, in their own panel or the bot. It needs a linked Telegram, and each Telegram account and each account only once. Someone who has an active service right now does not get it, so what is left of their plan is not lost. One trial plan at a time.",
+#"ثبت‌نام جدید با وضعیت «در انتظار پلن» می‌آید و تا پلنی برایش ذخیره نکنید ترافیکی دریافت نمی‌کند؛ اولین ذخیرهٔ همین سطر فعالش می‌کند. صفر در سهمیه یا سرعت یعنی بی‌حد. «زمان» خالی یعنی بدون تغییر؛ عددی که بنویسید تاریخ پایان را از امروز همان‌قدر روز جلو می‌برد، و رنگ خاکستریِ داخلش روزهای باقی‌مانده است. سرعت فقط دانلود را محدود می‌کند و حداکثر ۳۰ ثانیه بعد روی رله‌ها اعمال می‌شود.": "A new sign-up arrives as “Waiting for a plan” and gets no traffic until you save a plan for it; the first save of its row activates it. Zero in quota or speed means no limit. An empty “Time” means no change; a number you write moves the end date that many days on from today, and the grey number inside it is the days left. Speed only limits downloads and is applied on the relays within 30 seconds.",
+#"وقتی کسی از پیوند دعوت یک مشتری (پیوند ربات یا ثبت‌نام) حساب بسازد و پلن بخرد، این درصد از قیمت پلن به کیف پول همان مشتری افزوده می‌شود؛ فرقی نمی‌کند با رسید خریده باشد یا از کیف پول. شارژ کیف پول پورسانت ندارد، تا یک پول دو بار حساب نشود. دعوت‌کننده فقط موقع ساختن حساب ثبت می‌شود و بعداً عوض نمی‌شود، و هیچ‌کس نمی‌تواند خودش را دعوت کند. هر مشتری لینک دعوتش را در ربات (بخش کیف پول) و در پنل خودش می‌بیند.": "When someone signs up with a customer’s invitation link (the bot link or the sign-up link) and buys a plan, this percent of the plan’s price is added to that customer’s wallet, whether they paid by receipt or from the wallet. Wallet top-ups earn no commission, so the same money is not counted twice. The inviter is recorded only when the account is made and never changes, and nobody can invite themselves. Each customer sees their invitation link in the bot (under Wallet) and in their own panel.",
+#"این ادمین کارمند است و مشتری اختصاصی ندارد؛ همهٔ مشتری‌ها را در بخش‌هایی که برایش تیک خورده می‌بیند. هر کاری که کرده با نام کاربری‌اش در صفحهٔ": "Staff, with no customers of their own; they see every customer in the parts ticked for them. Everything they did is recorded with their username on the",
+#"فایلی برای بازیابی در انتظار نیست. از بخش": "No file is waiting to be restored. From",
+#"ادمین‌ها": "Admins",
+#"برای ادامه نام کاربری و رمز عبور را وارد کنید.": "Enter your username and password to continue.",
+#"تنظیمات پنل": "Panel settings",
+#"تونل وایرگارد": "WireGuard tunnel",
+#"تیکت‌ها (": "Tickets (",
+#"حساب من": "My account",
+#"خانه": "Home",
+#"داشبورد مدیریت": "Control dashboard",
+#"درخواست‌های پشتیبانی": "Support requests",
+#"رسیدها": "Receipts",
+#"رسیدهای واریز": "Payment receipts",
+#"سنجش سلامت": "Health check",
+#"عیب‌یابی": "Diagnose",
+#"مدیران پنل": "Panel admins",
+#"مدیریت دامنه‌ها": "Domain management",
+#"مشتریان": "Customers",
+#"نودها و سرورها": "Nodes and servers",
+#"ورود به مرکز مدیریت": "Sign in to the control center",
+#"پرداخت": "Payment",
+#"پلن‌های فروش": "Sales plans",
+#"گزارش رویدادها": "Event log",
+#"هنوز آماری دریافت نشده": "No stats yet"
 #}
 #__END_I18N_EN__
 
