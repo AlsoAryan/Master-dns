@@ -37,12 +37,21 @@ print("Demonware")
 check("the main resolver asks for it directly",
       "server=/demonware.net/#" in read("common/bypass.conf").splitlines())
 listed = [l.strip() for l in read("domains/domains.txt").splitlines()]
-check("it is not on the shared routed list, nor any name under it",
-      not [l for l in listed if l == "demonware.net" or l.endswith(".demonware.net")])
+# Four HTTPS names under it answer an Iranian address with 403 and stop the game
+# at "Checking for update"; those, and nothing else under demonware.net, are routed.
+CHECK = ["objectstore-cloud-prod-rex.egcp.demonware.net", "objectstore-publishers-cod.prod.demonware.net", "rex-gvs.prod.demonware.net", "user-consent.prod.demonware.net"]
+check("it is not on the shared routed list, nor any name under it - but four",
+      sorted(l for l in listed if l == "demonware.net" or l.endswith(".demonware.net")) == CHECK)
 services = json.loads(read("domains/services.json"))["services"]
 routed = [d for s in services if s["key"] != "bypass" for g in s["groups"] for d in g["domains"]
           if d == "demonware.net" or d.endswith(".demonware.net")]
-check("nor in any service a template can route", not routed, routed)
+check("nor in any service a template can route - but the same four, in one group",
+      sorted(routed) == CHECK, routed)
+https = next(g for s in services if s["key"] == "blizzard" for g in s["groups"] if g["key"] == "cod-https")
+check("that group is Call of Duty's, and not opt-in", sorted(https["domains"]) == CHECK and not https.get("opt_in"))
+games = json.loads(read("domains/games.json"))
+games = games["games"] if isinstance(games, dict) else games
+check("and the game asks for it", "blizzard/cod-https" in next(g for g in games if g["key"] == "cod")["needs"])
 group = next(g for s in services if s["key"] == "bypass" for g in s["groups"]
              if g["key"] == "demonware")
 check("every template bypasses it, the group being locked",

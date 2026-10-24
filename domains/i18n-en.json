@@ -1874,7 +1874,6 @@
 "پیش از ذخیره از همین سرور آزموده می‌شوند، و هر رله هم پیش از اعمال، خودش از ایران امتحان می‌کند — اگر جواب ندهد همان قبلی را نگه می‌دارد.": "They are tested from this server before saving, and each relay also tries them from Iran before applying — if they do not answer, it keeps the previous ones.",
 "پیش‌فرض": "default",
 "پیش‌فرض خاموش —": "Off by default —",
-"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند": "off by default: works better direct on most operators",
 "پیش‌فرض خاموش: روی ۵۲۲۳ است، که رله نمی‌برد": "off by default: it is on 5223, which the relay does not carry",
 "پیش‌فرض رله": "Relay default",
 "پیش‌فرض — مثل همیشه": "default - as it has always been",
@@ -2435,5 +2434,9 @@
 "پرداخت": "Payment",
 "پلن‌های فروش": "Sales plans",
 "گزارش رویدادها": "Event log",
-"هنوز آماری دریافت نشده": "No stats yet"
+"هنوز آماری دریافت نشده": "No stats yet",
+"Call of Duty — بررسی به‌روزرسانی": "Call of Duty — update check",
+"اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید": "If it will not open, use smartdns-watch to see which Gaijin name went through the relay and is not on 443 (for example 20443 or 8090), then make that name direct with smartdns bypass",
+"این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند": "These four Demonware names are on 443 but answer an Iranian address with 403; without them Call of Duty stays on \"Checking for update\". The lobby and STUN stay direct",
+"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that"
 }

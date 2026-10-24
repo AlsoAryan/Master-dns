@@ -239,6 +239,17 @@
           ]
         },
         {
+          "key": "cod-https",
+          "label": "Call of Duty — بررسی به‌روزرسانی",
+          "note": "این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند",
+          "domains": [
+            "objectstore-cloud-prod-rex.egcp.demonware.net",
+            "objectstore-publishers-cod.prod.demonware.net",
+            "rex-gvs.prod.demonware.net",
+            "user-consent.prod.demonware.net"
+          ]
+        },
+        {
           "key": "download",
           "label": "دانلود بازی",
           "domains": [

@@ -119,6 +119,20 @@ smartdns-access password [new]   # set a new one; the old is not recoverable
 smartdns-access rotate           # new path and new password at once
 ```
 
+## When a game will not start
+
+A name that is not on port 443 cannot go through the relay, which carries only 80 and
+443. Watch what the game asks for and take such names off the relay.
+
+Run `sudo smartdns-watch` for the customer to see which names went via the relay and which
+went direct, then make a name direct with `smartdns bypass` (the menu has both).
+
+Call of Duty's update check needs four Demonware HTTPS names routed; they are in the
+`cod-https` group, which the game asks for. PUBG Mobile's "Server is busy" with the code
+`restrict-area` comes from its login (proximabeta.com on 8085/8086) seeing an Iranian
+address, which DNS alone cannot change. War Thunder talks on ports such as 20443 and
+8090; find the names with `smartdns-watch` and make them direct.
+
 ## Build and test
 
 `master-dns.sh` is generated. The logic is in `tools/installer-logic.sh`, the

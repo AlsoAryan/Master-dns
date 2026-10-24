@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.4"
+VERSION="0.0.5"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -3045,7 +3045,17 @@ exit 0
 ##    and Warzone stop at "Networking failed to start" (HUENEME - NEGEV);
 ##    resolved directly they come up (reported from a PS5 in Tehran, 0.8.5).
 ##
-##      demonware.net          lsg, genesis.stun, loginservice, user-consent
+##      demonware.net          lsg, genesis.stun, loginservice
+##
+##    Four names under it are the exception, and they go the other way: plain
+##    HTTPS on 443 that answers an Iranian address with 403, so the game stops
+##    at "Checking for update" (HILLCAT). They are routed - a longer match than
+##    demonware.net, so they win over the line below - from the cod-https group:
+##
+##      user-consent.prod.demonware.net
+##      objectstore-publishers-cod.prod.demonware.net
+##      objectstore-cloud-prod-rex.egcp.demonware.net
+##      rex-gvs.prod.demonware.net
 ##
 ## 2. The service is reachable from Iran anyway, and routing it costs something.
 ##    ps5.np.playstation.net is the console's STUN server as well as a PSN API
@@ -24560,7 +24570,8 @@ exit 0
 #.side nav a.on{color:var(--accent);font-weight:600;
 # background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 20%,transparent),color-mix(in srgb,var(--accent) 6%,transparent));
 # box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 26%,transparent)}
-#.side nav a.out{margin-top:auto;border-radius:16px;color:var(--bad)}
+#.side nav a.out{margin-top:auto;position:sticky;bottom:0;align-self:stretch;border-radius:16px;color:var(--bad);
+# background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(12px)}
 #.side nav a.out:hover{background:var(--err-bg);color:var(--bad)}
 #.wrap{max-width:none;margin:0;padding:22px 30px 56px;padding-inline-start:calc(248px + 16px + 30px)}
 #.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 4px 22px;
@@ -24601,6 +24612,22 @@ exit 0
 # box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 #code{border-radius:8px}.msg{border-radius:18px}.receipt{border-radius:18px}.thread>div{border-radius:18px}
 #footer{opacity:.7}
+#/* ---- 0.0.5 polish ---- */
+#@keyframes md-load{0%{transform:scaleX(0);opacity:1}70%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+#.topbar{position:relative}
+#.topbar::after{content:'';position:absolute;inset-inline:4px;bottom:10px;height:2px;border-radius:2px;transform-origin:right;
+# background:linear-gradient(90deg,var(--accent),var(--accent2));animation:md-load 1.1s cubic-bezier(.2,.8,.2,1) both}
+#html[dir=ltr] .topbar::after{transform-origin:left}
+#input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--accent)}
+#a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:12px}
+#.msg{border-inline-start:4px solid var(--accent);animation:md-rise .4s cubic-bezier(.2,.8,.2,1) both}
+#.msg.err{border-inline-start-color:var(--bad)}.msg.warnbox{border-inline-start-color:var(--warn)}
+#::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+#.card h2{display:flex;align-items:center;gap:8px}
+#.card h2::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:var(--accent);
+# box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+#details>summary{cursor:pointer;transition:color .2s}details>summary:hover{color:var(--accent)}
+#table{border-collapse:separate;border-spacing:0}
 #/* ---- sign-in: one box in the middle of the page ---- */
 #body.solo .wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:28px 18px}
 #body.solo .brand{position:static;margin:0 0 22px;display:flex;justify-content:center;align-items:center;gap:12px;font-size:30px}
@@ -37138,6 +37165,8 @@ exit 0
 #nvidiagrid.net
 #oaistatic.com
 #oaiusercontent.com
+#objectstore-cloud-prod-rex.egcp.demonware.net
+#objectstore-publishers-cod.prod.demonware.net
 #offworldindustries.com
 #ollama.com
 #oncehuman.game
@@ -37224,6 +37253,7 @@ exit 0
 #replit.com
 #researchgate.net
 #respawn.com
+#rex-gvs.prod.demonware.net
 #rgpub.io
 #riotcdn.net
 #riotgames.co.kr
@@ -37366,6 +37396,7 @@ exit 0
 #unsplash.com
 #uplay.com
 #upwork.com
+#user-consent.prod.demonware.net
 #vagrantup.com
 #valorant.com
 #valorantesports.com
@@ -37664,6 +37695,17 @@ exit 0
 #            "sledgehammergames.com",
 #            "treyarch.com",
 #            "worldofwarcraft.com"
+#          ]
+#        },
+#        {
+#          "key": "cod-https",
+#          "label": "Call of Duty — بررسی به‌روزرسانی",
+#          "note": "این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند",
+#          "domains": [
+#            "objectstore-cloud-prod-rex.egcp.demonware.net",
+#            "objectstore-publishers-cod.prod.demonware.net",
+#            "rex-gvs.prod.demonware.net",
+#            "user-consent.prod.demonware.net"
 #          ]
 #        },
 #        {
@@ -39604,6 +39646,7 @@ exit 0
 #      "kind": "platform",
 #      "needs": [
 #        "blizzard/main",
+#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39769,6 +39812,7 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
+#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39779,6 +39823,7 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
+#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39789,6 +39834,7 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
+#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39799,6 +39845,7 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
+#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39818,6 +39865,7 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
+#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -40113,7 +40161,7 @@ exit 0
 #      "needs": [
 #        "pubgmobile/main"
 #      ],
-#      "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند"
+#      "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد"
 #    },
 #    {
 #      "key": "pubgpc",
@@ -40619,7 +40667,8 @@ exit 0
 #      "needs": [
 #        "coop/gaijin",
 #        "steam/main"
-#      ]
+#      ],
+#      "note": "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید"
 #    },
 #    {
 #      "key": "warthundermobile",
@@ -40628,7 +40677,8 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "coop/gaijin"
-#      ]
+#      ],
+#      "note": "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید"
 #    },
 #    {
 #      "key": "enlisted",
@@ -43240,7 +43290,6 @@ exit 0
 #"پیش از ذخیره از همین سرور آزموده می‌شوند، و هر رله هم پیش از اعمال، خودش از ایران امتحان می‌کند — اگر جواب ندهد همان قبلی را نگه می‌دارد.": "They are tested from this server before saving, and each relay also tries them from Iran before applying — if they do not answer, it keeps the previous ones.",
 #"پیش‌فرض": "default",
 #"پیش‌فرض خاموش —": "Off by default —",
-#"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند": "off by default: works better direct on most operators",
 #"پیش‌فرض خاموش: روی ۵۲۲۳ است، که رله نمی‌برد": "off by default: it is on 5223, which the relay does not carry",
 #"پیش‌فرض رله": "Relay default",
 #"پیش‌فرض — مثل همیشه": "default - as it has always been",
@@ -43801,7 +43850,11 @@ exit 0
 #"پرداخت": "Payment",
 #"پلن‌های فروش": "Sales plans",
 #"گزارش رویدادها": "Event log",
-#"هنوز آماری دریافت نشده": "No stats yet"
+#"هنوز آماری دریافت نشده": "No stats yet",
+#"Call of Duty — بررسی به‌روزرسانی": "Call of Duty — update check",
+#"اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید": "If it will not open, use smartdns-watch to see which Gaijin name went through the relay and is not on 443 (for example 20443 or 8090), then make that name direct with smartdns bypass",
+#"این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند": "These four Demonware names are on 443 but answer an Iranian address with 403; without them Call of Duty stays on \"Checking for update\". The lobby and STUN stay direct",
+#"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that"
 #}
 #__END_I18N_EN__
 

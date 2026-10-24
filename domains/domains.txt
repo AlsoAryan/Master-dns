@@ -483,6 +483,8 @@ nvidia.com
 nvidiagrid.net
 oaistatic.com
 oaiusercontent.com
+objectstore-cloud-prod-rex.egcp.demonware.net
+objectstore-publishers-cod.prod.demonware.net
 offworldindustries.com
 ollama.com
 oncehuman.game
@@ -569,6 +571,7 @@ render.com
 replit.com
 researchgate.net
 respawn.com
+rex-gvs.prod.demonware.net
 rgpub.io
 riotcdn.net
 riotgames.co.kr
@@ -711,6 +714,7 @@ unrealengine.dev
 unsplash.com
 uplay.com
 upwork.com
+user-consent.prod.demonware.net
 vagrantup.com
 valorant.com
 valorantesports.com

@@ -87,6 +87,7 @@
       "kind": "platform",
       "needs": [
         "blizzard/main",
+        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -252,6 +253,7 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
+        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -262,6 +264,7 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
+        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -272,6 +275,7 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
+        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -282,6 +286,7 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
+        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -301,6 +306,7 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
+        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -596,7 +602,7 @@
       "needs": [
         "pubgmobile/main"
       ],
-      "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند"
+      "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد"
     },
     {
       "key": "pubgpc",
@@ -1102,7 +1108,8 @@
       "needs": [
         "coop/gaijin",
         "steam/main"
-      ]
+      ],
+      "note": "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید"
     },
     {
       "key": "warthundermobile",
@@ -1111,7 +1118,8 @@
       "kind": "game",
       "needs": [
         "coop/gaijin"
-      ]
+      ],
+      "note": "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید"
     },
     {
       "key": "enlisted",
