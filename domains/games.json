@@ -87,7 +87,6 @@
       "kind": "platform",
       "needs": [
         "blizzard/main",
-        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -258,13 +257,23 @@
       ]
     },
     {
+      "key": "cod-console",
+      "name": "کال آو دیوتی روی کنسول",
+      "en": "Call of Duty on console",
+      "kind": "game",
+      "needs": [
+        "blizzard/main",
+        "blizzard/cod-https"
+      ],
+      "note": "پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد"
+    },
+    {
       "key": "overwatch",
       "name": "اورواچ ۲",
       "en": "Overwatch 2",
       "kind": "game",
       "needs": [
         "blizzard/main",
-        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -275,7 +284,6 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
-        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -286,7 +294,6 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
-        "blizzard/cod-https",
         "blizzard/download"
       ]
     },
@@ -306,7 +313,6 @@
       "kind": "game",
       "needs": [
         "blizzard/main",
-        "blizzard/cod-https",
         "blizzard/download"
       ]
     },

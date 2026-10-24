@@ -87,6 +87,13 @@ curl -X POST https://PANEL/api/v1/admin/users/42/adjust \
 unlimited account is never made limited by it, and a quota is never taken to
 zero, because zero means unlimited.
 
+Two more for a sales bot: `POST /api/v1/admin/users/adjust` does the same for many
+accounts at once (`{"all": "active", "days": 2}` after an outage; up to 500 per call,
+the ones that cannot take it are named), and `GET /api/v1/admin/expiring?days=3&usage=90`
+lists who is about to run out of days or traffic, soonest first, which is what a renewal
+reminder is made from. `GET /api/v1/admin/users` now pages (`limit`, `offset`) and narrows
+by `status`.
+
 ## Commands
 
 On a server, `sudo smartdns-menu` lists everything; the ones used most:
@@ -128,7 +135,9 @@ Run `sudo smartdns-watch` for the customer to see which names went via the relay
 went direct, then make a name direct with `smartdns bypass` (the menu has both).
 
 Call of Duty's update check needs four Demonware HTTPS names routed; they are in the
-`cod-https` group, which the game asks for. PUBG Mobile's "Server is busy" with the code
+`cod-https` group, which the game asks for. A template made before that group existed gets
+it once, at the panel's first start after the upgrade, if it routes any other Blizzard /
+Activision group; unticking it afterwards sticks. PUBG Mobile's "Server is busy" with the code
 `restrict-area` comes from its login (proximabeta.com on 8085/8086) seeing an Iranian
 address, which DNS alone cannot change. War Thunder talks on ports such as 20443 and
 8090; find the names with `smartdns-watch` and make them direct.

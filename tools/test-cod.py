@@ -52,6 +52,12 @@ check("that group is Call of Duty's, and not opt-in", sorted(https["domains"]) =
 games = json.loads(read("domains/games.json"))
 games = games["games"] if isinstance(games, dict) else games
 check("and the game asks for it", "blizzard/cod-https" in next(g for g in games if g["key"] == "cod")["needs"])
+asks = sorted(g["key"] for g in games if "blizzard/cod-https" in g["needs"])
+check("only the Call of Duty entries ask for it - not WoW, Overwatch or the rest of Battle.net",
+      asks == ["cod", "cod-console"], str(asks))
+console = next(g for g in games if g["key"] == "cod-console")
+check("the console entry needs Activision's names and these four, and no Battle.net download",
+      sorted(console["needs"]) == ["blizzard/cod-https", "blizzard/main"])
 group = next(g for s in services if s["key"] == "bypass" for g in s["groups"]
              if g["key"] == "demonware")
 check("every template bypasses it, the group being locked",

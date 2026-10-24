@@ -12,6 +12,7 @@ and nobody invites themselves. The admin panel and the bot API follow the
 same rules.
 """
 import base64
+from datetime import datetime, timedelta, timezone
 import importlib.machinery
 import importlib.util
 import json
@@ -523,6 +524,61 @@ for bad in ({}, {"days": 0}, {"days": "x"}, {"days": 99999}, {"gb": "abc"}):
     code_, body = call("POST", "/admin/users/%d/adjust" % sara["id"], bad)
     check("adjust: %s is refused" % bad, code_ == 400, str(body))
 check("adjust: the customer's bot is told", len(outbox("plan.adjusted")) >= 4)
+
+# Many at once: a day for everybody after an outage.
+FAR, SOON = "2099-06-01T00:00:00+00:00", (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(timespec="seconds")
+store.run("UPDATE users SET status = 'active', quota_bytes = ?, used_bytes = 0, expires_at = ? WHERE id IN (?, ?)",
+          (10 * GB, FAR, sara["id"], bahar["id"]))
+code_, body = call("POST", "/admin/users/adjust", {"ids": [sara["id"], bahar["id"]], "days": 1, "gb": 1})
+check("bulk: two named accounts both take it", code_ == 200 and body["changed"] == 2 and not body["skipped"], str(body))
+check("  days and traffic moved on each", user(sara["id"])["quota_bytes"] == 11 * GB
+      and user(bahar["id"])["expires_at"].startswith("2099-06-02"))
+store.run("UPDATE users SET quota_bytes = 0 WHERE id = ?", (bahar["id"],))
+code_, body = call("POST", "/admin/users/adjust", {"ids": [sara["id"], bahar["id"]], "gb": 1})
+check("bulk: an unlimited account is skipped by name, the rest still change",
+      code_ == 200 and body["changed"] == 1 and body["skipped"] == [{"id": bahar["id"], "error": "no_quota"}], str(body))
+active = store.one("SELECT count(*) AS n FROM users WHERE status = 'active'")["n"]
+code_, body = call("POST", "/admin/users/adjust", {"all": "active", "days": 1})
+check("bulk: all active takes every active account (those with a date)",
+      code_ == 200 and body["changed"] + len(body["skipped"]) == active, str(body))
+for bad, name in (({"days": 1}, "no target"), ({"ids": "x", "days": 1}, "ids not a list"),
+                  ({"ids": [1], "days": 0}, "nothing to move"), ({"ids": list(range(501)), "days": 1}, "501 accounts")):
+    code_, body = call("POST", "/admin/users/adjust", bad)
+    check("bulk: %s is refused" % name, code_ == 400, str(body))
+
+# Who needs a nudge.
+store.run("UPDATE users SET status = 'active', quota_bytes = ?, used_bytes = 0, expires_at = ? WHERE id = ?",
+          (10 * GB, SOON, sara["id"]))
+store.run("UPDATE users SET status = 'active', quota_bytes = ?, used_bytes = ?, expires_at = ? WHERE id = ?",
+          (10 * 10 ** 9, 96 * 10 ** 8, FAR, bahar["id"]))
+code_, body = call("GET", "/admin/expiring?days=3&usage=90")
+ids = {u["id"]: u for u in body.get("users", [])}
+check("expiring: one ending tomorrow, one nearly out of traffic",
+      code_ == 200 and "ending" in ids.get(sara["id"], {}).get("why", [])
+      and ids.get(bahar["id"], {}).get("why") == ["traffic"] and ids[bahar["id"]]["used_percent"] == 96,
+      str([(u["id"], u["why"], u["used_percent"]) for u in body["users"]]))
+check("  the soonest first", [u["id"] for u in body["users"]].index(sara["id"]) < [u["id"] for u in body["users"]].index(bahar["id"]))
+code_, body = call("GET", "/admin/expiring?days=0&usage=100")
+check("expiring: a narrower ask leaves them out",
+      code_ == 200 and bahar["id"] not in {u["id"] for u in body["users"]}, str(body)[:200])
+code_, body = call("GET", "/admin/expiring?days=x&usage=999")
+check("expiring: nonsense falls back to the defaults, and is capped", code_ == 200 and body["days"] == 3 and body["usage"] == 100)
+
+# Listing: paged, narrowed by status, with a total.
+total = store.one("SELECT count(*) AS n FROM users")["n"]
+code_, body = call("GET", "/admin/users?limit=2")
+check("users: a page of two, and how many there are", code_ == 200 and len(body["users"]) == 2
+      and body["total"] == total and body["limit"] == 2 and body["offset"] == 0, str(body)[:200])
+code_, page2 = call("GET", "/admin/users?limit=2&offset=2")
+check("  the next page is the next accounts", {u["id"] for u in page2["users"]}.isdisjoint({u["id"] for u in body["users"]}))
+store.run("UPDATE users SET status = 'suspended' WHERE id = ?", (sara["id"],))
+code_, body = call("GET", "/admin/users?status=suspended&limit=100")
+check("users: narrowed by status", code_ == 200 and sara["id"] in {u["id"] for u in body["users"]}
+      and all(u["status"] == "suspended" for u in body["users"]), str(body)[:200])
+code_, body = call("GET", "/admin/users?status=nonsense")
+check("users: a status that does not exist is refused", code_ == 400)
+code_, body = call("GET", "/admin/users?limit=9999")
+check("users: the page size is capped at a hundred", code_ == 200 and body["limit"] == 100)
 res = panel.create_receipt(store, user(sara["id"]), dict(SLIP, kind="topup", amount="100000"))
 code_, body = call("GET", "/admin/receipts")
 check("its receipts say which are top-ups",

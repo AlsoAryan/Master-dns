@@ -2438,5 +2438,13 @@
 "Call of Duty — بررسی به‌روزرسانی": "Call of Duty — update check",
 "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید": "If it will not open, use smartdns-watch to see which Gaijin name went through the relay and is not on 443 (for example 20443 or 8090), then make that name direct with smartdns bypass",
 "این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند": "These four Demonware names are on 443 but answer an Iranian address with 403; without them Call of Duty stays on \"Checking for update\". The lobby and STUN stay direct",
-"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that"
+"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that",
+"ids باید فهرست عدد باشد": "ids must be a list of numbers",
+"status یکی از active، suspended، pending، expired یا over_quota": "status must be one of active, suspended, pending, expired or over_quota",
+"برای کپی کلیک کنید": "Click to copy",
+"بیش از ۵۰۰ حساب؛ با ids تکه‌تکه بفرستید": "More than 500 accounts; send them in pieces with ids",
+"در هر درخواست حداکثر ۵۰۰ حساب": "At most 500 accounts per request",
+"هدف را با ids (فهرست) یا all=active مشخص کنید": "Name the target with ids (a list) or all=active",
+"کال آو دیوتی روی کنسول": "Call of Duty on console",
+"پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد": "PlayStation and Xbox get the game from their own store, so the Battle.net download is not needed; the update check needs only these two groups"
 }

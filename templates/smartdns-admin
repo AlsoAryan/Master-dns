@@ -3930,7 +3930,7 @@ html[dir=ltr] .side nav a:hover{transform:translateX(4px)}
 .side nav a.on{color:var(--accent);font-weight:600;
  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 20%,transparent),color-mix(in srgb,var(--accent) 6%,transparent));
  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 26%,transparent)}
-.side nav a.out{margin-top:auto;position:sticky;bottom:0;align-self:stretch;border-radius:16px;color:var(--bad);
+.side nav a.out{margin:auto 0 0;position:sticky;bottom:0;align-self:stretch;border-radius:16px;color:var(--bad);
  background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(12px)}
 .side nav a.out:hover{background:var(--err-bg);color:var(--bad)}
 .wrap{max-width:none;margin:0;padding:22px 30px 56px;padding-inline-start:calc(248px + 16px + 30px)}
@@ -3972,6 +3972,18 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 code{border-radius:8px}.msg{border-radius:18px}.receipt{border-radius:18px}.thread>div{border-radius:18px}
 footer{opacity:.7}
+/* ---- 0.0.6 ---- */
+code:not(pre code){cursor:copy;transition:background .2s,color .2s}
+code:not(pre code):hover{background:color-mix(in srgb,var(--accent) 16%,var(--row));color:var(--accent)}
+.toast{position:fixed;bottom:26px;inset-inline-start:50%;transform:translate(50%,24px);opacity:0;z-index:50;pointer-events:none;
+ padding:10px 20px;border-radius:999px;font-size:13px;color:var(--on-btn);
+ background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:var(--pop);transition:opacity .25s,transform .25s}
+html[dir=ltr] .toast{transform:translate(-50%,24px)}
+.toast.on{opacity:1;transform:translate(50%,0)}html[dir=ltr] .toast.on{transform:translate(-50%,0)}
+.stat .n{font-variant-numeric:tabular-nums}
+tbody tr{transition:background .2s}
+.side nav a.on::before{content:'';display:inline-block;width:6px;height:6px;margin-inline-end:8px;border-radius:50%;
+ background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);vertical-align:middle}
 /* ---- 0.0.5 polish ---- */
 @keyframes md-load{0%{transform:scaleX(0);opacity:1}70%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
 .topbar{position:relative}
@@ -4273,6 +4285,19 @@ def app_version():
 
 # The mark: a rounded tile in the accent colours with an M cut through it.
 LOGO_SVG = ("<svg viewBox='0 0 32 32' aria-hidden='true'><defs><linearGradient id='mg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='var(--accent)'/><stop offset='1' stop-color='var(--accent2)'/></linearGradient></defs><rect width='32' height='32' rx='10' fill='url(#mg)'/><path d='M8 23V9.5l8 8 8-8V23' fill='none' stroke='#fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+
+
+# Click an address, a link or a key in the panel to copy it; a small toast says so.
+COPY_JS = ("<script>(function(){var t;function toast(m){var d=document.getElementById('md-toast');"
+           "if(!d){d=document.createElement('div');d.id='md-toast';d.className='toast';"
+           "document.body.appendChild(d)}d.textContent=m;d.classList.add('on');clearTimeout(t);"
+           "t=setTimeout(function(){d.classList.remove('on')},1600)}"
+           "document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('code');"
+           "if(!c||c.closest('pre')||!navigator.clipboard)return;var s=window.getSelection();"
+           "if(s&&String(s).length)return;navigator.clipboard.writeText(c.textContent.trim())"
+           ".then(function(){toast('کپی شد')},function(){})});"
+           "document.querySelectorAll('code').forEach(function(c){if(!c.closest('pre'))"
+           "c.title='برای کپی کلیک کنید'})})()</script>")
 
 
 def brand_html():
@@ -7039,11 +7064,11 @@ def page(title, body, cfg, active="", msg=None, msg_kind="good"):
 <title>%s</title>%s<style>%s</style></head>
 <body><div class="shell"><aside class="side">%s<nav>%s<a class='out' href='/%s/logout'>خروج</a></nav></aside>
 <main class="wrap"><div class="topbar"><h1>%s</h1><div class="tools">%s</div></div>
-%s%s%s</main></div></body></html>""" % (html.escape(title), THEME_HEAD,
+%s%s%s</main></div>%s</body></html>""" % (html.escape(title), THEME_HEAD,
                                  font_face("/" + cfg["ADMIN_PATH"]) + CSS,
                                  brand_html(), nav, cfg["ADMIN_PATH"],
                                  html.escape(title), THEME_BUTTON,
-                                 banner, body, footer_html()))
+                                 banner, body, footer_html(), COPY_JS))
 
 
 def login_page(cfg, error=None):

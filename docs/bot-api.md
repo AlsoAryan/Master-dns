@@ -388,12 +388,14 @@ def from_panel(secret, header, body):      # body: bytes، همان‌طور ک�
 | `GET /admin/receipts/{id}/image` | عکس رسید: `{"content_type", "data"}` (بعد از تصمیم پاک می‌شود) |
 | `POST /admin/receipts/{id}/approve` | تأیید — پلن رسید خودکار روی حساب می‌نشیند، دقیقاً مثل پنل. رسید شارژ کیف پول (`"kind": "topup"`) مبلغش به کیف پول می‌رود؛ با `{"amount": 450000}` مبلغ درست را بدهید اگر رسید چیز دیگری می‌گوید |
 | `POST /admin/receipts/{id}/reject` | رد |
-| `GET /admin/users?q=...` | جستجو با نام، نام کاربری، شماره، آیدی تلگرام، شمارهٔ حساب یا آی‌پی (بیست تا)؛ بدون `q` تازه‌ترین‌ها |
+| `GET /admin/users?q=...&status=active&limit=50&offset=0` | جستجو با نام، نام کاربری، شماره، آیدی تلگرام، شمارهٔ حساب یا آی‌پی؛ `status` یکی از `active`، `suspended`، `pending`، `expired`، `over_quota`؛ `limit` تا ۱۰۰ (پیش‌فرض ۲۰) و `offset` برای صفحه‌بندی؛ جواب `total` هم دارد. بدون `q` تازه‌ترین‌ها |
 | `GET /admin/users/{id}` | یک حساب |
 | `POST /admin/users/{id}/status` | `{"status": "suspended"}` یا `{"status": "active"}` |
 | `POST /admin/users/{id}/plan` | `{"plan_id": 1}` — دادن پلن بدون رسید (مثلاً پرداخت نقدی) |
 | `POST /admin/users/{id}/wallet` | `{"amount": "50000", "note": "هدیه"}` — اضافه کردن به کیف پول؛ `"-50000"` کم می‌کند. کمتر از صفر نمی‌شود (`409` با `wallet_short`). به مشتری خبر `wallet.changed` می‌رود |
 | `POST /admin/users/{id}/adjust` | `{"days": 7, "gb": -2}` — روز و حجم را بدهید یا کم کنید؛ هر کدام جدا یا هر دو. `days` بیشتر از ۳۶۵۰ و `gb` بیشتر از حد نمی‌شود (`400` با `bad_amount`). حسابی که حجمش نامحدود است یا هنوز پلن ندارد حجم نمی‌گیرد (`409` با `no_quota`) و حسابی که تاریخ پایان ندارد روزش کم نمی‌شود (`409` با `no_expiry`). کم کردنِ بیش از باقی‌مانده حجم را به یک بایت می‌رساند، نه صفر (صفر یعنی نامحدود). به مشتری خبر `plan.adjusted` می‌رود |
+| `POST /admin/users/adjust` | تنظیم گروهی: `{"ids": [4, 9, 12], "days": 1}` یا `{"all": "active", "days": 2}` (مثلاً جبران یک قطعی). `days` و `gb` مثل تنظیم تکی. تا ۵۰۰ حساب در هر درخواست؛ حسابی که نمی‌تواند بپذیرد (`no_quota`، `no_expiry`) رد می‌شود و نامش می‌آید: `{"changed": 38, "skipped": [{"id": 7, "error": "no_quota"}]}` |
+| `GET /admin/expiring?days=3&usage=90` | مشتری‌هایی که تا `days` روز دیگر تمام می‌شوند، تمام شده‌اند یا `usage` درصد حجمشان مصرف شده؛ اول زودتر تمام‌شونده‌ها. هر مورد `why` دارد (`ending`، `expired`، `traffic`) و `used_percent`؛ تا ۲۰۰ مورد. برای یادآور تمدید |
 | `GET /admin/tickets?status=open` | تیکت‌ها؛ `open` (پیش‌فرض)، `answered`، `closed`، `all` |
 | `GET /admin/tickets/{id}` | یک تیکت با پیام‌ها و صاحبش |
 | `GET /admin/tickets/{id}/messages/{message_id}/image` | عکس یک پیام تیکت: `{"content_type", "data"}` (base64) |

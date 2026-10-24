@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.5"
+VERSION="0.0.6"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -4894,6 +4894,15 @@ exit 0
 #    PRIMARY KEY (template_id, service_key, group_key)
 #);
 #
+#-- Groups added to a service after templates were made, and already offered to
+#-- them once (see follow_catalogue_joins): a group the operator then unticks is
+#-- not put back at the next start.
+#CREATE TABLE IF NOT EXISTS catalogue_joined (
+#    service_key TEXT NOT NULL,
+#    group_key   TEXT NOT NULL,
+#    PRIMARY KEY (service_key, group_key)
+#);
+#
 #-- Single domains switched off inside a group the template otherwise routes.
 #--
 #-- Recorded as exceptions rather than as the full list of what is routed, so
@@ -5921,6 +5930,44 @@ exit 0
 #        log(INFO, "template group %s/%s became %s"
 #            % (row["service_key"], row["group_key"], ", ".join(fresh)))
 #    return moved
+#
+#
+#def follow_catalogue_joins(store, catalogue):
+#    """Give a group added to a service to the templates that already route the rest of it.
+#
+#    A template names the groups it routes, by key, so a group added later is in
+#    none of them but the default - which routes whatever is not opt-in. Call of
+#    Duty needed four more names, and a template that routed Activision's own
+#    names the day before would go on stopping at "Checking for update", with
+#    nothing in the editor to say why.
+#
+#    A group marked `join` goes, once, into every template that routes any other
+#    group of its service: ticking part of a service is how a template says it
+#    wants that service, and a group that arrives later is part of it. Not into
+#    one that routes none of the service, and not again after an operator
+#    unticks it - that is a decision, and is kept.
+#    """
+#    joined = 0
+#    for svc in catalogue:
+#        for grp in svc["groups"]:
+#            if not grp.get("join") or store.one(
+#                    "SELECT 1 FROM catalogue_joined WHERE service_key = ? AND group_key = ?",
+#                    (svc["key"], grp["key"])):
+#                continue
+#            me = (svc["key"], grp["key"])
+#            rest = {(svc["key"], g["key"]) for g in svc["groups"]
+#                    if g is not grp and not g.get("locked")}
+#            for t in store.q("SELECT id FROM templates WHERE is_default = 0"):
+#                have = store.template_groups(t["id"])
+#                if me not in have and have & rest:
+#                    store.run("INSERT OR IGNORE INTO template_services"
+#                              " (template_id, service_key, group_key) VALUES (?, ?, ?)",
+#                              (t["id"], svc["key"], grp["key"]))
+#                    joined += 1
+#                    log(INFO, "template #%d now routes %s/%s (it routed the rest of %s)"
+#                        % (t["id"], svc["key"], grp["key"], svc["key"]))
+#            store.run("INSERT OR IGNORE INTO catalogue_joined (service_key, group_key) VALUES (?, ?)", me)
+#    return joined
 #
 #
 #def games_in_template(store, template_id):
@@ -11691,21 +11738,37 @@ exit 0
 #        return 200, dict(res, receipt=admin_receipt(self.store, row))
 #
 #    def api_admin_users(self, body):
+#        """Search (`q`) or list accounts, newest first; `status` narrows it
+#        (active, suspended, pending, expired, over_quota), `limit` (up to 100, default 20)
+#        and `offset` page through, and `total` says how many there are."""
+#        def number(name, default, low, high):
+#            try:
+#                return max(low, min(high, int((self.query.get(name) or [default])[0])))
+#            except (TypeError, ValueError):
+#                return default
 #        q = (self.query.get("q") or [""])[0].strip()[:64]
+#        status = (self.query.get("status") or [""])[0]
+#        if status and status not in ("active", "suspended", "pending", "expired", "over_quota"):
+#            return 400, refused("bad_status", "status یکی از active، suspended، pending، expired یا over_quota")
+#        limit, offset = number("limit", 20, 1, 100), number("offset", 0, 0, 10 ** 6)
 #        extra, more = self.mine()
-#        if not q:
-#            rows = self.store.q("SELECT * FROM users u WHERE 1 = 1" + extra
-#                                + " ORDER BY id DESC LIMIT 20", more)
-#        else:
+#        where, args = "1 = 1" + extra, list(more)
+#        if status:
+#            where += " AND u.status = ?"
+#            args.append(status)
+#        join = ""
+#        if q:
 #            like = "%" + q.replace("%", "").replace("_", "") + "%"
-#            rows = self.store.q(
-#                "SELECT DISTINCT u.* FROM users u LEFT JOIN ips i ON i.user_id = u.id"
-#                " WHERE (u.username LIKE ? OR u.first_name LIKE ? OR u.phone LIKE ?"
-#                " OR CAST(u.telegram_id AS TEXT) = ? OR CAST(u.id AS TEXT) = ?"
-#                " OR i.ip = ?)" + extra + " ORDER BY u.id DESC LIMIT 20",
-#                (like, like, like, q, q, q) + more)
-#        return 200, {"ok": True, "users": [admin_user_view(self.store, r, self.relays)
-#                                           for r in rows]}
+#            join = " LEFT JOIN ips i ON i.user_id = u.id"
+#            where += (" AND (u.username LIKE ? OR u.first_name LIKE ? OR u.phone LIKE ?"
+#                      " OR CAST(u.telegram_id AS TEXT) = ? OR CAST(u.id AS TEXT) = ? OR i.ip = ?)")
+#            args += [like, like, like, q, q, q]
+#        total = self.store.one("SELECT COUNT(DISTINCT u.id) AS n FROM users u" + join
+#                               + " WHERE " + where, tuple(args))["n"]
+#        rows = self.store.q("SELECT DISTINCT u.* FROM users u" + join + " WHERE " + where
+#                            + " ORDER BY u.id DESC LIMIT ? OFFSET ?", tuple(args) + (limit, offset))
+#        return 200, {"ok": True, "total": total, "limit": limit, "offset": offset,
+#                     "users": [admin_user_view(self.store, r, self.relays) for r in rows]}
 #
 #    def admin_target(self, uid):
 #        extra, more = self.mine()
@@ -11784,60 +11847,146 @@ exit 0
 #        return 200, {"ok": True, "balance": balance,
 #                     "user": admin_user_view(self.store, user, self.relays)}
 #
-#    def api_admin_adjust(self, body, uid):
-#        """Add days or traffic to an account, or take some off - by hand.
+#    @staticmethod
+#    def adjust_amounts(body):
+#        """(days, bytes) from a request, or an error response.
 #
-#        {"days": 7} / {"days": -3} move the end date; {"gb": 5} / {"gb": -2}
-#        (or "bytes") move the quota. Either or both. Two things this will not
-#        do: turn a quota of zero - which means unlimited here - into a number,
-#        and leave a quota at zero by taking too much, which would make the
-#        account unlimited. A quota taken to or below nothing becomes one byte:
-#        spent, not free."""
-#        user, err = self.admin_target(uid)
-#        if err:
-#            return err
+#        {"days": 7} / {"days": -3} move the end date, {"gb": 5} / {"gb": -2}
+#        (or "bytes") the quota. Either or both, never both nothing."""
 #        days, delta = body.get("days"), body.get("bytes")
 #        if body.get("gb") is not None:
 #            try:
 #                delta = int(round(float(body["gb"]) * 1024 ** 3))
 #            except (TypeError, ValueError):
-#                return 400, refused("bad_amount", "gb باید عدد باشد")
+#                return None, None, (400, refused("bad_amount", "gb باید عدد باشد"))
 #        try:
 #            days = None if days is None else int(days)
 #            delta = None if delta is None else int(delta)
 #        except (TypeError, ValueError):
-#            return 400, refused("bad_amount", "days و bytes باید عدد صحیح باشند")
+#            return None, None, (400, refused("bad_amount", "days و bytes باید عدد صحیح باشند"))
 #        if not days and not delta:
-#            return 400, refused("bad_amount", "days یا gb (یا bytes) را بدهید، غیر از صفر")
+#            return None, None, (400, refused("bad_amount",
+#                                             "days یا gb (یا bytes) را بدهید، غیر از صفر"))
 #        if abs(days or 0) > 3650 or abs(delta or 0) > 1024 ** 5:
-#            return 400, refused("bad_amount", "این مقدار از حد مجاز بیشتر است")
+#            return None, None, (400, refused("bad_amount", "این مقدار از حد مجاز بیشتر است"))
+#        return days, delta, None
+#
+#    def adjust_one(self, user, days, delta):
+#        """Move one account's days and traffic. Returns (user, said), or
+#        (None, (status, refusal)) when the account cannot take it.
+#
+#        Two things this will not do: turn a quota of zero - which means
+#        unlimited here - into a number, and leave a quota at zero by taking too
+#        much, which would make the account unlimited. A quota taken to or below
+#        nothing becomes one byte: spent, not free."""
 #        sets, args, said = [], [], []
 #        if days:
 #            ends = parse_ts(user["expires_at"])
 #            if ends is None and days < 0:
-#                return 409, refused("no_expiry", "این حساب تاریخ پایان ندارد؛ چیزی برای کم کردن نیست")
-#            base = max(ends, datetime.now(timezone.utc)) if ends and days > 0 \
-#                else (ends or datetime.now(timezone.utc))
+#                return None, (409, refused("no_expiry",
+#                                           "این حساب تاریخ پایان ندارد؛ چیزی برای کم کردن نیست"))
+#            now = datetime.now(timezone.utc)
+#            base = max(ends, now) if ends and days > 0 else (ends or now)
 #            sets.append("expires_at = ?")
 #            args.append((base + timedelta(days=days)).isoformat(timespec="seconds"))
 #            said.append("%+d روز" % days)
 #        if delta:
 #            if not (user["quota_bytes"] or 0):
-#                return 409, refused("no_quota", "حجم این حساب نامحدود است یا هنوز پلنی ندارد؛ "
-#                                    "اول پلن بدهید")
+#                return None, (409, refused("no_quota", "حجم این حساب نامحدود است یا هنوز پلنی "
+#                                           "ندارد؛ اول پلن بدهید"))
 #            sets.append("quota_bytes = ?")
 #            args.append(max(1, user["quota_bytes"] + delta))
 #            said.append("%+.2f گیگ" % (delta / 1024 ** 3))
 #        # Back under the limit, the warnings it already crossed may fire again.
 #        self.store.run("UPDATE users SET %s, warned = 0 WHERE id = ?" % ", ".join(sets),
 #                       tuple(args) + (user["id"],))
-#        self.admin_log("user #%d adjusted: %s" % (user["id"], ", ".join(said)))
 #        user = self.store.one("SELECT * FROM users WHERE id = ?", (user["id"],))
 #        emit(self.store, user, "plan.adjusted", {
 #            "days": days or 0, "bytes": delta or 0,
 #            "text": "🛠 حساب شما به‌روز شد: %s" % "، ".join(said)})
-#        return 200, {"ok": True, "message": "، ".join(said),
+#        return user, "، ".join(said)
+#
+#    def api_admin_adjust(self, body, uid):
+#        user, err = self.admin_target(uid)
+#        if err:
+#            return err
+#        days, delta, err = self.adjust_amounts(body)
+#        if err:
+#            return err
+#        user, said = self.adjust_one(user, days, delta)
+#        if user is None:
+#            return said
+#        self.admin_log("user #%d adjusted: %s" % (user["id"], said))
+#        return 200, {"ok": True, "message": said,
 #                     "user": admin_user_view(self.store, user, self.relays)}
+#
+#    def api_admin_adjust_many(self, body):
+#        """The same, for many at once - a day for everybody after an outage.
+#
+#        {"ids": [4, 9, 12]} or {"all": "active"} (every account that is active),
+#        with days and/or gb as for one account. An account that cannot take it
+#        is skipped and named, never half-done; up to 500 per call."""
+#        days, delta, err = self.adjust_amounts(body)
+#        if err:
+#            return err
+#        extra, more = self.mine()
+#        if body.get("all") == "active":
+#            rows = self.store.q("SELECT * FROM users u WHERE u.status = 'active'" + extra
+#                                + " ORDER BY u.id LIMIT 501", more)
+#        elif isinstance(body.get("ids"), list) and body["ids"]:
+#            try:
+#                ids = sorted({int(i) for i in body["ids"]})
+#            except (TypeError, ValueError):
+#                return 400, refused("bad_ids", "ids باید فهرست عدد باشد")
+#            if len(ids) > 500:
+#                return 400, refused("too_many", "در هر درخواست حداکثر ۵۰۰ حساب")
+#            rows = self.store.q("SELECT * FROM users u WHERE u.id IN (%s)" % ",".join("?" * len(ids))
+#                                + extra + " ORDER BY u.id", tuple(ids) + more)
+#        else:
+#            return 400, refused("bad_target", "هدف را با ids (فهرست) یا all=active مشخص کنید")
+#        if len(rows) > 500:
+#            return 400, refused("too_many", "بیش از ۵۰۰ حساب؛ با ids تکه‌تکه بفرستید")
+#        changed, skipped = 0, []
+#        for row in rows:
+#            user, said = self.adjust_one(row, days, delta)
+#            if user is None:
+#                skipped.append({"id": row["id"], "error": said[1]["error"]})
+#            else:
+#                changed += 1
+#        self.admin_log("%d accounts adjusted (%s days, %s bytes), %d skipped"
+#                       % (changed, days or 0, delta or 0, len(skipped)))
+#        return 200, {"ok": True, "changed": changed, "skipped": skipped}
+#
+#    def api_admin_expiring(self, body):
+#        """Who needs a nudge: accounts ending within `days` (default 3), already
+#        ended, or with `usage` percent of their traffic used (default 90), the
+#        soonest first. What a renewal reminder is built from."""
+#        def number(name, default, low, high):
+#            try:
+#                return max(low, min(high, int((self.query.get(name) or [default])[0])))
+#            except (TypeError, ValueError):
+#                return default
+#        days = number("days", 3, 0, 365)
+#        usage = number("usage", 90, 1, 100)
+#        extra, more = self.mine()
+#        now = datetime.now(timezone.utc)
+#        horizon = (now + timedelta(days=days)).isoformat(timespec="seconds")
+#        rows = self.store.q(
+#            "SELECT * FROM users u WHERE u.status IN ('active', 'expired', 'over_quota') AND ((u.expires_at IS NOT NULL"
+#            " AND u.expires_at <= ?) OR (u.quota_bytes > 0 AND u.used_bytes * 100 >= u.quota_bytes * ?))"
+#            + extra + " ORDER BY u.expires_at IS NULL, u.expires_at, u.id LIMIT 200",
+#            (horizon, usage) + more)
+#        out = []
+#        for r in rows:
+#            ends = parse_ts(r["expires_at"])
+#            pct = (r["used_bytes"] or 0) * 100 // r["quota_bytes"] if r["quota_bytes"] else None
+#            why = []
+#            if ends is not None and ends <= now + timedelta(days=days):
+#                why.append("expired" if ends <= now else "ending")
+#            if pct is not None and pct >= usage:
+#                why.append("traffic")
+#            out.append(dict(admin_user_view(self.store, r, self.relays), why=why, used_percent=pct))
+#        return 200, {"ok": True, "days": days, "usage": usage, "count": len(out), "users": out}
 #
 #    def api_admin_tickets(self, body):
 #        which = (self.query.get("status") or ["open"])[0]
@@ -11969,6 +12118,8 @@ exit 0
 #        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/plan$"), "admin_plan"),
 #        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/wallet$"), "admin_wallet"),
 #        ("POST", re.compile(r"/api/v1/admin/users/(\d{1,12})/adjust$"), "admin_adjust"),
+#        ("POST", re.compile(r"/api/v1/admin/users/adjust$"), "admin_adjust_many"),
+#        ("GET", re.compile(r"/api/v1/admin/expiring$"), "admin_expiring"),
 #        ("GET", re.compile(r"/api/v1/admin/tickets$"), "admin_tickets"),
 #        ("GET", re.compile(r"/api/v1/admin/tickets/(\d{1,12})$"), "admin_ticket"),
 #        ("GET", re.compile(r"/api/v1/admin/tickets/(\d{1,12})/messages/(\d{1,12})/image$"),
@@ -12863,6 +13014,7 @@ exit 0
 #    GAMES[:] = load_games()
 #    BLOCKS[:] = load_blocks()
 #    follow_catalogue_split(store, CATALOGUE)
+#    follow_catalogue_joins(store, CATALOGUE)
 #    DEFAULT_TEMPLATE[0] = store.ensure_default_template(CATALOGUE)["id"]
 #    print("catalogue: %d services, default template #%d"
 #          % (len(CATALOGUE), DEFAULT_TEMPLATE[0]), flush=True)
@@ -24570,7 +24722,7 @@ exit 0
 #.side nav a.on{color:var(--accent);font-weight:600;
 # background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 20%,transparent),color-mix(in srgb,var(--accent) 6%,transparent));
 # box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 26%,transparent)}
-#.side nav a.out{margin-top:auto;position:sticky;bottom:0;align-self:stretch;border-radius:16px;color:var(--bad);
+#.side nav a.out{margin:auto 0 0;position:sticky;bottom:0;align-self:stretch;border-radius:16px;color:var(--bad);
 # background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(12px)}
 #.side nav a.out:hover{background:var(--err-bg);color:var(--bad)}
 #.wrap{max-width:none;margin:0;padding:22px 30px 56px;padding-inline-start:calc(248px + 16px + 30px)}
@@ -24612,6 +24764,18 @@ exit 0
 # box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 #code{border-radius:8px}.msg{border-radius:18px}.receipt{border-radius:18px}.thread>div{border-radius:18px}
 #footer{opacity:.7}
+#/* ---- 0.0.6 ---- */
+#code:not(pre code){cursor:copy;transition:background .2s,color .2s}
+#code:not(pre code):hover{background:color-mix(in srgb,var(--accent) 16%,var(--row));color:var(--accent)}
+#.toast{position:fixed;bottom:26px;inset-inline-start:50%;transform:translate(50%,24px);opacity:0;z-index:50;pointer-events:none;
+# padding:10px 20px;border-radius:999px;font-size:13px;color:var(--on-btn);
+# background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:var(--pop);transition:opacity .25s,transform .25s}
+#html[dir=ltr] .toast{transform:translate(-50%,24px)}
+#.toast.on{opacity:1;transform:translate(50%,0)}html[dir=ltr] .toast.on{transform:translate(-50%,0)}
+#.stat .n{font-variant-numeric:tabular-nums}
+#tbody tr{transition:background .2s}
+#.side nav a.on::before{content:'';display:inline-block;width:6px;height:6px;margin-inline-end:8px;border-radius:50%;
+# background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent);vertical-align:middle}
 #/* ---- 0.0.5 polish ---- */
 #@keyframes md-load{0%{transform:scaleX(0);opacity:1}70%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
 #.topbar{position:relative}
@@ -24913,6 +25077,19 @@ exit 0
 #
 ## The mark: a rounded tile in the accent colours with an M cut through it.
 #LOGO_SVG = ("<svg viewBox='0 0 32 32' aria-hidden='true'><defs><linearGradient id='mg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='var(--accent)'/><stop offset='1' stop-color='var(--accent2)'/></linearGradient></defs><rect width='32' height='32' rx='10' fill='url(#mg)'/><path d='M8 23V9.5l8 8 8-8V23' fill='none' stroke='#fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+#
+#
+## Click an address, a link or a key in the panel to copy it; a small toast says so.
+#COPY_JS = ("<script>(function(){var t;function toast(m){var d=document.getElementById('md-toast');"
+#           "if(!d){d=document.createElement('div');d.id='md-toast';d.className='toast';"
+#           "document.body.appendChild(d)}d.textContent=m;d.classList.add('on');clearTimeout(t);"
+#           "t=setTimeout(function(){d.classList.remove('on')},1600)}"
+#           "document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('code');"
+#           "if(!c||c.closest('pre')||!navigator.clipboard)return;var s=window.getSelection();"
+#           "if(s&&String(s).length)return;navigator.clipboard.writeText(c.textContent.trim())"
+#           ".then(function(){toast('کپی شد')},function(){})});"
+#           "document.querySelectorAll('code').forEach(function(c){if(!c.closest('pre'))"
+#           "c.title='برای کپی کلیک کنید'})})()</script>")
 #
 #
 #def brand_html():
@@ -27679,11 +27856,11 @@ exit 0
 #<title>%s</title>%s<style>%s</style></head>
 #<body><div class="shell"><aside class="side">%s<nav>%s<a class='out' href='/%s/logout'>خروج</a></nav></aside>
 #<main class="wrap"><div class="topbar"><h1>%s</h1><div class="tools">%s</div></div>
-#%s%s%s</main></div></body></html>""" % (html.escape(title), THEME_HEAD,
+#%s%s%s</main></div>%s</body></html>""" % (html.escape(title), THEME_HEAD,
 #                                 font_face("/" + cfg["ADMIN_PATH"]) + CSS,
 #                                 brand_html(), nav, cfg["ADMIN_PATH"],
 #                                 html.escape(title), THEME_BUTTON,
-#                                 banner, body, footer_html()))
+#                                 banner, body, footer_html(), COPY_JS))
 #
 #
 #def login_page(cfg, error=None):
@@ -37700,6 +37877,7 @@ exit 0
 #        {
 #          "key": "cod-https",
 #          "label": "Call of Duty — بررسی به‌روزرسانی",
+#          "join": true,
 #          "note": "این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند",
 #          "domains": [
 #            "objectstore-cloud-prod-rex.egcp.demonware.net",
@@ -39646,7 +39824,6 @@ exit 0
 #      "kind": "platform",
 #      "needs": [
 #        "blizzard/main",
-#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39817,13 +39994,23 @@ exit 0
 #      ]
 #    },
 #    {
+#      "key": "cod-console",
+#      "name": "کال آو دیوتی روی کنسول",
+#      "en": "Call of Duty on console",
+#      "kind": "game",
+#      "needs": [
+#        "blizzard/main",
+#        "blizzard/cod-https"
+#      ],
+#      "note": "پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد"
+#    },
+#    {
 #      "key": "overwatch",
 #      "name": "اورواچ ۲",
 #      "en": "Overwatch 2",
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
-#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39834,7 +40021,6 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
-#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39845,7 +40031,6 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
-#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -39865,7 +40050,6 @@ exit 0
 #      "kind": "game",
 #      "needs": [
 #        "blizzard/main",
-#        "blizzard/cod-https",
 #        "blizzard/download"
 #      ]
 #    },
@@ -43854,7 +44038,15 @@ exit 0
 #"Call of Duty — بررسی به‌روزرسانی": "Call of Duty — update check",
 #"اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید": "If it will not open, use smartdns-watch to see which Gaijin name went through the relay and is not on 443 (for example 20443 or 8090), then make that name direct with smartdns bypass",
 #"این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند": "These four Demonware names are on 443 but answer an Iranian address with 403; without them Call of Duty stays on \"Checking for update\". The lobby and STUN stay direct",
-#"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that"
+#"پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that",
+#"ids باید فهرست عدد باشد": "ids must be a list of numbers",
+#"status یکی از active، suspended، pending، expired یا over_quota": "status must be one of active, suspended, pending, expired or over_quota",
+#"برای کپی کلیک کنید": "Click to copy",
+#"بیش از ۵۰۰ حساب؛ با ids تکه‌تکه بفرستید": "More than 500 accounts; send them in pieces with ids",
+#"در هر درخواست حداکثر ۵۰۰ حساب": "At most 500 accounts per request",
+#"هدف را با ids (فهرست) یا all=active مشخص کنید": "Name the target with ids (a list) or all=active",
+#"کال آو دیوتی روی کنسول": "Call of Duty on console",
+#"پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد": "PlayStation and Xbox get the game from their own store, so the Battle.net download is not needed; the update check needs only these two groups"
 #}
 #__END_I18N_EN__
 
