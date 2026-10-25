@@ -44,7 +44,9 @@ script and it asks questions. It refuses to run if the file is cut short.
 | **single** | one server abroad | all of the above on one machine, `ROLE=single`. Good for trying it out |
 | **node** | another server abroad | one more exit, added from the admin panel's *Nodes* page |
 
-The installer numbers and times each step and ends with a summary. It is safe
+The installer numbers and times each step and ends with a summary. `sudo bash master-dns.sh --check` first looks at the machine (system, systemd, memory, disk,
+address, ports 53, 80 and 443) and changes nothing; an install ends with a timeline of where
+the time went. It is safe
 to re-run, backs up what it replaces, and `sudo bash master-dns.sh --uninstall`
 puts the machine back, asking before it removes the database or packages.
 `sudo smartdns-menu` lists every command afterwards.
@@ -63,7 +65,9 @@ route to Google over IPv6); **udp** 53, 3478.
 - **Selling**: plans, receipts, discount codes, a free trial, a wallet,
   invitation links, extra devices, and resellers with their own plans and bot.
 - **Panels**: a dashboard-style operator panel and a customer panel in Persian or
-  English, light and dark, with a blue, pink, green or red accent. The public
+  English, light and dark, with a blue, pink, green, red, purple or orange accent. The admin panel opens a
+  jump-to-page palette on Ctrl/Cmd+K or `/`; the customer panel is a wide dashboard on a
+  computer and a single column on a phone. The public
   forms are guarded against bots and floods: a hidden trap field, a signed
   timer and a per-address limit, none of which a person notices.
 - **Encrypted DNS**: DoH and DoT per server, an address per customer, an iPhone

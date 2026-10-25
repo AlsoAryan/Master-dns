@@ -42,7 +42,7 @@ check("two words of six rows each where it is narrow, inside 80 columns",
 check("in block letters", all("█" in r or "╚" in r for r in wide) and sum("█" in r for r in wide) == 5)
 check("the version beneath", '"$VERSION"' in body and "smart DNS for Iran" in body)
 check("before the preflight, so even a run without root shows it",
-      logic.index('case "${1:-}" in -V|--version|-h|--help) ;; *) banner ;; esac')
+      logic.index("    *) banner; syscheck || true ;;")
       < logic.index("# ---------------------------------------------------------------- preflight")
       < logic.index('[ "$(id -u)" = 0 ] || die "run as root'))
 check("  and after --version and --help are answered, which print only themselves",

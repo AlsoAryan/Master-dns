@@ -3807,7 +3807,7 @@ DARK = """color-scheme:dark;
  --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
  --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
  --err-bg:#1f0f13;--warn-bg:#1f1a0c;--warn-line:#5e4d25;
- --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
+ --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--c-purple:#8b5cf6;--c-orange:#f97316;--sun:inline;--moon:none;
  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 44px -26px rgba(0,0,0,.9);
  --pop:0 18px 50px rgba(0,0,0,.65)"""
 LIGHT = """color-scheme:light;
@@ -3817,7 +3817,7 @@ LIGHT = """color-scheme:light;
  --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
  --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
  --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
- --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
+ --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--c-purple:#8b5cf6;--c-orange:#f97316;--sun:none;--moon:inline;
  --shadow:0 1px 0 rgba(255,255,255,.8) inset,0 16px 40px -28px rgba(30,41,80,.28);
  --pop:0 16px 44px rgba(30,41,80,.18)"""
 # Blue is the default and lives in DARK / LIGHT above. Each other accent only
@@ -3825,6 +3825,10 @@ LIGHT = """color-scheme:light;
 ACCENTS = {
     "pink": ("--accent:#ff7eb6;--accent2:#ff9cc8;--btn:#c2185b;--btn-hover:#d81b6a",
              "--accent:#c2185b;--accent2:#db2777;--btn:#be185d;--btn-hover:#9d174d"),
+    "purple": ("--accent:#b79bff;--accent2:#d2bfff;--btn:#7c3aed;--btn-hover:#8b5cf6",
+               "--accent:#6d28d9;--accent2:#7c3aed;--btn:#6d28d9;--btn-hover:#5b21b6"),
+    "orange": ("--accent:#ffa94d;--accent2:#ffc47d;--btn:#c2410c;--btn-hover:#ea580c",
+               "--accent:#c2410c;--accent2:#ea580c;--btn:#c2410c;--btn-hover:#9a3412"),
     "red": ("--accent:#ff6b6b;--accent2:#ff8e8e;--btn:#dc2626;--btn-hover:#ef4444",
             "--accent:#c62828;--accent2:#dc2626;--btn:#c62828;--btn-hover:#a61e1e"),
     "green": ("--accent:#4ade80;--accent2:#86efac;--btn:#15803d;--btn-hover:#16a34a",
@@ -3852,11 +3856,12 @@ THEME_CSS = _theme_css()
 THEME_HEAD = ("<script>try{var d=document.documentElement,"
               "t=localStorage.getItem('theme'),a=localStorage.getItem('accent');"
               "if(t=='light'||t=='dark')d.setAttribute('data-theme',t);"
-              "if(a=='blue'||a=='pink'||a=='green'||a=='red')d.setAttribute('data-accent',a)"
+              "if(a=='blue'||a=='pink'||a=='green'||a=='red'||a=='purple'||a=='orange')d.setAttribute('data-accent',a)"
               "}catch(e){}</script>")
 _DOTS = "".join(
     "<button type='button' class='dot %s' title='%s' aria-label='%s' onclick=\"(function(r){r.setAttribute('data-accent','%s');try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
-    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز")))
+    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز"),
+                            ("purple", "بنفش"), ("orange", "نارنجی")))
 THEME_BUTTON = (
     "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره' onclick=\"(function(r){var c=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'),n=c=='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('theme',n)}catch(e){}})(document.documentElement)\"><span class='sun'>☀️</span><span class='moon'>🌙</span></button><span class='accents' role='group' aria-label='رنگ تاکیدی'>" + _DOTS + "</span><button type='button' class='theme lang' title='English / فارسی' aria-label='English / فارسی' onclick=\"document.cookie='lang='+(document.documentElement.lang=='en'?'fa':'en')+'; path=/; max-age=31536000; samesite=lax';location.reload()\"><span class='fa-only'>EN</span><span class='en-only'>فا</span></button>")
 
@@ -3891,9 +3896,10 @@ body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none
 .accents{position:absolute;top:14px;left:62px;height:38px;display:flex;align-items:center;gap:8px}
 .accents button.dot{width:18px;height:18px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;display:block}
 .accents button.dot:hover{transform:scale(1.25)}
-.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}
+.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}.dot.purple{background:var(--c-purple)}.dot.orange{background:var(--c-orange)}
 :root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,:root[data-accent=pink] .dot.pink,
-:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red,
+:root[data-accent=purple] .dot.purple,:root[data-accent=orange] .dot.orange{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 
 /* ---- shell: a floating sidebar and a glass top bar ---- */
 @keyframes md-side-in{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
@@ -3972,6 +3978,55 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 code{border-radius:8px}.msg{border-radius:18px}.receipt{border-radius:18px}.thread>div{border-radius:18px}
 footer{opacity:.7}
+/* ---- 0.0.7: the inside of each page ---- */
+@keyframes md-row{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes md-fade{from{opacity:0}to{opacity:1}}
+@keyframes md-spin{to{transform:rotate(360deg)}}
+@keyframes md-pop{0%{transform:scale(.8);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+body{font-weight:430;letter-spacing:.003em}
+h1,h2,h3,th,.stat .n,.brand .name{font-weight:760}
+.card>h2:first-child{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid var(--line);font-size:16px}
+.card>h2:first-child~h2,.card>h2[style]{margin-top:26px}
+h2+p.muted,h2+.muted{padding:10px 14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 6%,var(--bg));
+ border-inline-start:3px solid color-mix(in srgb,var(--accent) 55%,transparent);line-height:2;font-size:12.5px;color:var(--dim)}
+h3.chart-h,h3.sec,h3{display:flex;align-items:center;gap:12px;margin:22px 0 12px;font-size:11.5px;letter-spacing:.07em;
+ color:var(--faint);text-transform:uppercase}
+h3.chart-h::after,h3.sec::after,h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+html[dir=rtl] h3::after{background:linear-gradient(270deg,var(--line2),transparent)}
+form.row,div.row{padding:10px 12px;border-radius:18px;background:var(--bg);border:1px solid var(--line);margin:10px 0}
+td.row,tr.row{padding:0;background:none;border:0;margin:0}
+table.users tr.row{background:none;border:0}
+td:first-child{font-weight:600}
+td{padding-block:12px}
+tbody tr:nth-child(-n+10){animation:md-row .45s cubic-bezier(.2,.8,.2,1) both}
+tbody tr:nth-child(2){animation-delay:.03s}tbody tr:nth-child(3){animation-delay:.06s}tbody tr:nth-child(4){animation-delay:.09s}
+tbody tr:nth-child(5){animation-delay:.12s}tbody tr:nth-child(6){animation-delay:.15s}tbody tr:nth-child(7){animation-delay:.18s}
+tbody tr:nth-child(8){animation-delay:.21s}tbody tr:nth-child(9){animation-delay:.24s}tbody tr:nth-child(10){animation-delay:.27s}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:3px 12px 3px 10px;font-weight:600;animation:md-pop .4s cubic-bezier(.2,.8,.2,1) both}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.pill.ok::before{box-shadow:0 0 0 3px color-mix(in srgb,currentColor 25%,transparent)}
+.card.wide{padding:20px 14px}
+button{padding:9px 16px}
+button.ghost,button.del,button.danger{padding:8px 15px}
+td button,td.acts button{padding:6px 12px}
+button.busy{pointer-events:none;opacity:.75}
+button.busy::before{content:'';display:inline-block;width:12px;height:12px;margin-inline-end:8px;border-radius:50%;
+ border:2px solid currentColor;border-top-color:transparent;animation:md-spin .7s linear infinite;vertical-align:-2px}
+.receipt{border:1px solid var(--line);padding:16px;margin:12px 0;background:var(--bg)}
+.thread>div{padding:12px 16px}
+a.dl{border-radius:999px;padding:10px 20px}
+#md-pal{position:fixed;inset:0;z-index:80;display:flex;justify-content:center;align-items:flex-start;padding-top:14vh;
+ background:rgba(0,0,0,.42);backdrop-filter:blur(8px);animation:md-fade .18s both}
+#md-pal .box{width:min(520px,92vw);background:var(--card);border:1px solid var(--line2);border-radius:26px;
+ box-shadow:var(--pop);overflow:hidden;animation:md-rise .25s cubic-bezier(.2,.8,.2,1) both}
+#md-pal input{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:18px 22px;font-size:15px}
+#md-pal input:focus{box-shadow:none}
+#md-pal .list{max-height:48vh;overflow-y:auto;padding:8px}
+#md-pal .list a{display:block;padding:10px 16px;border-radius:14px;color:var(--fg)}
+#md-pal .list a.on,#md-pal .list a:hover{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.tools::before{content:'Ctrl K';font-family:'MD Latin',sans-serif;font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+ padding:3px 8px;border-radius:8px;border:1px solid var(--line2);cursor:default}
+@media (max-width:999px){.tools::before{display:none}}
 /* ---- 0.0.6 ---- */
 code:not(pre code){cursor:copy;transition:background .2s,color .2s}
 code:not(pre code):hover{background:color-mix(in srgb,var(--accent) 16%,var(--row));color:var(--accent)}
@@ -4287,7 +4342,9 @@ def app_version():
 LOGO_SVG = ("<svg viewBox='0 0 32 32' aria-hidden='true'><defs><linearGradient id='mg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='var(--accent)'/><stop offset='1' stop-color='var(--accent2)'/></linearGradient></defs><rect width='32' height='32' rx='10' fill='url(#mg)'/><path d='M8 23V9.5l8 8 8-8V23' fill='none' stroke='#fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
 
 
-# Click an address, a link or a key in the panel to copy it; a small toast says so.
+# The panel's small behaviours, in one script: click an address, link or key to
+# copy it (with a toast); Ctrl/Cmd+K or "/" opens a palette that jumps to any page;
+# a form can be sent once - the button waits instead of letting it go twice.
 COPY_JS = ("<script>(function(){var t;function toast(m){var d=document.getElementById('md-toast');"
            "if(!d){d=document.createElement('div');d.id='md-toast';d.className='toast';"
            "document.body.appendChild(d)}d.textContent=m;d.classList.add('on');clearTimeout(t);"
@@ -4297,7 +4354,31 @@ COPY_JS = ("<script>(function(){var t;function toast(m){var d=document.getElemen
            "if(s&&String(s).length)return;navigator.clipboard.writeText(c.textContent.trim())"
            ".then(function(){toast('کپی شد')},function(){})});"
            "document.querySelectorAll('code').forEach(function(c){if(!c.closest('pre'))"
-           "c.title='برای کپی کلیک کنید'})})()</script>")
+           "c.title='برای کپی کلیک کنید'});"
+           "document.addEventListener('submit',function(e){if(e.defaultPrevented)return;var f=e.target;"
+           "if(f.dataset.sent){e.preventDefault();return}f.dataset.sent='1';"
+           "var b=f.querySelector('button:not([type=button])');if(b)b.classList.add('busy');"
+           "setTimeout(function(){delete f.dataset.sent;if(b)b.classList.remove('busy')},8000)});"
+           "var links=[].slice.call(document.querySelectorAll('.side nav a'));"
+           "function palette(){if(document.getElementById('md-pal'))return;var o=document.createElement('div');"
+           "o.id='md-pal';o.innerHTML='<div class=box><input autocomplete=off><div class=list></div></div>';"
+           "document.body.appendChild(o);"
+           "var i=o.querySelector('input'),l=o.querySelector('.list'),k=0,v=[];i.placeholder='برو به…';"
+           "function draw(){var q=i.value.trim().toLowerCase();v=links.filter(function(a){"
+           "return a.textContent.toLowerCase().indexOf(q)>-1});k=Math.min(k,Math.max(0,v.length-1));"
+           "l.innerHTML='';v.forEach(function(a,n){var r=document.createElement('a');r.href=a.href;"
+           "r.textContent=a.textContent;if(n==k)r.className='on';l.appendChild(r)})}"
+           "function close(){o.remove()}"
+           "o.addEventListener('click',function(e){if(e.target==o)close()});"
+           "i.addEventListener('input',function(){k=0;draw()});"
+           "i.addEventListener('keydown',function(e){if(e.key=='Escape')close();"
+           "else if(e.key=='ArrowDown'){k=Math.min(k+1,v.length-1);draw();e.preventDefault()}"
+           "else if(e.key=='ArrowUp'){k=Math.max(k-1,0);draw();e.preventDefault()}"
+           "else if(e.key=='Enter'&&v[k]){location=v[k].href}});draw();i.focus()}"
+           "document.addEventListener('keydown',function(e){var tg=(e.target.tagName||'').toLowerCase();"
+           "var typing=tg=='input'||tg=='textarea'||tg=='select';"
+           "if((e.key=='k'||e.key=='K')&&(e.ctrlKey||e.metaKey)||(!typing&&e.key=='/'&&!e.ctrlKey&&!e.metaKey)){"
+           "e.preventDefault();palette()}})})()</script>")
 
 
 def brand_html():

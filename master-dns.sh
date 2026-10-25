@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.6"
+VERSION="0.0.7"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -62,11 +62,30 @@ else
 fi
 # Steps are numbered and timed, so a long install shows where it is and how
 # long each part took, instead of a bare list of headings.
-STEP_N=0; T_START="$(date +%s)"
+STEP_N=0; T_START="$(date +%s)"; STEP_NAME=(); STEP_AT=()
 step() {
     STEP_N=$((STEP_N + 1))
+    STEP_NAME[STEP_N]="$*"; STEP_AT[STEP_N]="$(date +%s)"
     printf '\n  %s%02d%s  %s%s%s  %s+%ss%s\n' "$C" "$STEP_N" "$N" "$B" "$*" "$N" \
            "$D" "$(( $(date +%s) - T_START ))" "$N"
+}
+
+# Where the time went, as bars: the last thing printed before the ready box, so
+# a slow install says which part was slow.
+timeline() {
+    local i d max=1 w=20 n k bar now; local -a took=()
+    now="$(date +%s)"
+    [ "$STEP_N" -gt 0 ] || return 0
+    for ((i = 1; i <= STEP_N; i++)); do
+        d=$(( ${STEP_AT[i + 1]:-$now} - STEP_AT[i] )); took[i]=$d
+        [ "$d" -gt "$max" ] && max=$d
+    done
+    printf '\n  %sTimeline%s\n' "$B" "$N"
+    for ((i = 1; i <= STEP_N; i++)); do
+        n=$(( took[i] * w / max )); [ "$n" -lt 1 ] && [ "${took[i]}" -gt 0 ] && n=1
+        bar=""; for ((k = 0; k < n; k++)); do bar+="#"; done
+        printf '    %s%02d%s  %-30.30s %s%-*s%s %3ss\n' "$C" "$i" "$N" "${STEP_NAME[i]}" "$C" "$w" "$bar" "$N" "${took[i]}"
+    done
 }
 info() { printf '    %s\n' "$*"; }
 warn() { printf '    %s%s%s\n' "$Y" "$*" "$N"; }
@@ -906,8 +925,9 @@ case "${1:-}" in
     --version|-V) printf '%s\n' "$VERSION"; exit 0 ;;
     --help|-h)
         printf 'master dns %s\n\n' "$VERSION"
-        printf 'usage: sudo bash %s [--uninstall | --tunnel]\n\n' "$0"
+        printf 'usage: sudo bash %s [--check | --uninstall | --tunnel]\n\n' "$0"
         printf '  no arguments   install or update this machine\n'
+        printf '  --check        look at this machine and say what an install would meet; change nothing\n'
         printf '  --uninstall    put it back as it was\n'
         printf '  --tunnel       choose the tunnel between relay and exit again, then update\n'
         printf '  --take-over    on the standby node: become the panel, from its backup\n'
@@ -936,11 +956,21 @@ esac
 # colour on a terminal, plain in a log.
 banner() {
     local cols="${COLUMNS:-}" c="" n=""
+    # Each row of the name in its own shade, violet down to cyan, on a terminal
+    # that has colour; the same rows, plain, in a log.
+    paint() {
+        local ramp=(135 99 63 69 75 81) i=0 row
+        for row in "$@"; do
+            if [ -n "$c" ]; then printf '\033[1;38;5;%sm%s\033[0m\n' "${ramp[i % 6]}" "$row"
+            else printf '%s\n' "$row"; fi
+            i=$((i + 1))
+        done
+    }
     case "$cols" in ""|*[!0-9]*) cols="$(tput cols 2>/dev/null || echo 80)" ;; esac
     if [ -t 1 ]; then c=$'\033[1;36m'; n=$'\033[0m'; fi
     printf '\n%s' "$c"
     if [ "$cols" -ge 100 ] 2>/dev/null; then
-        printf '%s\n' \
+        paint \
         '  ███╗   ███╗  █████╗  ███████╗ ████████╗ ███████╗ ██████╗    ██████╗  ███╗   ██╗ ███████╗' \
         '  ████╗ ████║ ██╔══██╗ ██╔════╝ ╚══██╔══╝ ██╔════╝ ██╔══██╗    ██╔══██╗ ████╗  ██║ ██╔════╝' \
         '  ██╔████╔██║ ███████║ ███████╗    ██║    █████╗   ██████╔╝    ██║  ██║ ██╔██╗ ██║ ███████╗' \
@@ -948,7 +978,7 @@ banner() {
         '  ██║ ╚═╝ ██║ ██║  ██║ ███████║    ██║    ███████╗ ██║  ██║    ██████╔╝ ██║ ╚████║ ███████║' \
         '  ╚═╝     ╚═╝ ╚═╝  ╚═╝ ╚══════╝    ╚═╝    ╚══════╝ ╚═╝  ╚═╝    ╚═════╝  ╚═╝  ╚═══╝ ╚══════╝'
     else
-        printf '%s\n' \
+        paint \
         '  ███╗   ███╗  █████╗  ███████╗ ████████╗ ███████╗ ██████╗' \
         '  ████╗ ████║ ██╔══██╗ ██╔════╝ ╚══██╔══╝ ██╔════╝ ██╔══██╗' \
         '  ██╔████╔██║ ███████║ ███████╗    ██║    █████╗   ██████╔╝' \
@@ -956,7 +986,7 @@ banner() {
         '  ██║ ╚═╝ ██║ ██║  ██║ ███████║    ██║    ███████╗ ██║  ██║' \
         '  ╚═╝     ╚═╝ ╚═╝  ╚═╝ ╚══════╝    ╚═╝    ╚══════╝ ╚═╝  ╚═╝'
         printf '\n'
-        printf '%s\n' \
+        paint \
         '      ██████╗  ███╗   ██╗ ███████╗' \
         '      ██╔══██╗ ████╗  ██║ ██╔════╝' \
         '      ██║  ██║ ██╔██╗ ██║ ███████╗' \
@@ -966,8 +996,51 @@ banner() {
     fi
     printf '%s\n  %ssmart DNS for Iran, version %s%s\n' "$n" "${B:-}" "$VERSION" "$n"
 }
+# ---------------------------------------------------------------- system check
+# What this machine is, before anything is changed: a line each for the things
+# that decide whether an install goes through, with a tick, a note or a cross.
+# `--check` runs only this, and says so in its exit status.
+syscheck() {
+    local bad=0 warns=0 name ram disk addr holder port
+    # shellcheck disable=SC1091
+    name="$( . /etc/os-release 2>/dev/null && printf '%s|%s' "${ID:-}" "${PRETTY_NAME:-unknown}" )" || name="|unknown"
+    printf '\n  %sSystem check%s\n' "$B" "$N"
+    chk() { printf '    %s %-12s %s\n' "$1" "$2" "$3"; }
+    case "${name%%|*}" in
+        debian|ubuntu) chk "${G}+${N}" "system" "${name#*|}" ;;
+        *) chk "${RD}x${N}" "system" "${name#*|} - this installer expects Debian or Ubuntu"; bad=$((bad + 1)) ;;
+    esac
+    if [ -d /run/systemd/system ]; then chk "${G}+${N}" "systemd" "running"
+    else chk "${RD}x${N}" "systemd" "not running - the services need it"; bad=$((bad + 1)); fi
+    if [ "$(id -u)" = 0 ]; then chk "${G}+${N}" "root" "yes"
+    else chk "${Y}!${N}" "root" "no - the install itself needs sudo"; warns=$((warns + 1)); fi
+    ram="$(awk '/^MemTotal/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null)" || ram=""
+    if [ "${ram:-0}" -ge 512 ]; then chk "${G}+${N}" "memory" "${ram} MB"
+    else chk "${Y}!${N}" "memory" "${ram:-?} MB - a small server; it will run, with little room"; warns=$((warns + 1)); fi
+    disk="$(df -Pm / 2>/dev/null | awk 'NR == 2 {print $4}')" || disk=""
+    if [ "${disk:-0}" -ge 2000 ]; then chk "${G}+${N}" "disk" "${disk} MB free"
+    else chk "${Y}!${N}" "disk" "${disk:-?} MB free - the database and logs grow"; warns=$((warns + 1)); fi
+    addr="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i < NF; i++) if ($i == "src") {print $(i + 1); exit}}')" || addr=""
+    if [ -n "$addr" ]; then chk "${G}+${N}" "address" "$addr"
+    else chk "${Y}!${N}" "address" "no IPv4 route found"; warns=$((warns + 1)); fi
+    for port in 53 80 443; do
+        holder="$(ss -Hltnup "sport = :$port" 2>/dev/null | sed -n 's/.*users:(("\([^"]*\)".*/\1/p' | head -n 1)" || holder=""
+        case "$holder" in
+            ""|nginx|dnsmasq) chk "${G}+${N}" "port $port" "${holder:+held by $holder (it is ours to configure)}${holder:-free}" ;;
+            *) chk "${Y}!${N}" "port $port" "held by $holder - the install will ask it to step aside"; warns=$((warns + 1)) ;;
+        esac
+    done
+    printf '    %s%d to look at, %d blocking%s\n' "$D" "$warns" "$bad" "$N"
+    [ "$bad" -eq 0 ]
+}
+
+
 # Not for -V and -h, answered above: a script asking wants only the answer.
-case "${1:-}" in -V|--version|-h|--help) ;; *) banner ;; esac
+case "${1:-}" in
+    -V|--version|-h|--help) ;;
+    --check) banner; syscheck; exit $? ;;
+    *) banner; syscheck || true ;;
+esac
 
 # ---------------------------------------------------------------- preflight
 [ "$(id -u)" = 0 ] || die "run as root:  sudo bash $0"
@@ -2815,6 +2888,7 @@ if [ "$fail" = 0 ]; then
             && mv -f "$STATE_DIR/installer/master-dns.sh.tmp" "$STATE_DIR/installer/master-dns.sh" \
             && info "kept this installer for the admin panel to upgrade the other servers with"
     fi
+    timeline
     printf '  %s+----------------------------------------------+%s\n' "$C" "$N"
     printf '  %s|%s  %sMaster DNS%s is ready  -  %-9s v%-10s %s|%s\n' "$C" "$N" "$B" "$N" \
            "$ROLE" "$VERSION" "$C" "$N"
@@ -16674,7 +16748,7 @@ exit 0
 # --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
 # --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
 # --err-bg:#1f0f13;--warn-bg:#1f1a0c;--warn-line:#5e4d25;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--c-purple:#8b5cf6;--c-orange:#f97316;--sun:inline;--moon:none;
 # --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 44px -26px rgba(0,0,0,.9);
 # --pop:0 18px 50px rgba(0,0,0,.65)"""
 #LIGHT = """color-scheme:light;
@@ -16684,7 +16758,7 @@ exit 0
 # --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
 # --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
 # --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--c-purple:#8b5cf6;--c-orange:#f97316;--sun:none;--moon:inline;
 # --shadow:0 1px 0 rgba(255,255,255,.8) inset,0 16px 40px -28px rgba(30,41,80,.28);
 # --pop:0 16px 44px rgba(30,41,80,.18)"""
 ## Blue is the default and lives in DARK / LIGHT above. Each other accent only
@@ -16692,6 +16766,10 @@ exit 0
 #ACCENTS = {
 #    "pink": ("--accent:#ff7eb6;--accent2:#ff9cc8;--btn:#c2185b;--btn-hover:#d81b6a",
 #             "--accent:#c2185b;--accent2:#db2777;--btn:#be185d;--btn-hover:#9d174d"),
+#    "purple": ("--accent:#b79bff;--accent2:#d2bfff;--btn:#7c3aed;--btn-hover:#8b5cf6",
+#               "--accent:#6d28d9;--accent2:#7c3aed;--btn:#6d28d9;--btn-hover:#5b21b6"),
+#    "orange": ("--accent:#ffa94d;--accent2:#ffc47d;--btn:#c2410c;--btn-hover:#ea580c",
+#               "--accent:#c2410c;--accent2:#ea580c;--btn:#c2410c;--btn-hover:#9a3412"),
 #    "red": ("--accent:#ff6b6b;--accent2:#ff8e8e;--btn:#dc2626;--btn-hover:#ef4444",
 #            "--accent:#c62828;--accent2:#dc2626;--btn:#c62828;--btn-hover:#a61e1e"),
 #    "green": ("--accent:#4ade80;--accent2:#86efac;--btn:#15803d;--btn-hover:#16a34a",
@@ -16719,13 +16797,14 @@ exit 0
 #THEME_HEAD = ("<script>try{var d=document.documentElement,"
 #              "t=localStorage.getItem('theme'),a=localStorage.getItem('accent');"
 #              "if(t=='light'||t=='dark')d.setAttribute('data-theme',t);"
-#              "if(a=='blue'||a=='pink'||a=='green'||a=='red')d.setAttribute('data-accent',a)"
+#              "if(a=='blue'||a=='pink'||a=='green'||a=='red'||a=='purple'||a=='orange')d.setAttribute('data-accent',a)"
 #              "}catch(e){}</script>")
 #_DOTS = "".join(
 #    "<button type='button' class='dot %s' title='%s' aria-label='%s'"
 #    " onclick=\"(function(r){r.setAttribute('data-accent','%s');"
 #    "try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
-#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز")))
+#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز"),
+#                            ("purple", "بنفش"), ("orange", "نارنجی")))
 #THEME_BUTTON = (
 #    "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره'"
 #    " onclick=\"(function(r){var c=r.getAttribute('data-theme')||"
@@ -16794,23 +16873,95 @@ exit 0
 #.accents{position:absolute;top:14px;left:62px;height:38px;display:flex;align-items:center;gap:8px}
 #.accents button.dot{width:18px;height:18px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;display:block}
 #.accents button.dot:hover{transform:scale(1.25)}
-#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}
+#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}.dot.purple{background:var(--c-purple)}.dot.orange{background:var(--c-orange)}
 #:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,:root[data-accent=pink] .dot.pink,
-#:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+#:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red,
+#:root[data-accent=purple] .dot.purple,:root[data-accent=orange] .dot.orange{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
-#.card{border-radius:32px;padding:32px;box-shadow:var(--shadow);animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both}
-#input,textarea{border-radius:16px;background:var(--bg);border-color:var(--line2)}
-#input:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
-#button,a.btn{border-radius:999px;position:relative;overflow:hidden}
-#a.btn{transition:background .2s,transform .15s}a.btn:active{transform:scale(.97)}
-#code{border-radius:8px}.big{border-radius:22px}.msg{border-radius:18px}
-#.dns,details.pw{border-radius:22px}
-#a.tk,label.plan,.pay{border-radius:18px}.thread>div{border-radius:20px}
-#.icon{animation:md-float 3.5s ease-in-out infinite}
-#.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
-#.card{position:relative;overflow:hidden}
+#/* ---- 0.0.7: a dashboard, not a phone screen ---- */
+#@keyframes md-fade{from{opacity:0}to{opacity:1}}
+#@keyframes md-spin{to{transform:rotate(360deg)}}
+#@keyframes md-shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+#@keyframes md-pulse{0%,100%{box-shadow:0 12px 36px -12px color-mix(in srgb,var(--accent) 55%,transparent)}
+# 50%{box-shadow:0 12px 50px -8px color-mix(in srgb,var(--accent) 80%,transparent)}}
+#body{display:block;padding:0;min-height:100vh;font-weight:430}
+#h1,h2,.v,.big{font-weight:760}
+#.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;
+# padding:12px max(18px,calc((100vw - 1060px) / 2));background:color-mix(in srgb,var(--bg) 78%,transparent);
+# backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+#.top .brand{position:static;display:flex;align-items:center;gap:10px;margin:0;font-size:22px;line-height:1}
+#.top .brand .mark{width:30px;height:30px}.top .brand .name{font-size:22px}
+#.brand .mark{display:inline-block;flex:none;width:1em;height:1em;animation:md-float 4s ease-in-out infinite}
+#.brand .mark svg{display:block;width:100%;height:100%}
+#.brand .name{font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% auto;
+# -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:md-flow 6s linear infinite}
+#.tools{display:flex;align-items:center;gap:10px;padding:5px 10px;border-radius:999px;background:color-mix(in srgb,var(--card) 70%,transparent);
+# border:1px solid var(--line)}
+#.tools button.theme{position:static;width:32px;height:32px;margin:0;top:auto;left:auto;right:auto;display:grid;place-items:center}
+#.tools .accents{position:static;height:auto}
+#.stage{max-width:1060px;margin:0 auto;padding:34px 18px 64px}
+#.stage>footer,.stage>.foot{margin-top:24px;text-align:center;color:var(--faint);font-size:12px}
+#.card{max-width:470px;width:100%;margin:5vh auto 0;border-radius:34px;padding:34px 32px;box-shadow:var(--shadow);
+# animation:md-rise .6s cubic-bezier(.2,.8,.2,1) both;position:relative;overflow:hidden;
+# background:color-mix(in srgb,var(--card) 94%,transparent)}
 #.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
 # background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));background-size:200% 100%;animation:md-flow 6s linear infinite}
+#.icon{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;font-size:26px;line-height:1;border-radius:22px;
+# background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,transparent),color-mix(in srgb,var(--accent2) 16%,transparent));
+# border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);animation:md-pulse 4s ease-in-out infinite}
+#.card>h1{text-align:center;font-size:23px}.card>.sub{text-align:center}
+#/* an account page, with rows or tiles or a DNS box: wide, in columns */
+#.card:has(>.row),.card:has(>.dns),.card:has(>.tiles),.card:has(>.usage){
+# max-width:none;margin-top:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 22px;padding:38px 42px}
+#.card:has(>.row)>*,.card:has(>.dns)>*,.card:has(>.tiles)>*,.card:has(>.usage)>*{grid-column:1/-1;min-width:0}
+#.card:has(>.row)>.icon,.card:has(>.dns)>.icon,.card:has(>.tiles)>.icon,.card:has(>.usage)>.icon{margin:0}
+#.card:has(>.row)>h1,.card:has(>.dns)>h1,.card:has(>.tiles)>h1,.card:has(>.usage)>h1{text-align:start;font-size:28px;margin:-6px 0 0}
+#.card:has(>.row)>.sub,.card:has(>.dns)>.sub{text-align:start;margin:0 0 8px}
+#.card>.row{grid-column:auto!important;flex-direction:column;align-items:flex-start;gap:4px;padding:18px 20px;
+# border:1px solid var(--line);border-radius:22px;background:var(--bg);transition:transform .25s,border-color .25s,box-shadow .25s;
+# animation:md-rise .55s cubic-bezier(.2,.8,.2,1) both}
+#.card>.row:nth-of-type(2){animation-delay:.06s}.card>.row:nth-of-type(3){animation-delay:.12s}.card>.row:nth-of-type(4){animation-delay:.18s}
+#.card>.row:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+# box-shadow:0 16px 34px -22px color-mix(in srgb,var(--accent) 60%,transparent)}
+#.card>.row .k{font-size:12px}.card>.row .v{font-size:19px}
+#.card .bar{height:10px;border-radius:999px;position:relative;overflow:hidden;margin:2px 0 6px;
+# background:color-mix(in srgb,var(--fg) 9%,transparent)}
+#.card .bar i{position:relative;overflow:hidden;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+#.card .bar i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+# animation:md-shimmer 2.4s ease-in-out infinite}
+#.card .bar i.warn{background:var(--warn)}.card .bar i.hot{background:var(--bad)}
+#.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+#.tile{padding:18px;border:1px solid var(--line);border-radius:22px;background:var(--bg);display:flex;flex-direction:column;gap:4px}
+#.dns{border-radius:26px;padding:22px;background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 8%,var(--bg)),var(--bg) 70%)}
+#.dns .big{cursor:copy}
+#.dns .row .big{padding:8px 18px;font-size:18px;border-radius:16px;margin:0}
+#.card:has(>.row) a.btn,.card:has(>.row) button,.card:has(>.dns) a.btn,.card:has(>.dns) button{width:auto;min-width:210px;justify-self:start;padding-inline:30px}
+#input,textarea{border-radius:18px;background:var(--bg);border-color:var(--line2);padding:13px 16px}
+#input:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+#button,a.btn{border-radius:999px;position:relative;overflow:hidden;font-weight:700;
+# background:linear-gradient(135deg,var(--btn),color-mix(in srgb,var(--btn) 70%,var(--accent2)))}
+#button.ghost,a.btn.ghost{background:transparent;font-weight:500}
+#a.btn{transition:transform .15s,box-shadow .2s}a.btn:hover,button:hover{box-shadow:0 12px 28px -14px color-mix(in srgb,var(--btn) 80%,transparent)}
+#a.btn:active{transform:scale(.97)}
+#button.busy{pointer-events:none;opacity:.75}
+#button.busy::before{content:'';display:inline-block;width:12px;height:12px;margin-inline-end:8px;border-radius:50%;
+# border:2px solid currentColor;border-top-color:transparent;animation:md-spin .7s linear infinite;vertical-align:-2px}
+#code{border-radius:8px;cursor:copy}.big{border-radius:22px}.msg{border-radius:20px;animation:md-rise .4s both}
+#details.pw{border-radius:22px}a.tk,label.plan,.pay{border-radius:20px}.thread>div{border-radius:22px}
+#label.plan{transition:border-color .2s,background .2s,transform .2s}label.plan:hover{transform:translateY(-2px)}
+#label.plan:has(input:checked){background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
+#.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
+#.toast{position:fixed;bottom:26px;inset-inline-start:50%;transform:translate(50%,24px);opacity:0;z-index:50;pointer-events:none;
+# padding:10px 20px;border-radius:999px;font-size:13px;color:var(--on-btn);
+# background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:var(--pop);transition:opacity .25s,transform .25s}
+#html[dir=ltr] .toast{transform:translate(-50%,24px)}
+#.toast.on{opacity:1;transform:translate(50%,0)}html[dir=ltr] .toast.on{transform:translate(-50%,0)}
+#@media (max-width:700px){
+# .stage{padding:18px 12px 48px}.card,.card:has(>.row),.card:has(>.dns),.card:has(>.tiles),.card:has(>.usage){
+#  padding:26px 20px;border-radius:26px;margin-top:2vh;grid-template-columns:1fr}
+# .card:has(>.row)>h1{font-size:23px}.top{padding:10px 14px}
+# .card:has(>.row) a.btn,.card:has(>.row) button,.card:has(>.dns) a.btn,.card:has(>.dns) button{width:100%}
+#}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 #"""
 #
@@ -17133,15 +17284,30 @@ exit 0
 #
 #
 #
+## Click a DNS address or a key to copy it, and a form is sent once: the button
+## waits instead of letting it go twice.
+#COPY_JS = ("<script>(function(){var t;function toast(m){var d=document.getElementById('md-toast');"
+#           "if(!d){d=document.createElement('div');d.id='md-toast';d.className='toast';"
+#           "document.body.appendChild(d)}d.textContent=m;d.classList.add('on');clearTimeout(t);"
+#           "t=setTimeout(function(){d.classList.remove('on')},1600)}"
+#           "document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('code,.big');"
+#           "if(!c||!navigator.clipboard)return;var s=window.getSelection();if(s&&String(s).length)return;"
+#           "navigator.clipboard.writeText(c.textContent.trim()).then(function(){toast('کپی شد')},function(){})});"
+#           "document.addEventListener('submit',function(e){if(e.defaultPrevented)return;var f=e.target;"
+#           "if(f.dataset.sent){e.preventDefault();return}f.dataset.sent='1';"
+#           "var b=f.querySelector('button:not([type=button])');if(b)b.classList.add('busy');"
+#           "setTimeout(function(){delete f.dataset.sent;if(b)b.classList.remove('busy')},8000)})})()</script>")
+#
+#
 #def user_page(inner):
 #    if is_single():
 #        inner = one_server_words(inner)
 #    return ("""<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 #<meta name="viewport" content="width=device-width,initial-scale=1">
-#<title>%s</title>%s<style>%s</style></head><body>%s
-#<div class="shell">%s<div class="card">%s</div>%s</div></body></html>"""
-#            % (html.escape(brand()), THEME_HEAD, USER_CSS, THEME_BUTTON,
-#               brand_html(), inner, footer_html()))
+#<title>%s</title>%s<style>%s</style></head><body><header class="top">%s<div class="tools">%s</div></header>
+#<main class="stage"><div class="card">%s</div>%s</main>%s</body></html>"""
+#            % (html.escape(brand()), THEME_HEAD, USER_CSS, brand_html(), THEME_BUTTON,
+#               inner, footer_html(), COPY_JS))
 #
 #
 ## A Persian keyboard types these, and the address box should not care.
@@ -24599,7 +24765,7 @@ exit 0
 # --btn-hover:#3b78f0;--on-btn:#ffffff;--danger:#7a2c3a;--warn:#e3b341;
 # --bad:#ff6b81;--good-bg:color-mix(in srgb,var(--accent) 14%,var(--card));
 # --err-bg:#1f0f13;--warn-bg:#1f1a0c;--warn-line:#5e4d25;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:inline;--moon:none;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--c-purple:#8b5cf6;--c-orange:#f97316;--sun:inline;--moon:none;
 # --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 44px -26px rgba(0,0,0,.9);
 # --pop:0 18px 50px rgba(0,0,0,.65)"""
 #LIGHT = """color-scheme:light;
@@ -24609,7 +24775,7 @@ exit 0
 # --btn-hover:#1a50bf;--on-btn:#ffffff;--danger:#cf222e;--warn:#9a6700;
 # --bad:#cf222e;--good-bg:color-mix(in srgb,var(--accent) 12%,var(--card));
 # --err-bg:#ffebe9;--warn-bg:#fff8c5;--warn-line:#d4a72c;
-# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--sun:none;--moon:inline;
+# --c-blue:#3b82f6;--c-pink:#ec4899;--c-green:#22c55e;--c-red:#ef4444;--c-purple:#8b5cf6;--c-orange:#f97316;--sun:none;--moon:inline;
 # --shadow:0 1px 0 rgba(255,255,255,.8) inset,0 16px 40px -28px rgba(30,41,80,.28);
 # --pop:0 16px 44px rgba(30,41,80,.18)"""
 ## Blue is the default and lives in DARK / LIGHT above. Each other accent only
@@ -24617,6 +24783,10 @@ exit 0
 #ACCENTS = {
 #    "pink": ("--accent:#ff7eb6;--accent2:#ff9cc8;--btn:#c2185b;--btn-hover:#d81b6a",
 #             "--accent:#c2185b;--accent2:#db2777;--btn:#be185d;--btn-hover:#9d174d"),
+#    "purple": ("--accent:#b79bff;--accent2:#d2bfff;--btn:#7c3aed;--btn-hover:#8b5cf6",
+#               "--accent:#6d28d9;--accent2:#7c3aed;--btn:#6d28d9;--btn-hover:#5b21b6"),
+#    "orange": ("--accent:#ffa94d;--accent2:#ffc47d;--btn:#c2410c;--btn-hover:#ea580c",
+#               "--accent:#c2410c;--accent2:#ea580c;--btn:#c2410c;--btn-hover:#9a3412"),
 #    "red": ("--accent:#ff6b6b;--accent2:#ff8e8e;--btn:#dc2626;--btn-hover:#ef4444",
 #            "--accent:#c62828;--accent2:#dc2626;--btn:#c62828;--btn-hover:#a61e1e"),
 #    "green": ("--accent:#4ade80;--accent2:#86efac;--btn:#15803d;--btn-hover:#16a34a",
@@ -24644,11 +24814,12 @@ exit 0
 #THEME_HEAD = ("<script>try{var d=document.documentElement,"
 #              "t=localStorage.getItem('theme'),a=localStorage.getItem('accent');"
 #              "if(t=='light'||t=='dark')d.setAttribute('data-theme',t);"
-#              "if(a=='blue'||a=='pink'||a=='green'||a=='red')d.setAttribute('data-accent',a)"
+#              "if(a=='blue'||a=='pink'||a=='green'||a=='red'||a=='purple'||a=='orange')d.setAttribute('data-accent',a)"
 #              "}catch(e){}</script>")
 #_DOTS = "".join(
 #    "<button type='button' class='dot %s' title='%s' aria-label='%s' onclick=\"(function(r){r.setAttribute('data-accent','%s');try{localStorage.setItem('accent','%s')}catch(e){}})(document.documentElement)\"></button>"
-#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز")))
+#    % (k, fa, fa, k, k) for k, fa in (("blue", "آبی"), ("pink", "صورتی"), ("green", "سبز"), ("red", "قرمز"),
+#                            ("purple", "بنفش"), ("orange", "نارنجی")))
 #THEME_BUTTON = (
 #    "<button type='button' class='theme' title='روشن / تیره' aria-label='روشن / تیره' onclick=\"(function(r){var c=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'),n=c=='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('theme',n)}catch(e){}})(document.documentElement)\"><span class='sun'>☀️</span><span class='moon'>🌙</span></button><span class='accents' role='group' aria-label='رنگ تاکیدی'>" + _DOTS + "</span><button type='button' class='theme lang' title='English / فارسی' aria-label='English / فارسی' onclick=\"document.cookie='lang='+(document.documentElement.lang=='en'?'fa':'en')+'; path=/; max-age=31536000; samesite=lax';location.reload()\"><span class='fa-only'>EN</span><span class='en-only'>فا</span></button>")
 #
@@ -24683,9 +24854,10 @@ exit 0
 #.accents{position:absolute;top:14px;left:62px;height:38px;display:flex;align-items:center;gap:8px}
 #.accents button.dot{width:18px;height:18px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;display:block}
 #.accents button.dot:hover{transform:scale(1.25)}
-#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}
+#.dot.blue{background:var(--c-blue)}.dot.pink{background:var(--c-pink)}.dot.green{background:var(--c-green)}.dot.red{background:var(--c-red)}.dot.purple{background:var(--c-purple)}.dot.orange{background:var(--c-orange)}
 #:root:not([data-accent]) .dot.blue,:root[data-accent=blue] .dot.blue,:root[data-accent=pink] .dot.pink,
-#:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+#:root[data-accent=green] .dot.green,:root[data-accent=red] .dot.red,
+#:root[data-accent=purple] .dot.purple,:root[data-accent=orange] .dot.orange{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
 #
 #/* ---- shell: a floating sidebar and a glass top bar ---- */
 #@keyframes md-side-in{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
@@ -24764,6 +24936,55 @@ exit 0
 # box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
 #code{border-radius:8px}.msg{border-radius:18px}.receipt{border-radius:18px}.thread>div{border-radius:18px}
 #footer{opacity:.7}
+#/* ---- 0.0.7: the inside of each page ---- */
+#@keyframes md-row{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#@keyframes md-fade{from{opacity:0}to{opacity:1}}
+#@keyframes md-spin{to{transform:rotate(360deg)}}
+#@keyframes md-pop{0%{transform:scale(.8);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+#body{font-weight:430;letter-spacing:.003em}
+#h1,h2,h3,th,.stat .n,.brand .name{font-weight:760}
+#.card>h2:first-child{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid var(--line);font-size:16px}
+#.card>h2:first-child~h2,.card>h2[style]{margin-top:26px}
+#h2+p.muted,h2+.muted{padding:10px 14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 6%,var(--bg));
+# border-inline-start:3px solid color-mix(in srgb,var(--accent) 55%,transparent);line-height:2;font-size:12.5px;color:var(--dim)}
+#h3.chart-h,h3.sec,h3{display:flex;align-items:center;gap:12px;margin:22px 0 12px;font-size:11.5px;letter-spacing:.07em;
+# color:var(--faint);text-transform:uppercase}
+#h3.chart-h::after,h3.sec::after,h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+#html[dir=rtl] h3::after{background:linear-gradient(270deg,var(--line2),transparent)}
+#form.row,div.row{padding:10px 12px;border-radius:18px;background:var(--bg);border:1px solid var(--line);margin:10px 0}
+#td.row,tr.row{padding:0;background:none;border:0;margin:0}
+#table.users tr.row{background:none;border:0}
+#td:first-child{font-weight:600}
+#td{padding-block:12px}
+#tbody tr:nth-child(-n+10){animation:md-row .45s cubic-bezier(.2,.8,.2,1) both}
+#tbody tr:nth-child(2){animation-delay:.03s}tbody tr:nth-child(3){animation-delay:.06s}tbody tr:nth-child(4){animation-delay:.09s}
+#tbody tr:nth-child(5){animation-delay:.12s}tbody tr:nth-child(6){animation-delay:.15s}tbody tr:nth-child(7){animation-delay:.18s}
+#tbody tr:nth-child(8){animation-delay:.21s}tbody tr:nth-child(9){animation-delay:.24s}tbody tr:nth-child(10){animation-delay:.27s}
+#.pill{display:inline-flex;align-items:center;gap:7px;padding:3px 12px 3px 10px;font-weight:600;animation:md-pop .4s cubic-bezier(.2,.8,.2,1) both}
+#.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+#.pill.ok::before{box-shadow:0 0 0 3px color-mix(in srgb,currentColor 25%,transparent)}
+#.card.wide{padding:20px 14px}
+#button{padding:9px 16px}
+#button.ghost,button.del,button.danger{padding:8px 15px}
+#td button,td.acts button{padding:6px 12px}
+#button.busy{pointer-events:none;opacity:.75}
+#button.busy::before{content:'';display:inline-block;width:12px;height:12px;margin-inline-end:8px;border-radius:50%;
+# border:2px solid currentColor;border-top-color:transparent;animation:md-spin .7s linear infinite;vertical-align:-2px}
+#.receipt{border:1px solid var(--line);padding:16px;margin:12px 0;background:var(--bg)}
+#.thread>div{padding:12px 16px}
+#a.dl{border-radius:999px;padding:10px 20px}
+##md-pal{position:fixed;inset:0;z-index:80;display:flex;justify-content:center;align-items:flex-start;padding-top:14vh;
+# background:rgba(0,0,0,.42);backdrop-filter:blur(8px);animation:md-fade .18s both}
+##md-pal .box{width:min(520px,92vw);background:var(--card);border:1px solid var(--line2);border-radius:26px;
+# box-shadow:var(--pop);overflow:hidden;animation:md-rise .25s cubic-bezier(.2,.8,.2,1) both}
+##md-pal input{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:18px 22px;font-size:15px}
+##md-pal input:focus{box-shadow:none}
+##md-pal .list{max-height:48vh;overflow-y:auto;padding:8px}
+##md-pal .list a{display:block;padding:10px 16px;border-radius:14px;color:var(--fg)}
+##md-pal .list a.on,#md-pal .list a:hover{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+#.tools::before{content:'Ctrl K';font-family:'MD Latin',sans-serif;font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+# padding:3px 8px;border-radius:8px;border:1px solid var(--line2);cursor:default}
+#@media (max-width:999px){.tools::before{display:none}}
 #/* ---- 0.0.6 ---- */
 #code:not(pre code){cursor:copy;transition:background .2s,color .2s}
 #code:not(pre code):hover{background:color-mix(in srgb,var(--accent) 16%,var(--row));color:var(--accent)}
@@ -25079,7 +25300,9 @@ exit 0
 #LOGO_SVG = ("<svg viewBox='0 0 32 32' aria-hidden='true'><defs><linearGradient id='mg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='var(--accent)'/><stop offset='1' stop-color='var(--accent2)'/></linearGradient></defs><rect width='32' height='32' rx='10' fill='url(#mg)'/><path d='M8 23V9.5l8 8 8-8V23' fill='none' stroke='#fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
 #
 #
-## Click an address, a link or a key in the panel to copy it; a small toast says so.
+## The panel's small behaviours, in one script: click an address, link or key to
+## copy it (with a toast); Ctrl/Cmd+K or "/" opens a palette that jumps to any page;
+## a form can be sent once - the button waits instead of letting it go twice.
 #COPY_JS = ("<script>(function(){var t;function toast(m){var d=document.getElementById('md-toast');"
 #           "if(!d){d=document.createElement('div');d.id='md-toast';d.className='toast';"
 #           "document.body.appendChild(d)}d.textContent=m;d.classList.add('on');clearTimeout(t);"
@@ -25089,7 +25312,31 @@ exit 0
 #           "if(s&&String(s).length)return;navigator.clipboard.writeText(c.textContent.trim())"
 #           ".then(function(){toast('کپی شد')},function(){})});"
 #           "document.querySelectorAll('code').forEach(function(c){if(!c.closest('pre'))"
-#           "c.title='برای کپی کلیک کنید'})})()</script>")
+#           "c.title='برای کپی کلیک کنید'});"
+#           "document.addEventListener('submit',function(e){if(e.defaultPrevented)return;var f=e.target;"
+#           "if(f.dataset.sent){e.preventDefault();return}f.dataset.sent='1';"
+#           "var b=f.querySelector('button:not([type=button])');if(b)b.classList.add('busy');"
+#           "setTimeout(function(){delete f.dataset.sent;if(b)b.classList.remove('busy')},8000)});"
+#           "var links=[].slice.call(document.querySelectorAll('.side nav a'));"
+#           "function palette(){if(document.getElementById('md-pal'))return;var o=document.createElement('div');"
+#           "o.id='md-pal';o.innerHTML='<div class=box><input autocomplete=off><div class=list></div></div>';"
+#           "document.body.appendChild(o);"
+#           "var i=o.querySelector('input'),l=o.querySelector('.list'),k=0,v=[];i.placeholder='برو به…';"
+#           "function draw(){var q=i.value.trim().toLowerCase();v=links.filter(function(a){"
+#           "return a.textContent.toLowerCase().indexOf(q)>-1});k=Math.min(k,Math.max(0,v.length-1));"
+#           "l.innerHTML='';v.forEach(function(a,n){var r=document.createElement('a');r.href=a.href;"
+#           "r.textContent=a.textContent;if(n==k)r.className='on';l.appendChild(r)})}"
+#           "function close(){o.remove()}"
+#           "o.addEventListener('click',function(e){if(e.target==o)close()});"
+#           "i.addEventListener('input',function(){k=0;draw()});"
+#           "i.addEventListener('keydown',function(e){if(e.key=='Escape')close();"
+#           "else if(e.key=='ArrowDown'){k=Math.min(k+1,v.length-1);draw();e.preventDefault()}"
+#           "else if(e.key=='ArrowUp'){k=Math.max(k-1,0);draw();e.preventDefault()}"
+#           "else if(e.key=='Enter'&&v[k]){location=v[k].href}});draw();i.focus()}"
+#           "document.addEventListener('keydown',function(e){var tg=(e.target.tagName||'').toLowerCase();"
+#           "var typing=tg=='input'||tg=='textarea'||tg=='select';"
+#           "if((e.key=='k'||e.key=='K')&&(e.ctrlKey||e.metaKey)||(!typing&&e.key=='/'&&!e.ctrlKey&&!e.metaKey)){"
+#           "e.preventDefault();palette()}})})()</script>")
 #
 #
 #def brand_html():
@@ -44046,7 +44293,10 @@ exit 0
 #"در هر درخواست حداکثر ۵۰۰ حساب": "At most 500 accounts per request",
 #"هدف را با ids (فهرست) یا all=active مشخص کنید": "Name the target with ids (a list) or all=active",
 #"کال آو دیوتی روی کنسول": "Call of Duty on console",
-#"پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد": "PlayStation and Xbox get the game from their own store, so the Battle.net download is not needed; the update check needs only these two groups"
+#"پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد": "PlayStation and Xbox get the game from their own store, so the Battle.net download is not needed; the update check needs only these two groups",
+#"بنفش": "Purple",
+#"نارنجی": "Orange",
+#"برو به…": "Go to…"
 #}
 #__END_I18N_EN__
 

@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.6"
+VERSION="0.0.7"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -62,11 +62,30 @@ else
 fi
 # Steps are numbered and timed, so a long install shows where it is and how
 # long each part took, instead of a bare list of headings.
-STEP_N=0; T_START="$(date +%s)"
+STEP_N=0; T_START="$(date +%s)"; STEP_NAME=(); STEP_AT=()
 step() {
     STEP_N=$((STEP_N + 1))
+    STEP_NAME[STEP_N]="$*"; STEP_AT[STEP_N]="$(date +%s)"
     printf '\n  %s%02d%s  %s%s%s  %s+%ss%s\n' "$C" "$STEP_N" "$N" "$B" "$*" "$N" \
            "$D" "$(( $(date +%s) - T_START ))" "$N"
+}
+
+# Where the time went, as bars: the last thing printed before the ready box, so
+# a slow install says which part was slow.
+timeline() {
+    local i d max=1 w=20 n k bar now; local -a took=()
+    now="$(date +%s)"
+    [ "$STEP_N" -gt 0 ] || return 0
+    for ((i = 1; i <= STEP_N; i++)); do
+        d=$(( ${STEP_AT[i + 1]:-$now} - STEP_AT[i] )); took[i]=$d
+        [ "$d" -gt "$max" ] && max=$d
+    done
+    printf '\n  %sTimeline%s\n' "$B" "$N"
+    for ((i = 1; i <= STEP_N; i++)); do
+        n=$(( took[i] * w / max )); [ "$n" -lt 1 ] && [ "${took[i]}" -gt 0 ] && n=1
+        bar=""; for ((k = 0; k < n; k++)); do bar+="#"; done
+        printf '    %s%02d%s  %-30.30s %s%-*s%s %3ss\n' "$C" "$i" "$N" "${STEP_NAME[i]}" "$C" "$w" "$bar" "$N" "${took[i]}"
+    done
 }
 info() { printf '    %s\n' "$*"; }
 warn() { printf '    %s%s%s\n' "$Y" "$*" "$N"; }
@@ -906,8 +925,9 @@ case "${1:-}" in
     --version|-V) printf '%s\n' "$VERSION"; exit 0 ;;
     --help|-h)
         printf 'master dns %s\n\n' "$VERSION"
-        printf 'usage: sudo bash %s [--uninstall | --tunnel]\n\n' "$0"
+        printf 'usage: sudo bash %s [--check | --uninstall | --tunnel]\n\n' "$0"
         printf '  no arguments   install or update this machine\n'
+        printf '  --check        look at this machine and say what an install would meet; change nothing\n'
         printf '  --uninstall    put it back as it was\n'
         printf '  --tunnel       choose the tunnel between relay and exit again, then update\n'
         printf '  --take-over    on the standby node: become the panel, from its backup\n'
@@ -936,11 +956,21 @@ esac
 # colour on a terminal, plain in a log.
 banner() {
     local cols="${COLUMNS:-}" c="" n=""
+    # Each row of the name in its own shade, violet down to cyan, on a terminal
+    # that has colour; the same rows, plain, in a log.
+    paint() {
+        local ramp=(135 99 63 69 75 81) i=0 row
+        for row in "$@"; do
+            if [ -n "$c" ]; then printf '\033[1;38;5;%sm%s\033[0m\n' "${ramp[i % 6]}" "$row"
+            else printf '%s\n' "$row"; fi
+            i=$((i + 1))
+        done
+    }
     case "$cols" in ""|*[!0-9]*) cols="$(tput cols 2>/dev/null || echo 80)" ;; esac
     if [ -t 1 ]; then c=$'\033[1;36m'; n=$'\033[0m'; fi
     printf '\n%s' "$c"
     if [ "$cols" -ge 100 ] 2>/dev/null; then
-        printf '%s\n' \
+        paint \
         '  ███╗   ███╗  █████╗  ███████╗ ████████╗ ███████╗ ██████╗    ██████╗  ███╗   ██╗ ███████╗' \
         '  ████╗ ████║ ██╔══██╗ ██╔════╝ ╚══██╔══╝ ██╔════╝ ██╔══██╗    ██╔══██╗ ████╗  ██║ ██╔════╝' \
         '  ██╔████╔██║ ███████║ ███████╗    ██║    █████╗   ██████╔╝    ██║  ██║ ██╔██╗ ██║ ███████╗' \
@@ -948,7 +978,7 @@ banner() {
         '  ██║ ╚═╝ ██║ ██║  ██║ ███████║    ██║    ███████╗ ██║  ██║    ██████╔╝ ██║ ╚████║ ███████║' \
         '  ╚═╝     ╚═╝ ╚═╝  ╚═╝ ╚══════╝    ╚═╝    ╚══════╝ ╚═╝  ╚═╝    ╚═════╝  ╚═╝  ╚═══╝ ╚══════╝'
     else
-        printf '%s\n' \
+        paint \
         '  ███╗   ███╗  █████╗  ███████╗ ████████╗ ███████╗ ██████╗' \
         '  ████╗ ████║ ██╔══██╗ ██╔════╝ ╚══██╔══╝ ██╔════╝ ██╔══██╗' \
         '  ██╔████╔██║ ███████║ ███████╗    ██║    █████╗   ██████╔╝' \
@@ -956,7 +986,7 @@ banner() {
         '  ██║ ╚═╝ ██║ ██║  ██║ ███████║    ██║    ███████╗ ██║  ██║' \
         '  ╚═╝     ╚═╝ ╚═╝  ╚═╝ ╚══════╝    ╚═╝    ╚══════╝ ╚═╝  ╚═╝'
         printf '\n'
-        printf '%s\n' \
+        paint \
         '      ██████╗  ███╗   ██╗ ███████╗' \
         '      ██╔══██╗ ████╗  ██║ ██╔════╝' \
         '      ██║  ██║ ██╔██╗ ██║ ███████╗' \
@@ -966,8 +996,51 @@ banner() {
     fi
     printf '%s\n  %ssmart DNS for Iran, version %s%s\n' "$n" "${B:-}" "$VERSION" "$n"
 }
+# ---------------------------------------------------------------- system check
+# What this machine is, before anything is changed: a line each for the things
+# that decide whether an install goes through, with a tick, a note or a cross.
+# `--check` runs only this, and says so in its exit status.
+syscheck() {
+    local bad=0 warns=0 name ram disk addr holder port
+    # shellcheck disable=SC1091
+    name="$( . /etc/os-release 2>/dev/null && printf '%s|%s' "${ID:-}" "${PRETTY_NAME:-unknown}" )" || name="|unknown"
+    printf '\n  %sSystem check%s\n' "$B" "$N"
+    chk() { printf '    %s %-12s %s\n' "$1" "$2" "$3"; }
+    case "${name%%|*}" in
+        debian|ubuntu) chk "${G}+${N}" "system" "${name#*|}" ;;
+        *) chk "${RD}x${N}" "system" "${name#*|} - this installer expects Debian or Ubuntu"; bad=$((bad + 1)) ;;
+    esac
+    if [ -d /run/systemd/system ]; then chk "${G}+${N}" "systemd" "running"
+    else chk "${RD}x${N}" "systemd" "not running - the services need it"; bad=$((bad + 1)); fi
+    if [ "$(id -u)" = 0 ]; then chk "${G}+${N}" "root" "yes"
+    else chk "${Y}!${N}" "root" "no - the install itself needs sudo"; warns=$((warns + 1)); fi
+    ram="$(awk '/^MemTotal/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null)" || ram=""
+    if [ "${ram:-0}" -ge 512 ]; then chk "${G}+${N}" "memory" "${ram} MB"
+    else chk "${Y}!${N}" "memory" "${ram:-?} MB - a small server; it will run, with little room"; warns=$((warns + 1)); fi
+    disk="$(df -Pm / 2>/dev/null | awk 'NR == 2 {print $4}')" || disk=""
+    if [ "${disk:-0}" -ge 2000 ]; then chk "${G}+${N}" "disk" "${disk} MB free"
+    else chk "${Y}!${N}" "disk" "${disk:-?} MB free - the database and logs grow"; warns=$((warns + 1)); fi
+    addr="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i < NF; i++) if ($i == "src") {print $(i + 1); exit}}')" || addr=""
+    if [ -n "$addr" ]; then chk "${G}+${N}" "address" "$addr"
+    else chk "${Y}!${N}" "address" "no IPv4 route found"; warns=$((warns + 1)); fi
+    for port in 53 80 443; do
+        holder="$(ss -Hltnup "sport = :$port" 2>/dev/null | sed -n 's/.*users:(("\([^"]*\)".*/\1/p' | head -n 1)" || holder=""
+        case "$holder" in
+            ""|nginx|dnsmasq) chk "${G}+${N}" "port $port" "${holder:+held by $holder (it is ours to configure)}${holder:-free}" ;;
+            *) chk "${Y}!${N}" "port $port" "held by $holder - the install will ask it to step aside"; warns=$((warns + 1)) ;;
+        esac
+    done
+    printf '    %s%d to look at, %d blocking%s\n' "$D" "$warns" "$bad" "$N"
+    [ "$bad" -eq 0 ]
+}
+
+
 # Not for -V and -h, answered above: a script asking wants only the answer.
-case "${1:-}" in -V|--version|-h|--help) ;; *) banner ;; esac
+case "${1:-}" in
+    -V|--version|-h|--help) ;;
+    --check) banner; syscheck; exit $? ;;
+    *) banner; syscheck || true ;;
+esac
 
 # ---------------------------------------------------------------- preflight
 [ "$(id -u)" = 0 ] || die "run as root:  sudo bash $0"
@@ -2815,6 +2888,7 @@ if [ "$fail" = 0 ]; then
             && mv -f "$STATE_DIR/installer/master-dns.sh.tmp" "$STATE_DIR/installer/master-dns.sh" \
             && info "kept this installer for the admin panel to upgrade the other servers with"
     fi
+    timeline
     printf '  %s+----------------------------------------------+%s\n' "$C" "$N"
     printf '  %s|%s  %sMaster DNS%s is ready  -  %-9s v%-10s %s|%s\n' "$C" "$N" "$B" "$N" \
            "$ROLE" "$VERSION" "$C" "$N"
