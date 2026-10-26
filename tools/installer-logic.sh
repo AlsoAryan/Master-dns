@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.7"
+VERSION="0.0.8"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -1196,6 +1196,7 @@ uninstall() {
     fi
     nft delete table inet smartdns_wg >/dev/null 2>&1 || true
     rm -f /etc/nftables.d/42-smartdns-wg.conf
+    rm -f /etc/modules-load.d/smartdns-conntrack.conf
     rm -rf /etc/smart-dns/wg
     # The tunnels the admin panel set: one per relay on an exit, or a relay's
     # own when this installer did not make it. Not on the list of services.
@@ -1888,6 +1889,11 @@ if [ -n "${SWAP_GB:-}" ] && [ "${SWAP_GB}" != 0 ]; then
 fi
 
 step "Kernel tuning for the long-RTT link"
+# The conntrack limits only exist once the module is loaded, and at boot
+# systemd-sysctl runs before anything has loaded it - so the module is named
+# for early loading, and loaded now, before the settings that need it.
+printf 'nf_conntrack\n' > /etc/modules-load.d/smartdns-conntrack.conf 2>/dev/null || true
+modprobe nf_conntrack >/dev/null 2>&1 || true
 install_payload SYSCTL /etc/sysctl.d/99-smartdns-tuning.conf || true
 sysctl -p /etc/sysctl.d/99-smartdns-tuning.conf >/dev/null 2>&1 || true
 

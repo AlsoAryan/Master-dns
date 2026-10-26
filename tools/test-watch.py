@@ -342,6 +342,23 @@ check("in the relay's part, beside smartdns-rules",
       0 < built.find("payload SMARTDNS_RULES > /usr/local/bin/smartdns-rules") < at)
 check("and uninstall knows it is ours", "note_file /usr/local/bin/smartdns-watch" in built)
 
+# A name a console asked for that the lobby does not need, and went direct.
+print("hints")
+hl = []
+hw = watch.Watcher({RELAY}, {CUSTOMER: "ali"}, {CUSTOMER}, out=hl.append, clock=lambda: 1000.0)
+check("nothing seen, nothing to say", hw.hints() == [])
+for name in ("lsg.prod.demonware.net", "genesis.stun.us.demonware.net", "loginservice.prod.demonware.net"):
+    hw.report(CUSTOMER, name, "direct 20.1.2.3")
+check("the lobby, STUN and login names going direct are as they should be", hw.hints() == [], hw.hints())
+hw.report(CUSTOMER, "rex-gvs.prod.demonware.net", "via relay")
+check("a web name that already goes through the relay is fine", hw.hints() == [], hw.hints())
+hw.report(CUSTOMER, "user-consent.prod.demonware.net", "direct 20.1.2.4")
+hw.report(CUSTOMER, "example.com", "direct 93.184.216.34")
+text = "\n".join(hw.hints())
+check("a web name going direct is listed, with what to do",
+      "user-consent.prod.demonware.net" in text and "smartdns add" in text and "Checking for update" in text, text)
+check("and only Demonware names are", "example.com" not in text and "lsg." not in text)
+
 print()
 if fails:
     print("%d FAILED: %s" % (len(fails), ", ".join(fails)))

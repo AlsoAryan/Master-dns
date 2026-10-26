@@ -25,6 +25,7 @@ there is. Ctrl-C stops it.
 import collections
 import ipaddress
 import json
+import re
 import os
 import signal
 import socket
@@ -146,6 +147,10 @@ def parse_dns(msg):
 
 
 # ------------------------------------------------------------------ watching
+# The Demonware names that must go direct: the lobby, the STUN servers, the login.
+DEMONWARE_DIRECT = re.compile(r"(^|\.)(lsg|loginservice)\.|(^|\.)stun\.|^genesis")
+
+
 class Watcher:
     """Pairs each question with its answer and prints a line per name.
 
@@ -243,6 +248,26 @@ class Watcher:
             "%-14s " % self.who.get(client, client)[:14]
         self.out("%s  %s%-44s %s%s" % (stamp, who, name, verdict,
                                           "   (%s)" % via if via else ""))
+
+    def hints(self):
+        """Lines worth a look, from what was seen, or [].
+
+        Call of Duty's lobby and STUN names under demonware.net have to go
+        direct - they are not on 443, which the relay cannot carry. Its web
+        names are 443, and one that answers an Iranian address with 403 has to
+        go through the relay instead; the game then stops at "Checking for
+        update". Any such name that went direct is listed, for `smartdns add`."""
+        web = sorted({name for (_, name, _), kind in self.shown.items()
+                      if kind == "direct" and name.endswith(".demonware.net")
+                      and not DEMONWARE_DIRECT.search(name)})
+        if not web:
+            return []
+        return (["", "Call of Duty: these Demonware names went direct. The lobby and STUN names "
+                 "have to; a web name",
+                 "that answers an Iranian address with 403 has to go through the relay. If the "
+                 "game stops at",
+                 "\"Checking for update\", try `smartdns add NAME` for the ones that look like web "
+                 "hosts:"] + ["  " + n for n in web])
 
     def summary(self):
         total = sum(self.counts.values())
@@ -417,6 +442,8 @@ def main(argv):
     except KeyboardInterrupt:
         if not as_json:
             print("\n" + w.summary())
+            for line in w.hints():
+                print(line)
     finally:
         if feed:
             feed.close()

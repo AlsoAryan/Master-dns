@@ -1,3 +1,5 @@
+2k.com
+2kgames.com
 3docean.net
 accounts.google.com
 acm.org
@@ -8,6 +10,7 @@ ads.google.com
 adservice.google.com
 ageofempires.com
 ai.google
+airbnb.com
 aistudio.google.com
 aka.ms
 albiononline.com
@@ -16,6 +19,8 @@ algolia.net
 altera.com
 amd.com
 amp.dev
+anaconda.com
+anaconda.org
 analytics.google.com
 android.com
 ant.design
@@ -83,6 +88,7 @@ bluemix.net
 blzstatic.com
 bnetcmsus-a.akamaihd.net
 bohemia.net
+booking.com
 books.google.com
 boombeach.com
 bootstrapcdn.com
@@ -91,8 +97,10 @@ branch.io
 brawlhalla.com
 brawlstars.com
 brawlstarsgame.com
+bstatic.com
 bugsnag.com
 bun.sh
+bungie.net
 business.google.com
 c9.io
 caddy.com
@@ -165,12 +173,14 @@ datacamp.com
 datadoghq.com
 dayz.com
 deadbydaylight.com
+deepl.com
 deepmind.google
 deepseek.com
 dell.com
 demandbase.com
 deno.land
 design.google.com
+destinythegame.com
 developer.chrome.com
 developer.google.com
 developer.samsung.com
@@ -213,7 +223,12 @@ download.virtualbox.org
 download2.epicgames.com
 download3.epicgames.com
 download4.epicgames.com
+dropbox.com
+dropboxapi.com
+dropboxstatic.com
+dropboxusercontent.com
 dunegames.com
+duolingo.com
 dyn.riotcdn.net
 ea.com
 ea.com.cn
@@ -266,6 +281,7 @@ fcmobile.com
 fiber.google.com
 figma.com
 finalfantasyxiv.com
+firaxis.com
 firebase.com
 firebase.google.com
 flurry.com
@@ -331,6 +347,7 @@ gopkg.in
 grabcad.com
 gradle.org
 grafana.com
+grammarly.com
 graphicriver.net
 graphql.org
 gravatar.com
@@ -378,6 +395,7 @@ intel.com
 invis.io
 issuetracker.google.com
 itch.io
+jagex.com
 jaspersoft.com
 java.com
 javacardos.com
@@ -446,13 +464,16 @@ minecraftservices.com
 miro.com
 mistral.ai
 mit.edu
+mobilelegends.com
 mojang.com
 mongodb.com
 mongodb.org
 monsterhunter.com
+moonton.com
 mortalkombat.com
 mp.microsoft.com
 multiversus.com
+muscache.com
 mybridge.co
 myfonts.net
 mysql.com
@@ -464,12 +485,16 @@ netlify.com
 newrelic.com
 newworld.com
 newworldinteractive.com
+nexon.com
+nexon.net
+nexoneu.com
 nextjs.org
 nflxext.com
 nflximg.net
 nflxvideo.net
 nginx.com
 ni.com
+nianticlabs.com
 nintendo.com
 nintendo.net
 nirsoft.net
@@ -503,6 +528,9 @@ packagist.org
 packtpub.com
 paladins.com
 palworldgame.com
+paradox-interactive.com
+paradoxinteractive.com
+paradoxplaza.com
 parsely.com
 patches.rockstargames.com
 pathofexile.com
@@ -537,6 +565,8 @@ playvalorant.com
 pnpm.io
 pocketpair.jp
 poe.com
+pokemon.com
+pokemongolive.com
 polymer-project.org
 popcap.com
 postman.com
@@ -565,6 +595,7 @@ reactjs.org
 realm.io
 recroom.com
 reddeadonline.com
+redis.com
 registry.k8s.io
 releases.hashicorp.com
 render.com
@@ -591,6 +622,7 @@ roguecompany.com
 rsg.sc
 ruby-doc.org
 rubygems.org
+runescape.com
 rust-lang.org
 rustafied.com
 salesforce.com

@@ -1393,6 +1393,92 @@
         "gamebackend/main"
       ],
       "note": "پیش‌فرض خاموش: روی ۵۲۲۳ است، که رله نمی‌برد"
+    },
+    {
+      "key": "destiny2",
+      "name": "دستینی ۲",
+      "en": "Destiny 2",
+      "kind": "game",
+      "needs": [
+        "othergames/bungie",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "nba2k",
+      "name": "ان‌بی‌ای ۲کا",
+      "en": "NBA 2K",
+      "kind": "game",
+      "needs": [
+        "othergames/take2",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "civilization",
+      "name": "تمدن",
+      "en": "Civilization",
+      "kind": "game",
+      "needs": [
+        "othergames/take2",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "borderlands",
+      "name": "بوردرلندز",
+      "en": "Borderlands",
+      "kind": "game",
+      "needs": [
+        "othergames/take2",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "paradox",
+      "name": "بازی‌های پارادوکس",
+      "en": "Paradox games (Stellaris, HOI4)",
+      "kind": "game",
+      "needs": [
+        "othergames/paradox",
+        "steam/main"
+      ]
+    },
+    {
+      "key": "pokemongo",
+      "name": "پوکمون گو",
+      "en": "Pokémon GO",
+      "kind": "game",
+      "needs": [
+        "othergames/niantic"
+      ]
+    },
+    {
+      "key": "maplestory",
+      "name": "میپل‌استوری",
+      "en": "MapleStory",
+      "kind": "game",
+      "needs": [
+        "othergames/nexon"
+      ]
+    },
+    {
+      "key": "runescape",
+      "name": "رون‌اسکیپ",
+      "en": "RuneScape",
+      "kind": "game",
+      "needs": [
+        "othergames/jagex"
+      ]
+    },
+    {
+      "key": "mlbb",
+      "name": "موبایل لجندز",
+      "en": "Mobile Legends",
+      "kind": "game",
+      "needs": [
+        "othergames/moonton"
+      ]
     }
   ]
 }

@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.7"
+VERSION="0.0.8"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -1196,6 +1196,7 @@ uninstall() {
     fi
     nft delete table inet smartdns_wg >/dev/null 2>&1 || true
     rm -f /etc/nftables.d/42-smartdns-wg.conf
+    rm -f /etc/modules-load.d/smartdns-conntrack.conf
     rm -rf /etc/smart-dns/wg
     # The tunnels the admin panel set: one per relay on an exit, or a relay's
     # own when this installer did not make it. Not on the list of services.
@@ -1888,6 +1889,11 @@ if [ -n "${SWAP_GB:-}" ] && [ "${SWAP_GB}" != 0 ]; then
 fi
 
 step "Kernel tuning for the long-RTT link"
+# The conntrack limits only exist once the module is loaded, and at boot
+# systemd-sysctl runs before anything has loaded it - so the module is named
+# for early loading, and loaded now, before the settings that need it.
+printf 'nf_conntrack\n' > /etc/modules-load.d/smartdns-conntrack.conf 2>/dev/null || true
+modprobe nf_conntrack >/dev/null 2>&1 || true
 install_payload SYSCTL /etc/sysctl.d/99-smartdns-tuning.conf || true
 sysctl -p /etc/sysctl.d/99-smartdns-tuning.conf >/dev/null 2>&1 || true
 
@@ -3071,6 +3077,24 @@ exit 0
 #net.ipv4.tcp_max_syn_backlog = 8192
 #net.ipv4.tcp_fin_timeout = 15
 #net.ipv4.tcp_tw_reuse = 1
+#
+## Latency. The send buffer above is large on purpose, and a large buffer is a
+## queue: data a socket has not sent yet sits in it, and a game's login or a
+## chat keystroke waits behind a download that shares the connection. This caps
+## what may sit unsent per socket, so the queue stays short and the big buffer
+## still does its work in flight.
+#net.ipv4.tcp_notsent_lowat = 131072
+#
+## Packet loss. Every proxied connection takes a conntrack entry, and so does
+## every DNS and STUN exchange. When the table is full the kernel does not queue
+## - it drops the packet ("nf_conntrack: table full, dropping packet"), which a
+## game sees as lag spikes and a console as a download that stalls. The stock
+## limit follows the machine's memory and is often 65536; this is roughly
+## 40 MB at the top, and an established TCP entry now lives four hours, not the
+## five days a forgotten one used to.
+#net.netfilter.nf_conntrack_max = 131072
+#net.netfilter.nf_conntrack_tcp_timeout_established = 14400
+#net.netfilter.nf_conntrack_udp_timeout_stream = 60
 #__END_SYSCTL__
 
 #__BEGIN_SYSCTL_BBR__
@@ -33797,6 +33821,7 @@ exit 0
 #import collections
 #import ipaddress
 #import json
+#import re
 #import os
 #import signal
 #import socket
@@ -33918,6 +33943,10 @@ exit 0
 #
 #
 ## ------------------------------------------------------------------ watching
+## The Demonware names that must go direct: the lobby, the STUN servers, the login.
+#DEMONWARE_DIRECT = re.compile(r"(^|\.)(lsg|loginservice)\.|(^|\.)stun\.|^genesis")
+#
+#
 #class Watcher:
 #    """Pairs each question with its answer and prints a line per name.
 #
@@ -34015,6 +34044,26 @@ exit 0
 #            "%-14s " % self.who.get(client, client)[:14]
 #        self.out("%s  %s%-44s %s%s" % (stamp, who, name, verdict,
 #                                          "   (%s)" % via if via else ""))
+#
+#    def hints(self):
+#        """Lines worth a look, from what was seen, or [].
+#
+#        Call of Duty's lobby and STUN names under demonware.net have to go
+#        direct - they are not on 443, which the relay cannot carry. Its web
+#        names are 443, and one that answers an Iranian address with 403 has to
+#        go through the relay instead; the game then stops at "Checking for
+#        update". Any such name that went direct is listed, for `smartdns add`."""
+#        web = sorted({name for (_, name, _), kind in self.shown.items()
+#                      if kind == "direct" and name.endswith(".demonware.net")
+#                      and not DEMONWARE_DIRECT.search(name)})
+#        if not web:
+#            return []
+#        return (["", "Call of Duty: these Demonware names went direct. The lobby and STUN names "
+#                 "have to; a web name",
+#                 "that answers an Iranian address with 403 has to go through the relay. If the "
+#                 "game stops at",
+#                 "\"Checking for update\", try `smartdns add NAME` for the ones that look like web "
+#                 "hosts:"] + ["  " + n for n in web])
 #
 #    def summary(self):
 #        total = sum(self.counts.values())
@@ -34189,6 +34238,8 @@ exit 0
 #    except KeyboardInterrupt:
 #        if not as_json:
 #            print("\n" + w.summary())
+#            for line in w.hints():
+#                print(line)
 #    finally:
 #        if feed:
 #            feed.close()
@@ -37104,6 +37155,8 @@ exit 0
 #__END_FONT_LICENSE__
 
 #__BEGIN_DOMAINS__
+#2k.com
+#2kgames.com
 #3docean.net
 #accounts.google.com
 #acm.org
@@ -37114,6 +37167,7 @@ exit 0
 #adservice.google.com
 #ageofempires.com
 #ai.google
+#airbnb.com
 #aistudio.google.com
 #aka.ms
 #albiononline.com
@@ -37122,6 +37176,8 @@ exit 0
 #altera.com
 #amd.com
 #amp.dev
+#anaconda.com
+#anaconda.org
 #analytics.google.com
 #android.com
 #ant.design
@@ -37189,6 +37245,7 @@ exit 0
 #blzstatic.com
 #bnetcmsus-a.akamaihd.net
 #bohemia.net
+#booking.com
 #books.google.com
 #boombeach.com
 #bootstrapcdn.com
@@ -37197,8 +37254,10 @@ exit 0
 #brawlhalla.com
 #brawlstars.com
 #brawlstarsgame.com
+#bstatic.com
 #bugsnag.com
 #bun.sh
+#bungie.net
 #business.google.com
 #c9.io
 #caddy.com
@@ -37271,12 +37330,14 @@ exit 0
 #datadoghq.com
 #dayz.com
 #deadbydaylight.com
+#deepl.com
 #deepmind.google
 #deepseek.com
 #dell.com
 #demandbase.com
 #deno.land
 #design.google.com
+#destinythegame.com
 #developer.chrome.com
 #developer.google.com
 #developer.samsung.com
@@ -37319,7 +37380,12 @@ exit 0
 #download2.epicgames.com
 #download3.epicgames.com
 #download4.epicgames.com
+#dropbox.com
+#dropboxapi.com
+#dropboxstatic.com
+#dropboxusercontent.com
 #dunegames.com
+#duolingo.com
 #dyn.riotcdn.net
 #ea.com
 #ea.com.cn
@@ -37372,6 +37438,7 @@ exit 0
 #fiber.google.com
 #figma.com
 #finalfantasyxiv.com
+#firaxis.com
 #firebase.com
 #firebase.google.com
 #flurry.com
@@ -37437,6 +37504,7 @@ exit 0
 #grabcad.com
 #gradle.org
 #grafana.com
+#grammarly.com
 #graphicriver.net
 #graphql.org
 #gravatar.com
@@ -37484,6 +37552,7 @@ exit 0
 #invis.io
 #issuetracker.google.com
 #itch.io
+#jagex.com
 #jaspersoft.com
 #java.com
 #javacardos.com
@@ -37552,13 +37621,16 @@ exit 0
 #miro.com
 #mistral.ai
 #mit.edu
+#mobilelegends.com
 #mojang.com
 #mongodb.com
 #mongodb.org
 #monsterhunter.com
+#moonton.com
 #mortalkombat.com
 #mp.microsoft.com
 #multiversus.com
+#muscache.com
 #mybridge.co
 #myfonts.net
 #mysql.com
@@ -37570,12 +37642,16 @@ exit 0
 #newrelic.com
 #newworld.com
 #newworldinteractive.com
+#nexon.com
+#nexon.net
+#nexoneu.com
 #nextjs.org
 #nflxext.com
 #nflximg.net
 #nflxvideo.net
 #nginx.com
 #ni.com
+#nianticlabs.com
 #nintendo.com
 #nintendo.net
 #nirsoft.net
@@ -37609,6 +37685,9 @@ exit 0
 #packtpub.com
 #paladins.com
 #palworldgame.com
+#paradox-interactive.com
+#paradoxinteractive.com
+#paradoxplaza.com
 #parsely.com
 #patches.rockstargames.com
 #pathofexile.com
@@ -37643,6 +37722,8 @@ exit 0
 #pnpm.io
 #pocketpair.jp
 #poe.com
+#pokemon.com
+#pokemongolive.com
 #polymer-project.org
 #popcap.com
 #postman.com
@@ -37671,6 +37752,7 @@ exit 0
 #realm.io
 #recroom.com
 #reddeadonline.com
+#redis.com
 #registry.k8s.io
 #releases.hashicorp.com
 #render.com
@@ -37697,6 +37779,7 @@ exit 0
 #rsg.sc
 #ruby-doc.org
 #rubygems.org
+#runescape.com
 #rust-lang.org
 #rustafied.com
 #salesforce.com
@@ -39036,6 +39119,66 @@ exit 0
 #          ]
 #        },
 #        {
+#          "key": "bungie",
+#          "label": "Bungie — Destiny 2",
+#          "domains": [
+#            "bungie.net",
+#            "destinythegame.com"
+#          ]
+#        },
+#        {
+#          "key": "take2",
+#          "label": "2K & Firaxis — NBA 2K, Civilization, Borderlands",
+#          "domains": [
+#            "2k.com",
+#            "2kgames.com",
+#            "firaxis.com"
+#          ]
+#        },
+#        {
+#          "key": "paradox",
+#          "label": "Paradox — Stellaris, HOI4, Crusader Kings",
+#          "domains": [
+#            "paradox-interactive.com",
+#            "paradoxinteractive.com",
+#            "paradoxplaza.com"
+#          ]
+#        },
+#        {
+#          "key": "niantic",
+#          "label": "Niantic — Pokémon GO",
+#          "domains": [
+#            "nianticlabs.com",
+#            "pokemon.com",
+#            "pokemongolive.com"
+#          ]
+#        },
+#        {
+#          "key": "nexon",
+#          "label": "Nexon — MapleStory",
+#          "domains": [
+#            "nexon.com",
+#            "nexon.net",
+#            "nexoneu.com"
+#          ]
+#        },
+#        {
+#          "key": "jagex",
+#          "label": "Jagex — RuneScape",
+#          "domains": [
+#            "jagex.com",
+#            "runescape.com"
+#          ]
+#        },
+#        {
+#          "key": "moonton",
+#          "label": "Moonton — Mobile Legends",
+#          "domains": [
+#            "mobilelegends.com",
+#            "moonton.com"
+#          ]
+#        },
+#        {
 #          "key": "misc",
 #          "label": "Odds and ends",
 #          "domains": [
@@ -39687,6 +39830,45 @@ exit 0
 #        }
 #      ],
 #      "section": "other"
+#    },
+#    {
+#      "key": "apps",
+#      "label": "Everyday apps & sites",
+#      "section": "other",
+#      "groups": [
+#        {
+#          "key": "files",
+#          "label": "Files, writing & languages",
+#          "domains": [
+#            "deepl.com",
+#            "dropbox.com",
+#            "dropboxapi.com",
+#            "dropboxstatic.com",
+#            "dropboxusercontent.com",
+#            "duolingo.com",
+#            "grammarly.com"
+#          ]
+#        },
+#        {
+#          "key": "travel",
+#          "label": "Travel & stays",
+#          "domains": [
+#            "airbnb.com",
+#            "booking.com",
+#            "bstatic.com",
+#            "muscache.com"
+#          ]
+#        },
+#        {
+#          "key": "data",
+#          "label": "Data & developer platforms",
+#          "domains": [
+#            "anaconda.com",
+#            "anaconda.org",
+#            "redis.com"
+#          ]
+#        }
+#      ]
 #    },
 #    {
 #      "key": "webdev",
@@ -41377,6 +41559,92 @@ exit 0
 #        "gamebackend/main"
 #      ],
 #      "note": "پیش‌فرض خاموش: روی ۵۲۲۳ است، که رله نمی‌برد"
+#    },
+#    {
+#      "key": "destiny2",
+#      "name": "دستینی ۲",
+#      "en": "Destiny 2",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/bungie",
+#        "steam/main"
+#      ]
+#    },
+#    {
+#      "key": "nba2k",
+#      "name": "ان‌بی‌ای ۲کا",
+#      "en": "NBA 2K",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/take2",
+#        "steam/main"
+#      ]
+#    },
+#    {
+#      "key": "civilization",
+#      "name": "تمدن",
+#      "en": "Civilization",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/take2",
+#        "steam/main"
+#      ]
+#    },
+#    {
+#      "key": "borderlands",
+#      "name": "بوردرلندز",
+#      "en": "Borderlands",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/take2",
+#        "steam/main"
+#      ]
+#    },
+#    {
+#      "key": "paradox",
+#      "name": "بازی‌های پارادوکس",
+#      "en": "Paradox games (Stellaris, HOI4)",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/paradox",
+#        "steam/main"
+#      ]
+#    },
+#    {
+#      "key": "pokemongo",
+#      "name": "پوکمون گو",
+#      "en": "Pokémon GO",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/niantic"
+#      ]
+#    },
+#    {
+#      "key": "maplestory",
+#      "name": "میپل‌استوری",
+#      "en": "MapleStory",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/nexon"
+#      ]
+#    },
+#    {
+#      "key": "runescape",
+#      "name": "رون‌اسکیپ",
+#      "en": "RuneScape",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/jagex"
+#      ]
+#    },
+#    {
+#      "key": "mlbb",
+#      "name": "موبایل لجندز",
+#      "en": "Mobile Legends",
+#      "kind": "game",
+#      "needs": [
+#        "othergames/moonton"
+#      ]
 #    }
 #  ]
 #}
@@ -44296,7 +44564,16 @@ exit 0
 #"پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد": "PlayStation and Xbox get the game from their own store, so the Battle.net download is not needed; the update check needs only these two groups",
 #"بنفش": "Purple",
 #"نارنجی": "Orange",
-#"برو به…": "Go to…"
+#"برو به…": "Go to…",
+#"ان‌بی‌ای ۲کا": "NBA 2K",
+#"بازی‌های پارادوکس": "Paradox games",
+#"بوردرلندز": "Borderlands",
+#"تمدن": "Civilization",
+#"دستینی ۲": "Destiny 2",
+#"رون‌اسکیپ": "RuneScape",
+#"موبایل لجندز": "Mobile Legends",
+#"میپل‌استوری": "MapleStory",
+#"پوکمون گو": "Pokémon GO"
 #}
 #__END_I18N_EN__
 

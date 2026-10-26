@@ -57,7 +57,7 @@ route to Google over IPv6); **udp** 53, 3478.
 
 ## What is in it
 
-- **Routing**: about 480 blocked domains, game and console services, AAAA
+- **Routing**: about 800 blocked domains, 150 games and platforms, AAAA
   filtering, STUN/TURN so console NAT checks pass.
 - **Customers**: an allowlist on their address with kernel byte counters,
   monthly or one-off quotas with warnings at 80% and 95%, per-customer speed
@@ -138,7 +138,8 @@ A name that is not on port 443 cannot go through the relay, which carries only 8
 Run `sudo smartdns-watch` for the customer to see which names went via the relay and which
 went direct, then make a name direct with `smartdns bypass` (the menu has both).
 
-Call of Duty's update check needs four Demonware HTTPS names routed; they are in the
+`smartdns-watch` ends a Call of Duty session by listing any Demonware web names that went
+direct, for `smartdns add`. Call of Duty's update check needs four Demonware HTTPS names routed; they are in the
 `cod-https` group, which the game asks for. A template made before that group existed gets
 it once, at the panel's first start after the upgrade, if it routes any other Blizzard /
 Activision group; unticking it afterwards sticks. PUBG Mobile's "Server is busy" with the code
@@ -156,6 +157,12 @@ python3 tools/build-installer.py   # rewrites master-dns.sh
 bash -n master-dns.sh              # it stays valid bash
 for t in tools/test-*.py; do python3 "$t"; done
 ```
+
+## Kernel settings
+
+The install writes `/etc/sysctl.d/99-smartdns-tuning.conf` (and, on request, BBR). Besides large
+buffers for a long path, it caps unsent data per socket so a download cannot queue a game's login
+behind it, and raises the connection-tracking table, whose overflow drops packets without a word.
 
 ## Known limits
 

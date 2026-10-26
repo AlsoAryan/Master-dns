@@ -1153,6 +1153,66 @@
           ]
         },
         {
+          "key": "bungie",
+          "label": "Bungie — Destiny 2",
+          "domains": [
+            "bungie.net",
+            "destinythegame.com"
+          ]
+        },
+        {
+          "key": "take2",
+          "label": "2K & Firaxis — NBA 2K, Civilization, Borderlands",
+          "domains": [
+            "2k.com",
+            "2kgames.com",
+            "firaxis.com"
+          ]
+        },
+        {
+          "key": "paradox",
+          "label": "Paradox — Stellaris, HOI4, Crusader Kings",
+          "domains": [
+            "paradox-interactive.com",
+            "paradoxinteractive.com",
+            "paradoxplaza.com"
+          ]
+        },
+        {
+          "key": "niantic",
+          "label": "Niantic — Pokémon GO",
+          "domains": [
+            "nianticlabs.com",
+            "pokemon.com",
+            "pokemongolive.com"
+          ]
+        },
+        {
+          "key": "nexon",
+          "label": "Nexon — MapleStory",
+          "domains": [
+            "nexon.com",
+            "nexon.net",
+            "nexoneu.com"
+          ]
+        },
+        {
+          "key": "jagex",
+          "label": "Jagex — RuneScape",
+          "domains": [
+            "jagex.com",
+            "runescape.com"
+          ]
+        },
+        {
+          "key": "moonton",
+          "label": "Moonton — Mobile Legends",
+          "domains": [
+            "mobilelegends.com",
+            "moonton.com"
+          ]
+        },
+        {
           "key": "misc",
           "label": "Odds and ends",
           "domains": [
@@ -1804,6 +1864,45 @@
         }
       ],
       "section": "other"
+    },
+    {
+      "key": "apps",
+      "label": "Everyday apps & sites",
+      "section": "other",
+      "groups": [
+        {
+          "key": "files",
+          "label": "Files, writing & languages",
+          "domains": [
+            "deepl.com",
+            "dropbox.com",
+            "dropboxapi.com",
+            "dropboxstatic.com",
+            "dropboxusercontent.com",
+            "duolingo.com",
+            "grammarly.com"
+          ]
+        },
+        {
+          "key": "travel",
+          "label": "Travel & stays",
+          "domains": [
+            "airbnb.com",
+            "booking.com",
+            "bstatic.com",
+            "muscache.com"
+          ]
+        },
+        {
+          "key": "data",
+          "label": "Data & developer platforms",
+          "domains": [
+            "anaconda.com",
+            "anaconda.org",
+            "redis.com"
+          ]
+        }
+      ]
     },
     {
       "key": "webdev",
