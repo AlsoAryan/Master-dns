@@ -70,7 +70,7 @@ block = src[section("version"):section("questions")]
 check("the version block was found", "snapshot_db" in block, block[:120])
 check("it is before any question is asked",
       src.index('VERSION_FILE="$STATE_DIR/version"')
-      < src.index("Which side is this machine"))
+      < src.index("Which server is this?"))
 check("and before anything is installed",
       src.index('VERSION_FILE="$STATE_DIR/version"') < src.index("apt-get update"))
 
@@ -270,7 +270,7 @@ logic = open(os.path.join(HERE, "installer-logic.sh"), encoding="utf-8").read()
 for what, pat in (
         ("the pairing token", r'SYNC_TOKEN:-\}" \] && \[ -z "\$\{ASSUME_YES:-\}" \] && \[ -z "\$UPGRADE" \]'),
         ("the domain", r'PANEL_DOMAIN:-\}" \] && \[ -z "\$\{ASSUME_YES:-\}" \] && \[ -z "\$UPGRADE" \]'),
-        ("proceed?", r'if \[ -z "\$\{ASSUME_YES:-\}" \] && \[ -z "\$UPGRADE" \]; then\n    read -r -p "  proceed\?'),
+        ("proceed?", r'if \[ -z "\$\{ASSUME_YES:-\}" \] && \[ -z "\$UPGRADE" \]; then\n    read -r -p "  install now\?'),
         ("swap", r'SWAP_GB:-\}" \] && \[ -z "\$\{ASSUME_YES:-\}" \] && \[ -z "\$UPGRADE" \]'),
         ("BBR", r'ASSUME_YES:-\}" \] \|\| \[ -n "\$UPGRADE" \]; then\n        # Keep whatever')):
     check("%s is skipped" % what, re.search(pat, logic) is not None)

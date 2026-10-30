@@ -5601,13 +5601,18 @@ def relay_tunnel(store, relay, relays, installer_tunnel):
     """What the admin panel set for this relay's tunnel, for its sync: None
     for the first relay while the exit's installer tunnels to it - that one
     stays the installer's - and for a machine that is not one of our relays."""
-    if relay not in relays or (installer_tunnel == "backpack" and relay == relays[0]) \
-            or store.setting("single:" + relay) == "1":
+    if relay not in relays or store.setting("single:" + relay) == "1":
         return None
     try:
         spec = json.loads(store.setting("relay_tunnel:" + relay) or "{}")
     except ValueError:
         spec = {}
+    # The installer's tunnel stays the installer's until the admin changes it
+    # from the panel's settings: that spec is marked "main", and from then on
+    # the panel is the one to say, here as on every other relay.
+    if installer_tunnel == "backpack" and relay == relays[0] \
+            and not (isinstance(spec, dict) and spec.get("main")):
+        return None
     if not isinstance(spec, dict) or not spec.get("transport"):
         return {"on": False}
     return dict(spec, on=True)

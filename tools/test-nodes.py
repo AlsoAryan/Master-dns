@@ -67,9 +67,9 @@ check("node is a fourth answer, and an exit", "4|node)   ROLE=node;   break ;;" 
 check("it gets no panel, no tunnel of its own, no HTTPS question",
       'if is_exit && [ "$ROLE" != node ] && [ -z "$JOINED" ]; then\n    step "Panel: database and sync API"' in logic
       and '{ [ "$ROLE" = single ] || [ "$ROLE" = node ]; } && TUNNEL=off' in logic
-      and '[ -z "$UPGRADE" ] && [ "$ROLE" != node ]; then\n    printf \'\\n%sHTTPS' in logic)
+      and '[ -z "$UPGRADE" ] && [ "$ROLE" != node ]; then\n    printf \'\\n%sSecure web address' in logic)
 check("it needs the pairing token, and keeps its pairing on an upgrade",
-      "a node needs the pairing token" in logic
+      "an extra abroad server needs the connection code" in logic
       and "elif [ -f /etc/smart-dns/node.env ]; then ROLE=node" in logic)
 check("its sync runs from node.env with --node, and is checked",
       "cat > /etc/smart-dns/node.env <<EOF" in logic

@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.8"
+VERSION="0.0.9"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -572,33 +572,48 @@ ask_tunnel() {
     # asking again with --tunnel and changing only the port should take one
     # line typed, not four.
     local d1=1 d2=1 d3=1
-    [ "${CUR_TUNNEL:-}" = backpack ] && d1=2
+    # Enter keeps what is there: the suggested secure way, a plain line, or
+    # whatever was picked by hand before.
+    if [ "${CUR_TUNNEL:-}" = backpack ]; then
+        if [ "${CUR_TRANSPORT:-stealth}" = stealth ] && [ "${CUR_DIRECTION:-reverse}" = reverse ] \
+           && [ -z "${CUR_PRESET:-}" ]; then d1=1; else d1=3; fi
+    elif [ -n "${CUR_TUNNEL:-}" ]; then d1=2; fi
     [ "${CUR_DIRECTION:-}" = l3 ] && d2=2
-    printf '\n%sBetween the relay and this exit%s\n\n' "$B" "$N"
+    printf '\n%sHow should the two servers talk to each other?%s\n\n' "$B" "$N"
     if [ "${CUR_TUNNEL:-}" = backpack ]; then
         case "${CUR_DIRECTION:-}" in l3) t=direct ;; direct) t="the old direct" ;; *) t="${CUR_DIRECTION:-?}" ;; esac
-        printf '  now: BackPack, %s, %s, port %s\n\n' "${CUR_TRANSPORT:-?}" "$t" "${CUR_PORT:-?}"
+        printf '  now: secure tunnel (%s, %s, port %s)\n\n' "${CUR_TRANSPORT:-?}" "$t" "${CUR_PORT:-?}"
     elif [ -n "${CUR_TUNNEL:-}" ]; then
-        printf '  now: direct TCP\n\n'
+        printf '  now: plain connection\n\n'
     fi
-    printf '  1) direct TCP        as it has always been - nothing extra installed\n'
-    printf '  2) BackPack tunnel   hides the names of the sites from filtering on the way\n\n'
-    read -r -p "  choice [$d1]: " a
-    case "${a:-$d1}" in 1) TUNNEL=off; return 0 ;; 2) TUNNEL=backpack ;; *) die "answer 1 or 2" ;; esac
+    printf '  1) Secure - suggested    hidden from filtering, nothing to set up\n'
+    printf '  2) Plain                 an ordinary connection; nothing extra is installed\n'
+    printf '  3) Let me choose         every detail by hand (for people who know the options)\n\n'
+    read -r -p "  your choice [$d1]: " a
+    case "${a:-$d1}" in
+        1) TUNNEL=backpack; TUNNEL_DIRECTION=reverse; TUNNEL_TRANSPORT=stealth; TUNNEL_PRESET=""
+           TUNNEL_PORT="${CUR_PORT:-8444}"
+           t="$(tunnel_port_problem "$TUNNEL_PORT")"
+           [ -z "$t" ] || die "port $TUNNEL_PORT cannot be used here: $t"
+           info "if the Iran server has a firewall, let this server reach port $TUNNEL_PORT on it"
+           return 0 ;;
+        2) TUNNEL=off; return 0 ;;
+        3) TUNNEL=backpack ;;
+        *) die "please type 1, 2 or 3" ;;
+    esac
     # Direct is BackPack's direct as its own menu makes it now - the layer-3
     # one, l3 here. The older direct engine is not offered any more; a
     # machine that has it keeps it until it is asked again.
-    printf '\n  Which end dials the other?\n\n'
-    printf '  1) reverse   this exit dials the relay - BackPack'"'"'s usual way\n'
-    printf '  2) direct    the relay dials this exit, over a network of the two machines'"'"' own -\n'
-    printf '               for where connections into Iran do not get through\n\n'
+    printf '\n  Which server starts the connection?\n\n'
+    printf '  1) this abroad server calls the Iran server - the usual way\n'
+    printf '  2) the Iran server calls this one - for when connections into Iran do not get through\n\n'
     read -r -p "  choice [$d2]: " a
     case "${a:-$d2}" in 1) TUNNEL_DIRECTION=reverse ;; 2) TUNNEL_DIRECTION=l3 ;;
         *) die "answer 1 or 2" ;; esac
     # What each transport is. How one performs depends on the route, so that is
     # not said here; only the two that did not connect at all in our own test
     # say so.
-    printf '\n  Transport:\n\n'
+    printf '\n  Connection style:\n\n'
     while IFS='|' read -r t note; do
         tunnel_transport_ok "$TUNNEL_DIRECTION" "$t" || continue
         i=$((i + 1)); list="$list $t"
@@ -627,7 +642,7 @@ NOTES
     TUNNEL_TRANSPORT="$(echo $list | cut -d' ' -f"$a")"
     [ -n "$TUNNEL_TRANSPORT" ] || die "there is no transport number $a"
     while :; do
-        read -r -p "  tunnel port [${CUR_PORT:-8444}]: " a
+        read -r -p "  port for the connection [${CUR_PORT:-8444}]: " a
         a="${a:-${CUR_PORT:-8444}}"
         t="$(tunnel_port_problem "$a")"
         [ -z "$t" ] && { TUNNEL_PORT="$a"; break; }
@@ -635,7 +650,7 @@ NOTES
     done
     # The preset: BackPack's own, those this kind of tunnel has.
     list=""; i=0; d3=1
-    printf '\n  Performance preset (both ends get it):\n\n'
+    printf '\n  Speed profile (both servers get it):\n\n'
     while IFS='|' read -r t note; do
         [ -z "$t" ] || tunnel_preset_ok "$TUNNEL_DIRECTION" "$TUNNEL_TRANSPORT" "$t" || continue
         i=$((i + 1)); list="$list ${t:--}"
@@ -657,11 +672,11 @@ PRESETS
     [ -n "$TUNNEL_PRESET" ] || die "there is no preset number $a"
     [ "$TUNNEL_PRESET" = - ] && TUNNEL_PRESET=""
     if [ "$TUNNEL_DIRECTION" = reverse ]; then
-        info "open port $TUNNEL_PORT to this exit in the relay's firewall, if it has one"
+        info "if the Iran server has a firewall, let this server reach port $TUNNEL_PORT on it"
     elif [ "$TUNNEL_TRANSPORT" = xdi ]; then
-        info "xdi needs no port opened - only ping, both ways"
+        info "this style needs no port opened - only ping, in both directions"
     else
-        info "open port $TUNNEL_PORT to the relay in this exit's firewall, if it has one"
+        info "if this server has a firewall, let the Iran server reach port $TUNNEL_PORT on it"
     fi
 }
 
@@ -1526,19 +1541,22 @@ valid_ip() {
 ROLE="${ROLE:-}"; PEER_IP="${PEER_IP:-}"; SELF_IP="${SELF_IP:-}"
 
 if [ -z "$ROLE" ]; then
-    printf '\n%sWhich side is this machine?%s\n\n' "$B" "$N"
-    printf '  1) relay  - the server inside Iran, the one clients point their DNS at\n'
-    printf '  2) exit   - the server abroad, which reaches the blocked sites\n'
-    printf '  3) single - both on one server abroad, with no relay in Iran\n'
-    printf '  4) node   - another exit abroad, joined to the panel on an exit\n\n'
+    printf '\n%sWelcome.%s This sets up Master DNS on this server, in about five minutes.\n' "$B" "$N"
+    printf '  You will be asked a few simple questions; pressing Enter takes the suggested answer.\n'
+    printf '\n%sWhich server is this?%s\n\n' "$B" "$N"
+    printf '  1) Iran server          your customers use this one as their DNS\n'
+    printf '  2) Abroad server        the main one: it holds the control panel\n'
+    printf '  3) One server only      a single server abroad does everything - good for a first try\n'
+    printf '  4) Extra abroad server  adds more capacity to a panel you already have\n\n'
+    printf '  %sNot sure?%s Set up the abroad server (2) first, then the Iran server (1).\n\n' "$D" "$N"
     while :; do
-        read -r -p "  choice [1/2/3/4]: " answer
+        read -r -p "  your choice [1/2/3/4]: " answer
         case "$answer" in
             1|relay)  ROLE=relay;  break ;;
             2|exit)   ROLE=exit;   break ;;
             3|single) ROLE=single; break ;;
             4|node)   ROLE=node;   break ;;
-            *) warn "answer 1, 2, 3 or 4" ;;
+            *) warn "please type 1, 2, 3 or 4" ;;
         esac
     done
 fi
@@ -1552,32 +1570,32 @@ if [ "$ROLE" = single ]; then
     # Said once, plainly, because it is the whole trade: customers in Iran
     # reach a server abroad directly, which is what gets filtered and slowed
     # on the way, and what a relay in Iran exists to avoid.
-    warn "one server abroad, no relay: customers reach it directly from Iran."
-    warn "that works, but the direct path is the one that gets filtered and slowed."
-    warn "for real customers a relay in Iran is better - this is for trying it out,"
-    warn "or where the direct path to this server happens to be good."
+    warn "One server only: customers reach it straight from Iran."
+    warn "That works, but that road is the one most often slowed or blocked."
+    warn "For real customers an Iran server in front is better - this mode is for"
+    warn "trying things out, or for when the road to this server happens to be good."
 fi
 
 if [ -z "$PEER_IP" ] && [ "$ROLE" != single ]; then
     printf '\n'
     if [ "$ROLE" = relay ]; then
-        read -r -p "  public address of the EXIT server abroad: " PEER_IP
+        read -r -p "  IP address of the abroad server: " PEER_IP
     elif [ "$ROLE" = node ]; then
-        read -r -p "  public address of the exit with the PANEL: " PEER_IP
+        read -r -p "  IP address of the abroad server that has the panel: " PEER_IP
     else
-        read -r -p "  public address of the RELAY server in Iran: " PEER_IP
+        read -r -p "  IP address of the Iran server: " PEER_IP
     fi
 fi
-[ "$ROLE" = single ] || valid_ip "$PEER_IP" || die "'$PEER_IP' is not an IPv4 address"
+[ "$ROLE" = single ] || valid_ip "$PEER_IP" || die "'$PEER_IP' is not an IP address - it looks like 203.0.113.5"
 
 if [ -z "$SELF_IP" ]; then
     guess="$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)"
     printf '\n'
-    read -r -p "  public address of THIS server [${guess}]: " SELF_IP
+    read -r -p "  IP address of this server [${guess}]: " SELF_IP
     SELF_IP="${SELF_IP:-$guess}"
 fi
-valid_ip "$SELF_IP" || die "'$SELF_IP' is not an IPv4 address"
-[ "$ROLE" = single ] || [ "$SELF_IP" != "$PEER_IP" ] || die "both addresses are the same"
+valid_ip "$SELF_IP" || die "'$SELF_IP' is not an IP address - it looks like 203.0.113.5"
+[ "$ROLE" = single ] || [ "$SELF_IP" != "$PEER_IP" ] || die "the two servers cannot have the same IP address"
 if is_exit; then exit_owner_check "$SELF_IP"; fi
 
 # A single machine joined to the panel on another one (PANEL_IP): its
@@ -1590,11 +1608,11 @@ if [ "$ROLE" = single ]; then
         JOINED=1
         valid_ip "$PANEL_IP" || die "PANEL_IP '$PANEL_IP' is not an IPv4 address"
         if [ -z "${SYNC_TOKEN:-}" ] && [ -z "${ASSUME_YES:-}" ]; then
-            printf '\n  The pairing token is on the admin panel'"'"'s Node page, on %s.\n' "$PANEL_IP"
-            read -r -p "  pairing token: " SYNC_TOKEN
+            printf '\n  The connection code is in the control panel (page "Nodes"), on %s.\n' "$PANEL_IP"
+            read -r -p "  connection code: " SYNC_TOKEN
         fi
         [ -n "${SYNC_TOKEN:-}" ] || [ -f /etc/smart-dns/sync.env ] \
-            || die "a single server joined to a panel needs the pairing token from its Node page"
+            || die "to join a panel this server needs its connection code (panel, page Nodes)"
     fi
 elif [ "$ROLE" = relay ]; then
     RELAY_IP="$SELF_IP"; EXIT_IP="$PEER_IP"
@@ -1602,10 +1620,10 @@ elif [ "$ROLE" = node ]; then
     # The relays come from the panel; the panel is the other address.
     RELAY_IP=""; EXIT_IP="$SELF_IP"; PANEL_IP="$PEER_IP"
     if [ -z "${SYNC_TOKEN:-}" ] && [ -z "${ASSUME_YES:-}" ]; then
-        printf '\n  The pairing token is on the admin panel'"'"'s Node page, on %s.\n' "$PEER_IP"
-        read -r -p "  pairing token: " SYNC_TOKEN
+        printf '\n  The connection code is in the control panel (page "Nodes"), on %s.\n' "$PEER_IP"
+        read -r -p "  connection code: " SYNC_TOKEN
     fi
-    [ -n "${SYNC_TOKEN:-}" ] || die "a node needs the pairing token from the admin panel's Node page"
+    [ -n "${SYNC_TOKEN:-}" ] || die "an extra abroad server needs the connection code from the panel (page Nodes)"
 else
     RELAY_IP="$PEER_IP"; EXIT_IP="$SELF_IP"
 fi
@@ -1635,33 +1653,36 @@ fi
 # all of them. The exit builds it unasked; the relay asks for the pairing token
 # the exit prints at the end of its own install.
 if [ "$ROLE" = relay ] && [ -z "${SYNC_TOKEN:-}" ] && [ -z "${ASSUME_YES:-}" ] && [ -z "$UPGRADE" ]; then
-    printf '\n%sPanel%s (optional - press enter to skip)\n\n' "$B" "$N"
-    printf '  The exit server prints a pairing token at the end of its install.\n'
-    read -r -p "  pairing token: " SYNC_TOKEN
+    printf '\n%sConnect to the abroad server%s\n\n' "$B" "$N"
+    printf '  The abroad server printed a connection code when it finished installing.\n'
+    printf '  Paste it here (or press Enter to skip - the Iran server then works on its own).\n'
+    read -r -p "  connection code: " SYNC_TOKEN
 fi
 # ------------------------------------------------------------------- TLS
 # Optional, like the panel. Without it the claim link is plain http, which
 # works but sends the registration token in the clear - anyone on the path can
 # take it and register their own address against the user's account.
 if [ -z "${PANEL_DOMAIN:-}" ] && [ -z "${ASSUME_YES:-}" ] && [ -z "$UPGRADE" ] && [ "$ROLE" != node ]; then
-    printf '\n%sHTTPS%s (optional - press enter to skip)\n\n' "$B" "$N"
+    printf '\n%sSecure web address%s (optional)\n\n' "$B" "$N"
     if [ "$ROLE" = single ]; then
-        printf '  A name pointing at this machine, for both panels and for DNS\n'
-        printf '  over HTTPS and TLS.\n'
+        printf '  If you own a domain name (like panel.example.com) that points at this\n'
+        printf '  server, enter it: both panels then open with a padlock.\n'
     elif [ "$ROLE" = relay ]; then
-        printf '  A name pointing at this machine, for the page users open to\n'
-        printf '  register their address.\n'
+        printf '  If you own a domain name (like panel.example.com) that points at this\n'
+        printf '  server, enter it: the page your customers open then has a padlock.\n'
     else
-        printf '  A name pointing at this machine, for the admin panel.\n'
+        printf '  If you own a domain name (like panel.example.com) that points at this\n'
+        printf '  server, enter it: the control panel then opens with a padlock.\n'
     fi
-    read -r -p "  domain: " PANEL_DOMAIN
+    printf '  No domain? Just press Enter - you can add one later.\n\n'
+    read -r -p "  domain name: " PANEL_DOMAIN
     # Nothing else is asked. The certificate is obtained automatically and the
     # only thing that proves anything is the domain itself - no DNS token, no
     # account, nothing to hand over.
     if [ -n "$PANEL_DOMAIN" ]; then
-        printf '\n  A certificate will be obtained for that name automatically.\n'
-        printf '  Point the record at this machine first and leave port 80\n'
-        printf '  reachable from the internet - that is how it is checked.\n'
+        printf '\n  The padlock certificate is requested for you, automatically.\n'
+        printf '  Make sure the domain already points at this server, and that\n'
+        printf '  port 80 is open to the internet - that is how it is checked.\n'
     fi
 fi
 
@@ -1688,10 +1709,10 @@ if [ -n "${ASK_TUNNEL:-}" ] && [ -z "$TUNNEL" ]; then
         ask_tunnel
     elif [ -z "${SYNC_TOKEN:-}" ]; then
         printf '\n%sTunnel%s\n\n' "$B" "$N"
-        printf '  Run the installer with --tunnel on the exit first. It prints a new\n'
-        printf '  pairing token that carries its answer: paste it here, or press enter\n'
-        printf '  to keep the tunnel this relay has now.\n\n'
-        read -r -p "  pairing token: " SYNC_TOKEN
+        printf '  Run the installer with --tunnel on the abroad server first. It prints a\n'
+        printf '  new connection code: paste it here, or press Enter to keep things as\n'
+        printf '  they are now.\n\n'
+        read -r -p "  connection code: " SYNC_TOKEN
     fi
 fi
 # One machine has nothing to tunnel between.
@@ -1749,20 +1770,31 @@ fi
 [ "$TUNNEL" = backpack ] || TUNNEL_PRESET=""
 if [ "$TUNNEL" = backpack ]; then
     case "$TUNNEL_DIRECTION" in l3) d=direct ;; direct) d="the old direct" ;; *) d="$TUNNEL_DIRECTION" ;; esac
-    TUNNEL_OUT="BackPack, $TUNNEL_TRANSPORT, $d, port $TUNNEL_PORT${TUNNEL_PRESET:+, $TUNNEL_PRESET}"
+    TUNNEL_OUT="secure tunnel - $TUNNEL_TRANSPORT, $d, port $TUNNEL_PORT${TUNNEL_PRESET:+, $TUNNEL_PRESET}"
 else
-    TUNNEL_OUT="none - the relay reaches the exit directly"
+    TUNNEL_OUT="plain - the Iran server reaches the abroad server directly"
 fi
 
-printf '\n%sAbout to configure:%s\n' "$B" "$N"
+printf '\n%sReady to install%s\n\n' "$B" "$N"
+case "$ROLE" in
+    node)   what="an extra abroad server" ;;
+    relay)  what="the Iran server" ;;
+    exit)   what="the main abroad server (with the control panel)" ;;
+    single) what="one server that does everything" ;;
+    *)      what="$ROLE" ;;
+esac
 if [ "$ROLE" = node ]; then
-    printf '    role   : node\n    this   : %s\n    panel  : %s\n\n' "$EXIT_IP" "$PANEL_IP"
+    printf '    this server : %s - %s\n    panel is on : %s\n\n' "$EXIT_IP" "$what" "$PANEL_IP"
+elif [ "$ROLE" = single ]; then
+    printf '    this server : %s - %s\n\n' "$RELAY_IP" "$what"
 else
-    printf '    role   : %s\n    relay  : %s\n    exit   : %s\n    tunnel : %s\n\n' "$ROLE" "$RELAY_IP" "$EXIT_IP" "$TUNNEL_OUT"
+    printf '    this server : %s - %s\n' "$SELF_IP" "$what"
+    printf '    the other   : %s\n' "$PEER_IP"
+    printf '    connection  : %s\n\n' "${TUNNEL_OUT:-plain}"
 fi
 if [ -z "${ASSUME_YES:-}" ] && [ -z "$UPGRADE" ]; then
-    read -r -p "  proceed? [y/N]: " ok
-    case "$ok" in y|Y|yes) ;; *) die "cancelled" ;; esac
+    read -r -p "  install now? [y/N]: " ok
+    case "$ok" in y|Y|yes) ;; *) die "stopped - nothing was changed" ;; esac
 fi
 
 export DEBIAN_FRONTEND=noninteractive
@@ -1978,8 +2010,8 @@ if [ "$TUNNEL" = backpack ] && ! install_backpack; then
     if [ -x "$BACKPACK_BIN" ]; then
         warn "keeping BackPack $(cut -d' ' -f1 "$BACKPACK_BIN.version" 2>/dev/null) that is already here"
     else
-        warn "no tunnel this run - the relay reaches the exit directly"
-        TUNNEL=off; TUNNEL_SPEC=""; TUNNEL_OUT="none - BackPack could not be installed"
+        warn "no tunnel this time - the Iran server reaches the abroad server directly"
+        TUNNEL=off; TUNNEL_SPEC=""; TUNNEL_OUT="plain - the tunnel software could not be downloaded"
     fi
 elif [ "$TUNNEL" != backpack ] && [ "$ROLE" != single ]; then
     # Here all the same, on a relay or an exit with no tunnel now: the admin
@@ -2450,40 +2482,47 @@ EOF
             # have tomorrow - a generated one gets pasted somewhere careless
             # or lost. Both have answers, so pressing enter is fine.
             if [ -z "${ASSUME_YES:-}" ]; then
-                printf '\n%sAdmin panel%s\n\n' "$B" "$N"
+                printf '\n%sControl panel%s - the page where you manage everything\n\n' "$B" "$N"
                 if [ -z "${ADMIN_PORT:-}" ]; then
-                    # Said before the question rather than after a rejected
-                    # answer: an operator who has already typed 443 has
-                    # usually also written it into a firewall rule.
-                    warn "these ports are taken - do not pick one of them:"
-                    warn "    22    ssh"
-                    warn "    53    dns"
-                    warn "    80    the proxy, and how certificates are proved"
-                    warn "   443    the proxy"
-                    warn "  8443    the sync API the relays connect to"
-                    warn "  8445    the bot API"
-                    warn "  8446    the exit's own route to Google over IPv6"
-                    warn " 18119    the exit's own route to Battle.net"
-                    warn "  1119    Battle.net's launcher"
-                    warn "  4070    Spotify's access point"
-                    warn "on a relay, 3478 is taken as well."
-                    warn "pick anything else, and open it in your firewall."
-                    printf '\n'
-                    read -r -p "  port to serve it on [9443]: " ADMIN_PORT
+                    # Most people want the usual port and are asked nothing more.
+                    # Whoever wants another is told first which ones are taken,
+                    # before typing: one already typed is usually in a firewall
+                    # rule by then.
+                    read -r -p "  use the usual port for the panel, 9443? [Y/n]: " ok
+                    case "$ok" in
+                        n|N|no)
+                            warn "these ports are taken - do not pick one of them:"
+                            warn "    22    ssh"
+                            warn "    53    dns"
+                            warn "    80    the proxy, and how certificates are proved"
+                            warn "   443    the proxy"
+                            warn "  8443    the sync API the Iran servers connect to"
+                            warn "  8445    the bot API"
+                            warn "  8446    the abroad server's own route to Google over IPv6"
+                            warn " 18119    the abroad server's own route to Battle.net"
+                            warn "  1119    Battle.net's launcher"
+                            warn "  4070    Spotify's access point"
+                            warn "on an Iran server, 3478 is taken as well."
+                            warn "pick anything else, and open it in your firewall."
+                            printf '\n'
+                            read -r -p "  port to serve it on [9443]: " ADMIN_PORT ;;
+                        *) ADMIN_PORT=9443 ;;
+                    esac
+                    info "if this server has a firewall, open port ${ADMIN_PORT:-9443} in it"
                 fi
                 if [ -z "${ADMIN_USER:-}" ]; then
-                    read -r -p "  username [admin]: " ADMIN_USER
+                    read -r -p "  your username [admin]: " ADMIN_USER
                 fi
                 if [ -z "${ADMIN_PASS:-}" ]; then
-                    printf '  password [enter for a generated one]: '
+                    printf '  your password (Enter = we make a strong one for you): '
                     read -rs ADMIN_PASS; printf '\n'
                     if [ -n "$ADMIN_PASS" ]; then
-                        printf '  again: '
+                        printf '  the same password again: '
                         read -rs ADMIN_PASS2; printf '\n'
                         [ "$ADMIN_PASS" = "$ADMIN_PASS2" ] \
-                            || die "the two passwords did not match"
+                            || die "the two passwords were not the same - run the installer again"
                         [ "${#ADMIN_PASS}" -ge 8 ] \
-                            || die "use a password of 8 characters or more"
+                            || die "please use a password of at least 8 characters"
                     fi
                 fi
             fi
@@ -3002,9 +3041,9 @@ if [ "$TUNNEL" = backpack ]; then
 fi
 
 if [ -n "$SYNC_TOKEN_OUT" ]; then
-    printf '    %sPairing token%s - run the installer on the relay and paste this when
-    it asks. It carries both the shared secret and the fingerprint of this
-    machine'"'"'s certificate, so the relay will talk to this server and no other.
+    printf '    %sConnection code%s - run the installer on the Iran server, choose
+    "Iran server", and paste this when it asks. It makes sure that server talks
+    to this one and to nobody else. Keep it private.
 
         %s
 
@@ -3014,8 +3053,8 @@ fi
 # The tunnel was asked again here: the relay has not heard yet, and it will not
 # until it is given the token above.
 if [ -n "${ASK_TUNNEL:-}" ] && [ "$ROLE" = exit ]; then
-    printf '    %sNow the relay%s: run the installer there with --tunnel and paste the\n' "$Y" "$N"
-    printf '    pairing token above. Until then it goes straight to this exit.\n\n'
+    printf '    %sNow the Iran server%s: run the installer there with --tunnel and paste the\n' "$Y" "$N"
+    printf '    connection code above. Until then it connects straight to this server.\n\n'
 fi
 
 if [ -n "$JOINED" ]; then
@@ -3030,6 +3069,24 @@ if [ "$ROLE" = node ]; then
 
 ' "$B" "$N" "$PANEL_IP"
 fi
+
+# What to do now, in order, for whoever has just finished.
+case "$ROLE" in
+    exit)
+        printf '    %sWhat to do next%s\n' "$B" "$N"
+        printf '      1. Open the control panel link above and sign in.\n'
+        printf '      2. Set up the Iran server: run this installer there, choose "Iran server",\n'
+        printf '         and paste the connection code.\n'
+        printf '      3. Then point your customers'"'"' DNS at the Iran server'"'"'s IP address.\n\n' ;;
+    relay)
+        printf '    %sWhat to do next%s\n' "$B" "$N"
+        printf '      Give your customers this server'"'"'s IP address, %s, as their DNS.\n' "$RELAY_IP"
+        printf '      Everything else is managed from the control panel on the abroad server.\n\n' ;;
+    single)
+        printf '    %sWhat to do next%s\n' "$B" "$N"
+        printf '      Open the control panel link above, then give your customers this\n'
+        printf '      server'"'"'s IP address as their DNS.\n\n' ;;
+esac
 
 printf '    Every command there is, in one menu:  %ssudo smartdns-menu%s\n\n' "$B" "$N"
 

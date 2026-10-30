@@ -303,9 +303,8 @@ def act(**form):
     return r.to
 
 
-check("the first relay's tunnel is the installer's, not set here",
-      act(ip="198.51.100.1", on="1", direction="reverse", transport="stealth",
-          port="9000").startswith("nodes?m=!"))
+check("the first relay's tunnel is the installer's: it can be changed, never switched off here",
+      act(ip="198.51.100.1", on="0").startswith("nodes?m=!"))
 check("a direct transport there is none of is refused",
       act(ip="198.51.100.2", on="1", direction="direct", transport="kcp",
           port="9000").startswith("nodes?m=!"))
@@ -349,8 +348,9 @@ admin.STORE.run("INSERT INTO settings (key, value) VALUES ('relay_tunnel_state:1
                 (json.dumps({"on": True, "running": True, "error": ""}),))
 check("  and both ends up once they are",
       "روشن در هر دو سر" in admin.tunnel_cell("p", "198.51.100.2"))
-check("  the installer's own shown as the installer's",
-      "--tunnel" in admin.tunnel_cell("p", "198.51.100.1"))
+check("  the installer's own is shown, and can be changed from the form",
+      "name='transport'" in admin.tunnel_cell("p", "198.51.100.1")
+      and "value='0'" not in admin.tunnel_cell("p", "198.51.100.1"))
 exits.clear()
 act(ip="198.51.100.2", on="0")
 check("off: its BackPack stopped and its files gone",

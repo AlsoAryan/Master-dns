@@ -120,9 +120,9 @@ print("the installer")
 check("a single machine is a relay and an exit at once",
       'is_relay() { [ "$ROLE" = relay ] || [ "$ROLE" = single ]; }' in LOGIC
       and 'is_exit()  { [ "$ROLE" = exit ] || [ "$ROLE" = single ] || [ "$ROLE" = node ]; }' in LOGIC)
-check("offered as the third choice", "3) single - both on one server abroad" in LOGIC
+check("offered as the third choice", "3) One server only" in LOGIC
       and "3|single) ROLE=single; break ;;" in LOGIC)
-check("with the trade said plainly", "customers reach it directly from Iran" in LOGIC)
+check("with the trade said plainly", "customers reach it straight from Iran" in LOGIC)
 check("one address, both ends", 'RELAY_IP="$SELF_IP"; EXIT_IP="$SELF_IP"; PEER_IP="$SELF_IP"' in LOGIC
       and '[ -z "$PEER_IP" ] && [ "$ROLE" != single ]' in LOGIC)
 check("no tunnel", '{ [ "$ROLE" = single ] || [ "$ROLE" = node ]; } && TUNNEL=off' in LOGIC)

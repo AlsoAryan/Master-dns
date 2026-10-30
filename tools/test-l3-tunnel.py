@@ -122,9 +122,9 @@ if BASH:
           == "l3 xdi 8477"
           and "1" in sh('parse_tunnel_spec bp-kcp-8477-l || echo 1'))
     got = sh('ask_tunnel >/dev/null; echo "$TUNNEL_DIRECTION $TUNNEL_TRANSPORT $TUNNEL_PORT"',
-             "2\n2\n2\n8477\n")
+             "3\n2\n2\n8477\n")
     check("  asked for as direct, the second choice, xdi among its carriers", got == "l3 xdi 8477", got)
-    menu = sh("ask_tunnel", "2\n2\n\n\n")
+    menu = sh("ask_tunnel", "3\n2\n\n\n")
     check("  its five carriers, and only those",
           all(re.search(r"\) %s " % t, menu) for t in ("pck", "xdi", "sni", "quic", "udp"))
           and not re.search(r"\) (stealth|wss|kcp|tcp) ", menu), menu[-400:])

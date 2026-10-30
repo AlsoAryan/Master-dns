@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-label="How Master DNS fits together">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5fe3f2"/>
+    </marker>
+    <style>
+      .box{fill:#14183a;stroke:#3b4590;stroke-width:2}
+      .hot{fill:#16224d;stroke:#5fe3f2;stroke-width:2.5}
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#e8ecff}
+      .h{font-size:20px;font-weight:700}.s{font-size:14px;fill:#9fb3ff}
+      .w{stroke:#5fe3f2;stroke-width:3;fill:none}
+      .d{stroke:#7c86c9;stroke-width:2;stroke-dasharray:6 7;fill:none}
+    </style>
+  </defs>
+  <rect width="960" height="360" rx="24" fill="#0c0f26"/>
+  <rect class="box" x="30" y="120" width="190" height="120" rx="18"/>
+  <text class="t h" x="125" y="168" text-anchor="middle">Customer</text>
+  <text class="t s" x="125" y="194" text-anchor="middle">phone · PS5 · PC</text>
+  <text class="t s" x="125" y="214" text-anchor="middle">uses the Iran server as DNS</text>
+
+  <rect class="hot" x="300" y="105" width="190" height="150" rx="18"/>
+  <text class="t h" x="395" y="150" text-anchor="middle">Iran server</text>
+  <text class="t s" x="395" y="176" text-anchor="middle">answers DNS</text>
+  <text class="t s" x="395" y="196" text-anchor="middle">forwards the connection</text>
+  <text class="t s" x="395" y="216" text-anchor="middle">customer page</text>
+
+  <rect class="hot" x="570" y="105" width="190" height="150" rx="18"/>
+  <text class="t h" x="665" y="150" text-anchor="middle">Abroad server</text>
+  <text class="t s" x="665" y="176" text-anchor="middle">reaches the service</text>
+  <text class="t s" x="665" y="196" text-anchor="middle">control panel · database</text>
+  <text class="t s" x="665" y="216" text-anchor="middle">Telegram bot · API</text>
+
+  <rect class="box" x="810" y="120" width="125" height="120" rx="18"/>
+  <text class="t h" x="872" y="176" text-anchor="middle">Service</text>
+  <text class="t s" x="872" y="200" text-anchor="middle">games · apps</text>
+
+  <path class="w" d="M220 180 H298" marker-end="url(#a)"/>
+  <path class="w" d="M492 165 H568" marker-end="url(#a)"/>
+  <path class="w" d="M762 180 H808" marker-end="url(#a)"/>
+  <path class="d" d="M492 205 H568" marker-end="url(#a)"/>
+  <text class="t s" x="530" y="152" text-anchor="middle">secure tunnel</text>
+  <text class="t s" x="530" y="232" text-anchor="middle">or direct</text>
+
+  <rect class="box" x="420" y="296" width="340" height="44" rx="12"/>
+  <text class="t s" x="590" y="324" text-anchor="middle">Extra abroad servers join the same panel (Nodes)</text>
+  <path class="d" d="M665 256 V294"/>
+</svg>

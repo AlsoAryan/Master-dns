@@ -1,48 +1,62 @@
 <div align="center">
 
-# Master DNS
+<img src="docs/banner.svg" alt="Master DNS" width="100%">
 
-**A smart-DNS service you can sell: relay, exit, panels, quotas and a bot, installed with one script.**
+**Smart DNS for Iran you can run — and sell — in an afternoon.**
+One script. Two servers. One control panel.
 
 *[فارسی](README.fa.md)*
 
 </div>
 
-Master DNS lets people in Iran reach services that block them. A **relay**
-inside the country answers DNS for the blocked domains with its own address
-and carries the connections abroad through an **exit** server. Everything else
-resolves normally and goes direct.
+---
 
-It is a whole service, not only a proxy: per-customer access control, traffic
-quotas, speed limits, a customer panel, an operator panel, selling, a Telegram
-bot and an API. No dependencies beyond what Debian ships.
+## The idea in 30 seconds
 
-```
- customer ──DNS──▶ relay (Iran) ──TLS passthrough──▶ exit (abroad) ──▶ service
- PS5 / phone       dnsmasq + nginx + nftables         nginx (SNI)
-```
+People in Iran point their phone, PC or console at **your Iran server** as their DNS.
+Blocked sites are answered with that server's address; the connection then travels,
+untouched, to **your server abroad**, which reaches the service. Everything else
+loads the normal way.
 
-The relay never terminates TLS: nginx reads the SNI from the handshake and
-opens a TCP tunnel to the exit, so nothing is decrypted and no certificate is
-shown to the client. Port 80 is forwarded as well, because console game
-packages are served over plain HTTP.
+<p align="center"><img src="docs/architecture.svg" alt="Customer → Iran server → secure tunnel → abroad server → service" width="100%"></p>
 
-## Install
+Nothing is decrypted on the way: the Iran server only reads which site is being asked
+for and passes the connection on. And it is a whole service, not just a proxy — customers,
+quotas, speed limits, a customer page, a control panel, selling, a Telegram bot and an API.
+
+## What's new in 0.0.9
+
+| | |
+|---|---|
+| 🔀 **Change the tunnel from the panel** | *Settings → "How the Iran server connects to the exit server"*: pick another connection style and both servers switch within a minute. No SSH. |
+| 🗺️ **A map of your servers** | The *Nodes* page now shows every server as a card with its own **name**, health bars and a live line to the server it goes through. |
+| 🧰 **A friendlier installer** | Plain words, one suggested answer for every question, a secure tunnel in one keypress, and a "what to do next" list at the end. |
+| 🧭 **A tidier Settings page** | Four clear sections with quick links on top. |
+| 🛡️ **Safer panel** | A content-security policy, a check that refuses requests coming from other websites, and stricter browser headers. |
+| 🐞 **Fixed** | The menu behind a user's three dots had no background and was drawn under the next rows. |
+
+## Quick start
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/AlsoAryan/Master-dns/main/master-dns.sh
 sudo bash master-dns.sh
 ```
 
-It downloads first instead of piping, on purpose: the configs live inside the
-script and it asks questions. It refuses to run if the file is cut short.
+1. **On the server abroad**: run it and choose *Abroad server*. When it finishes it shows
+   the control-panel link, your username and password, and a **connection code**.
+2. **On the server in Iran**: run it, choose *Iran server*, and paste the connection code.
+3. Give your customers the Iran server's IP address as their DNS. Manage everything from
+   the control panel.
 
-| Role | Where | What it does |
+It downloads first instead of piping, on purpose: the configs live inside the script and it
+asks questions. It refuses to run if the file is cut short.
+
+| You choose | Where | What it does |
 |---|---|---|
-| **exit** | a server abroad | the panel, the database, the way out. Install it first; it prints a pairing token |
-| **relay** | a server in Iran | answers DNS, serves the customer panel. Paste the token when asked |
-| **single** | one server abroad | all of the above on one machine, `ROLE=single`. Good for trying it out |
-| **node** | another server abroad | one more exit, added from the admin panel's *Nodes* page |
+| **Abroad server** (`exit`) | a server abroad | the panel, the database, the way out. Install it first; it prints a connection code |
+| **Iran server** (`relay`) | a server in Iran | answers DNS, serves the customer page. Paste the code when asked |
+| **One server only** (`single`) | one server abroad | all of the above on one machine, `ROLE=single`. Good for trying it out |
+| **Extra abroad server** (`node`) | another server abroad | one more way out, added from the panel's *Nodes* page |
 
 The installer numbers and times each step and ends with a summary. `sudo bash master-dns.sh --check` first looks at the machine (system, systemd, memory, disk,
 address, ports 53, 80 and 443) and changes nothing; an install ends with a timeline of where

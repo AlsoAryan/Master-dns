@@ -81,7 +81,7 @@ r = run(whole)
 out = r.stdout + r.stderr
 check("it did not call itself incomplete", "incomplete" not in out, out[-200:])
 check("and it got as far as asking which side this machine is",
-      "Which side is this machine" in out, out[-300:])
+      "Which server is this?" in out, out[-300:])
 
 print("a file cut off inside the payloads refuses to run")
 # Still valid bash and still 300 KB: neither `bash -n` nor a size check would

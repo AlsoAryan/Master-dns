@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 260" role="img" aria-label="Master DNS">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1442"/><stop offset="0.55" stop-color="#18306b"/><stop offset="1" stop-color="#0d6b7a"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b79cff"/><stop offset="1" stop-color="#5fe3f2"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.8" cy="0.2" r="0.7">
+      <stop offset="0" stop-color="#5fe3f2" stop-opacity="0.35"/><stop offset="1" stop-color="#5fe3f2" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="960" height="260" rx="28" fill="url(#bg)"/>
+  <rect width="960" height="260" rx="28" fill="url(#glow)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1.5">
+    <path d="M620 60 C 700 20, 780 120, 860 70"/><path d="M600 130 C 690 90, 790 190, 900 140"/>
+    <path d="M640 200 C 720 160, 800 230, 920 190"/>
+  </g>
+  <g fill="#5fe3f2">
+    <circle cx="620" cy="60" r="6"/><circle cx="860" cy="70" r="6"/><circle cx="600" cy="130" r="6"/>
+    <circle cx="900" cy="140" r="6"/><circle cx="640" cy="200" r="6"/><circle cx="920" cy="190" r="6"/>
+  </g>
+  <text x="56" y="128" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="82" font-weight="800" fill="url(#ink)">Master DNS</text>
+  <text x="60" y="176" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" fill="#e8ecff">Smart DNS for Iran — one script, two servers, one panel.</text>
+  <text x="60" y="214" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="18" fill="#9fb3ff">version 0.0.9</text>
+</svg>

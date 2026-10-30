@@ -2147,6 +2147,79 @@ def apply_exit_tunnel(ip):
     return ""
 
 
+MAIN_TUNNEL_DIR = "/etc/smart-dns/tunnel"
+MAIN_TUNNEL_NFT = "/etc/nftables.d/40-smartdns-tunnel.conf"
+MAIN_TUNNEL_UNIT = "smartdns-tunnel.service"
+
+
+def main_tunnel_spec(ip):
+    """The tunnel the installer made to relay `ip`, once the admin has taken it
+    over in the panel's settings: its spec, or {} while it is still the
+    installer's own."""
+    spec = relay_tunnel(ip)
+    return spec if spec.get("main") else {}
+
+
+def apply_main_tunnel(ip):
+    """This exit's end of the installer's tunnel, as the panel's settings have
+    it: the installer's own files and service, written the same way, so an
+    installer run later finds nothing to change. \"\" or why not."""
+    spec = main_tunnel_spec(ip)
+    if not spec:
+        return ""
+    secret = read_env(PANEL_ENV).get("SYNC_SECRET") or ""
+    if not secret:
+        return "SYNC_SECRET در panel.env نیست"
+    if not os.access(BACKPACK_BIN, os.X_OK):
+        return "BackPack روی این سرور نصب نیست؛ نصب‌کننده را یک بار دیگر اجرا کنید"
+    os.makedirs(MAIN_TUNNEL_DIR, mode=0o700, exist_ok=True)
+    path = os.path.join(MAIN_TUNNEL_DIR, "tunnel.toml")
+    text = exit_tunnel_toml(ip, spec, secret, MAIN_TUNNEL_DIR)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            changed = fh.read() != text
+    except OSError:
+        changed = True
+    if changed:
+        with open(path + ".tmp", "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.chmod(path + ".tmp", 0o600)
+        os.replace(path + ".tmp", path)
+    if spec["direction"] != "reverse":
+        port = spec["port"]
+        rules = ("# written by master dns: the tunnel's port answers %s only\n"
+                 "table inet smartdns_tunnel\ndelete table inet smartdns_tunnel\n"
+                 "table inet smartdns_tunnel {\n    chain input {\n"
+                 "        type filter hook input priority -5 ; policy accept ;\n"
+                 "        tcp dport %d ip saddr != %s drop\n"
+                 "        udp dport %d ip saddr != %s drop\n"
+                 "        meta nfproto ipv6 tcp dport %d drop\n"
+                 "        meta nfproto ipv6 udp dport %d drop\n    }\n}\n"
+                 % (ip, port, ip, port, ip, port, port))
+        os.makedirs(os.path.dirname(MAIN_TUNNEL_NFT), exist_ok=True)
+        with open(MAIN_TUNNEL_NFT, "w", encoding="utf-8") as fh:
+            fh.write(rules)
+        subprocess.run(["nft", "-f", MAIN_TUNNEL_NFT], capture_output=True, timeout=30)
+    elif os.path.exists(MAIN_TUNNEL_NFT):
+        os.unlink(MAIN_TUNNEL_NFT)
+        subprocess.run(["nft", "delete", "table", "inet", "smartdns_tunnel"],
+                       capture_output=True, timeout=30)
+    # What an installer run or an upgrade keeps, unasked.
+    for key, value in (("TUNNEL", "backpack"), ("TUNNEL_TRANSPORT", spec["transport"]),
+                       ("TUNNEL_DIRECTION", spec["direction"]), ("TUNNEL_PORT", str(spec["port"])),
+                       ("TUNNEL_PRESET", spec.get("preset") or "")):
+        if read_env(PANEL_ENV).get(key, "") != value:
+            set_env_list(key, [value])
+    subprocess.run(["systemctl", "enable", MAIN_TUNNEL_UNIT], capture_output=True, timeout=60)
+    active = subprocess.run(["systemctl", "is-active", "--quiet", MAIN_TUNNEL_UNIT],
+                            timeout=30).returncode == 0
+    if changed or not active:
+        subprocess.run(["systemctl", "restart", MAIN_TUNNEL_UNIT], capture_output=True, timeout=60)
+        log(INFO, "main tunnel to relay %s: %s, %s, port %d"
+            % (ip, spec["transport"], spec["direction"], spec["port"]))
+    return ""
+
+
 def apply_exit_tunnels():
     """Every relay's tunnel as set, and none for a relay no longer served -
     when the panel starts, so an installer run in between changes nothing."""
@@ -2154,6 +2227,16 @@ def apply_exit_tunnels():
     mine = installer_tunnel()
     for ip in ips:
         if mine and ip == mine["relay"]:
+            if main_tunnel_spec(ip):
+                # Taken over in the settings: the panel keeps the installer's
+                # own files at what the settings say.
+                try:
+                    why = apply_main_tunnel(ip)
+                    if why:
+                        log(WARN, "main tunnel to relay %s: %s" % (ip, why))
+                except Exception as e:
+                    log(WARN, "main tunnel to relay %s not set up: %r" % (ip, e))
+                continue
             # The installer's now: one tunnel to a relay, not two.
             if os.path.isdir(os.path.join(RELAY_TUNNELS, ip)):
                 STORE.run("DELETE FROM settings WHERE key = ?", ("relay_tunnel:" + ip,))
@@ -2188,12 +2271,13 @@ def tunnel_block(p, ip, to):
     main = to == here
     label = ("<b dir='ltr'>%s</b>: " % html.escape(to)) if node_list() else ""
     mine = installer_tunnel()
-    if main and mine and ip == mine["relay"]:
-        return ("<div>%s<span class='muted'>BackPack، %s، %s، درگاه %s — از نصب‌کننده؛ با "
-                "<code>--tunnel</code> عوض می‌شود</span></div>"
-                % ((label,) + tuple(html.escape(mine[k]) for k in ("transport", "direction",
-                                                                    "port"))))
+    owned = bool(main and mine and ip == mine["relay"])
     spec = relay_tunnel(ip, to)
+    if owned and not spec.get("main"):
+        # Still the installer's own: shown as it is, and changeable from here.
+        spec = {"transport": mine["transport"], "direction": mine["direction"],
+                "port": int(mine["port"] or 0),
+                "preset": read_env(PANEL_ENV).get("TUNNEL_PRESET") or ""}
     key = "relay_tunnel_state:" + ip if main else "relay_tunnel_state:%s:%s" % (ip, to)
     row = STORE.one("SELECT value FROM settings WHERE key = ?", (key,))
     try:
@@ -2203,7 +2287,8 @@ def tunnel_block(p, ip, to):
     if spec:
         if main:
             there = subprocess.run(["systemctl", "is-active", "--quiet",
-                                    "smartdns-tunnel@%s" % ip], timeout=30).returncode == 0
+                                    "smartdns-tunnel" if owned else "smartdns-tunnel@%s" % ip],
+                                   timeout=30).returncode == 0
         else:
             row = STORE.one("SELECT value FROM settings WHERE key = ?",
                             ("node_tunnel_state:%s:%s" % (to, ip),))
@@ -2212,7 +2297,10 @@ def tunnel_block(p, ip, to):
                                          DIRECTION_WORDS.get(spec["direction"], ""),
                                          spec["port"]) + (
             "، " + spec["preset"] if spec.get("preset") else "")
-        if seen.get("error"):
+        if owned and not relay_tunnel(ip, to).get("main"):
+            state = ("<span class='ok'>روشن</span>" if there else
+                     "<span class='warn'>سرویس روی سرور خارج کار نمی‌کند</span>")
+        elif seen.get("error"):
             state = "<span class='warn'>رله: %s</span>" % html.escape(seen["error"])
         elif not seen.get("on"):
             state = "<span class='warn'>رله هنوز نگرفته است</span>"
@@ -2241,7 +2329,7 @@ def tunnel_block(p, ip, to):
         % (k, " ".join(d for d in TUNNEL_TRANSPORTS if preset_ok(d, "kcp", k)),
            " selected" if k == spec.get("preset", "") else "", PRESET_WORDS[k])
         for k in ("",) + TUNNEL_PRESETS)
-    return (
+    page = (
         "<details><summary>%s%s</summary><form method='post' action='/%s/relay-tunnel' style='margin-top:8px' onchange='tunnelPick(this)'><input type='hidden' name='ip' value='%s'><input type='hidden' name='exit' value='%s'><label style='display:block'><input type='radio' name='on' value='0'%s> "
         "خاموش — رله مستقیم به سرور خارج وصل "
         "شود</label><label style='display:block'><input type='radio' name='on' value='1'%s> تونل "
@@ -2268,6 +2356,129 @@ def tunnel_block(p, ip, to):
            "<option value='direct' selected>مستقیم قدیمی — دیگر انتخاب نمی‌شود</option>"
            if direction == "direct" else "", options,
            spec.get("port") or 8444, presets, TUNNEL_PICK))
+    if owned:
+        # The installer's own tunnel is never "off" from here: the panel changes
+        # how it goes, and `smartdns-tunnel off` stops it.
+        page = page.replace("<label style='display:block'><input type='radio' name='on' value='0'>"
+                            " خاموش — رله مستقیم به سرور خارج وصل شود</label>", "")
+        page = page.replace("name='on' value='1' checked>", "name='on' value='1' checked hidden>")
+    return page
+
+
+
+# The same transports, in the words of someone who has never heard of them.
+TRANSPORT_FRIENDLY = {
+    "stealth": "مخفی و رمزشده — پیشنهاد ما",
+    "wss": "شبیه یک سایت معمولی (HTTPS)",
+    "wssmux": "شبیه یک سایت معمولی، چند مسیر در یک اتصال",
+    "tcp": "ساده — بدون رمز، سریع، ولی دیده می‌شود",
+    "tcpmux": "ساده، چند مسیر در یک اتصال — بدون رمز",
+    "kcp": "برای اینترنتی که بسته گم می‌کند (UDP)",
+    "pck": "برای مسیری که اتصال برقرار می‌شود و بعد قطع می‌شود",
+    "quic": "UDP نسل تازه — ممکن است وصل نشود",
+    "ws": "وب‌سوکت — بدون رمز",
+    "wsmux": "وب‌سوکت، چند مسیر در یک اتصال — بدون رمز",
+    "xdi": "داخل پینگ — برای جایی که فقط پینگ رد می‌شود",
+    "sni": "شروع با نام یک سایت مجاز",
+    "udp": "UDP خام — ممکن است وصل نشود",
+}
+
+
+def tunnel_settings_card(p):
+    """Settings: how the relay and the exit are joined, changed for both of
+    them with one button - the form is the relays card's, in plainer words,
+    and answers on this page."""
+    if one_server():
+        return ""
+    here = exit_address()
+    ips = [ip for ip in relay_list() if not is_single_server(ip)]
+    if not ips:
+        return ""
+    mine = installer_tunnel()
+    out = ["<div class='card' id='tunnel'><h2>راه ارتباط سرور ایران با سرور خارج</h2>"
+           "<p class='muted'>رله (سرور ایران) و سرور خارج با یک «تونل» به هم وصل‌اند. اگر روشی "
+           "که الان کار می‌کند کند یا ناپایدار شد، این‌جا روش را عوض کنید؛ تغییر روی <b>هر دو "
+           "سرور</b> اعمال می‌شود و تا یک دقیقه دیگر وصل است. تا وصل شدن، رله مستقیم به سرور "
+           "خارج می‌رود و مشتری‌ها قطع نمی‌شوند.</p>"]
+    for ip in ips:
+        owned = bool(mine and ip == mine["relay"])
+        spec = relay_tunnel(ip)
+        if owned and not spec.get("main"):
+            spec = {"transport": mine["transport"], "direction": mine["direction"],
+                    "port": int(mine["port"] or 0),
+                    "preset": read_env(PANEL_ENV).get("TUNNEL_PRESET") or ""}
+        name = server_name(ip)
+        head = "<b>%s</b> <code dir='ltr'>%s</code>" % (html.escape(name), html.escape(ip)) \
+            if name != ip else "<code dir='ltr'>%s</code>" % html.escape(ip)
+        if not spec:
+            out.append("<div class='tun'><div class='tunhead'>%s <span class='pill'>بدون تونل — "
+                       "مستقیم</span></div>" % head)
+            spec = {}
+        else:
+            exit_on = subprocess.run(
+                ["systemctl", "is-active", "--quiet",
+                 "smartdns-tunnel" if owned else "smartdns-tunnel@%s" % ip],
+                timeout=30).returncode == 0
+            row = STORE.one("SELECT value FROM settings WHERE key = ?",
+                            ("relay_tunnel_state:" + ip,))
+            try:
+                seen = json.loads(row["value"]) if row and row["value"] else {}
+            except ValueError:
+                seen = {}
+            fresh = owned and not relay_tunnel(ip).get("main")
+            if fresh:
+                relay_end = ("", "از نصب‌کننده")
+            elif seen.get("error"):
+                relay_end = ("bad", seen["error"])
+            elif not seen.get("on"):
+                relay_end = ("warn", "هنوز نگرفته")
+            else:
+                relay_end = ("ok", "روشن") if seen.get("running") else ("warn", "خاموش")
+            out.append(
+                "<div class='tun'><div class='tunhead'>%s <span class='pill %s'>سرور خارج: %s"
+                "</span>%s</div><p class='muted'>روش فعلی: <b dir='ltr'>%s</b> — %s</p>"
+                % (head, "ok" if exit_on else "warn", "روشن" if exit_on else "خاموش",
+                   "" if relay_end[0] == "" and fresh else
+                   " <span class='pill %s'>رله: %s</span>" % (relay_end[0], html.escape(relay_end[1])),
+                   html.escape(spec["transport"]),
+                   html.escape(TRANSPORT_FRIENDLY.get(spec["transport"], ""))))
+        direction = spec.get("direction") or "reverse"
+        options = "".join(
+            "<option value='%s' data-d='%s'%s>%s</option>"
+            % (t, " ".join(d for d in TUNNEL_TRANSPORTS if t in TUNNEL_TRANSPORTS[d]),
+               " selected" if t == spec.get("transport", "stealth") else "",
+               html.escape(TRANSPORT_FRIENDLY.get(t, t)) + " (%s)" % t)
+            for t in TUNNEL_TRANSPORTS["reverse"] + ("sni",))
+        presets = "".join(
+            "<option value='%s' data-d='%s'%s>%s</option>"
+            % (k, " ".join(d for d in TUNNEL_TRANSPORTS if preset_ok(d, "kcp", k)),
+               " selected" if k == spec.get("preset", "") else "", PRESET_WORDS[k])
+            for k in ("",) + TUNNEL_PRESETS)
+        out.append(
+            "<form method='post' action='/%s/relay-tunnel' class='row' onchange='tunnelPick(this)'>"
+            "<input type='hidden' name='ip' value='%s'><input type='hidden' name='exit' value='%s'>"
+            "<input type='hidden' name='on' value='1'><input type='hidden' name='back' "
+            "value='settings'><label style='margin:0'>روش اتصال</label><select name='transport'>"
+            "%s</select><button>اعمال روی هر دو سرور</button>"
+            "<details style='flex-basis:100%%'><summary class='muted'>تنظیمات پیشرفته</summary>"
+            "<div class='row' style='margin-top:8px'><label style='margin:0'>کدام سر وصل شود</label>"
+            "<select name='direction'><option value='reverse'%s>سرور خارج به رله وصل شود"
+            "</option>%s%s</select><label style='margin:0'>درگاه</label>"
+            "<input name='port' value='%s' dir='ltr' style='width:90px'>"
+            "<label style='margin:0'>سرعت</label><select name='preset'>%s</select></div>"
+            "<p class='muted'>درگاه این تونل روی رله (حالت پیش‌فرض) یا روی سرور خارج باز "
+            "می‌شود؛ اگر فایروال دارید باید بازش کنید.</p></details></form>%s</div>"
+            % (p, html.escape(ip), html.escape(here), options,
+               " selected" if direction == "reverse" else "",
+               "<option value='l3'%s>رله به سرور خارج وصل شود</option>"
+               % (" selected" if direction == "l3" else ""),
+               "<option value='direct' selected>مستقیم قدیمی</option>"
+               if direction == "direct" else "",
+               spec.get("port") or 8444, presets, TUNNEL_PICK))
+    out.append("<p class='muted'>اگر بعد از عوض کردن، وضعیت رله «هنوز نگرفته» ماند، یک دقیقه صبر "
+               "کنید؛ رله هر دقیقه از پنل می‌پرسد.</p></div>")
+    return "".join(out)
+
 
 def preset_problem(direction, transport, preset):
     """Why this tunnel cannot have this preset, or "" when it can."""
@@ -2328,6 +2539,10 @@ def save_node_tunnel(ip, to, one):
 
 def server_link(kind, ip, text=None):
     """A server's name, linked to its own page of figures."""
+    name = (setting("server_name:" + ip) or "").strip() if ip and not text else ""
+    if name:
+        return ("<a href='/%s/server?k=%s&amp;h=%s'><b>%s</b><br><code dir='ltr'>%s</code></a>"
+                % (CFG["ADMIN_PATH"], kind, ip, html.escape(name), html.escape(ip)))
     return ("<a href='/%s/server?k=%s&amp;h=%s' dir='ltr'><code>%s</code></a>"
             % (CFG["ADMIN_PATH"], kind, ip, html.escape(text or ip)))
 
@@ -2979,13 +3194,139 @@ def standby_card(p):
     return "".join(out)
 
 
+def node_stat(host):
+    """A server's last health sample for the map: whether it is reporting, and
+    how full it is."""
+    m = STORE.one("SELECT * FROM metrics WHERE host = ? ORDER BY at DESC LIMIT 1", (host,))
+    seen = parse_ts(m["at"]) if m else None
+    online = bool(seen and (datetime.now(timezone.utc) - seen).total_seconds() < 120)
+
+    def pct(a, b):
+        return min(100, int(100.0 * (a or 0) / b)) if m and b else None
+    return {"online": online, "at": m["at"] if m else None,
+            "cpu": int(m["cpu"]) if m and m["cpu"] is not None else None,
+            "mem": pct(m["mem_used"], m["mem_total"]) if m else None,
+            "disk": pct(m["disk_used"], m["disk_total"]) if m else None}
+
+
+def tunnel_chip(ip):
+    """One word on a relay's tunnel to its exit, for its card on the map:
+    (class, text, whether the line to the exit is drawn as carrying)."""
+    mine = installer_tunnel()
+    spec = relay_tunnel(ip)
+    owned = bool(mine and ip == mine["relay"])
+    if not spec and not owned:
+        return ("", "مستقیم، بدون تونل", False)
+    name = spec.get("transport") or (mine or {}).get("transport") or ""
+    if owned and not spec.get("main"):
+        return ("ok", "تونل %s" % name, True)
+    row = STORE.one("SELECT value FROM settings WHERE key = ?", ("relay_tunnel_state:" + ip,))
+    try:
+        seen = json.loads(row["value"]) if row and row["value"] else {}
+    except ValueError:
+        seen = {}
+    if seen.get("error"):
+        return ("bad", "تونل %s — خطا" % name, False)
+    if seen.get("on") and seen.get("running"):
+        return ("ok", "تونل %s" % name, True)
+    return ("warn", "تونل %s — در حال وصل شدن" % name, False)
+
+
+def ip_cell(ip):
+    """A server's address, with the name the admin gave it above, if any."""
+    name = (setting("server_name:" + ip) or "").strip()
+    code = "<code dir='ltr'>%s</code>" % html.escape(ip or "?")
+    return "<b>%s</b><br>%s" % (html.escape(name), code) if name else code
+
+
+def node_card_html(p, ip, kind, extra=""):
+    """One server on the map: its name (changeable right there), address,
+    state and how full it is."""
+    host = "exit" if kind == "exit" and ip == exit_address() else ip
+    st = node_stat(host)
+    icon = {"exit": "🌍", "relay": "🛡️", "single": "⚡"}.get(kind, "🖥️")
+    role = ("سرور اصلی — پنل" if ip == exit_address() else "نود") if kind == "exit" else (
+        "تک‌سرور" if kind == "single" else "رله — ایران")
+    raw = (setting("server_name:" + ip) or "").strip()
+
+    def gauge(label, v):
+        if v is None:
+            return ""
+        cls = "hot" if v >= 90 else "warn" if v >= 75 else ""
+        return ("<div class='g'><span>%s</span><div class='bar'><i class='%s' style='width:%d%%'>"
+                "</i></div><b>%d%%</b></div>" % (label, cls, v, v))
+    gauges = gauge("CPU", st["cpu"]) + gauge("RAM", st["mem"]) + gauge("دیسک", st["disk"])
+    return (
+        "<div class='tnode %s %s' id='n-%s'><div class='top'><span class='ico'>%s</span><div "
+        "class='nm'><form method='post' action='/%s/server-name-save'><input type='hidden' "
+        "name='ip' value='%s'><input name='name' value='%s' maxlength='%d' placeholder='%s' "
+        "aria-label='نام سرور' title='برای نام‌گذاری بنویسید و Enter بزنید'></form><small>%s · "
+        "<code dir='ltr'>%s</code></small></div><span class='st %s'><i></i>%s</span></div>"
+        "<div class='gs'>%s</div>%s</div>"
+        % (kind, "on" if st["online"] else "off", html.escape(ip.replace(".", "-")), icon, p,
+           html.escape(ip), html.escape(raw, quote=True), SERVER_NAME_MAX,
+           html.escape("یک نام بگذارید، مثلاً «آلمان ۱»"), role, html.escape(ip),
+           "ok" if st["online"] else "bad", "وصل" if st["online"] else "قطع",
+           gauges or "<span class='muted'>هنوز آماری نیامده</span>", extra))
+
+
+def topology_card(p):
+    """The nodes page's map: the exits on one side, the relays that go out of
+    them on the other, and a line between each pair - green while the tunnel
+    carries, dashed while it does not."""
+    here, nodes = exit_address(), node_list()
+    relays = [ip for ip in relay_list() if not is_single_server(ip)]
+    singles = [ip for ip in relay_list() if is_single_server(ip)]
+    exits = [here] + nodes
+    ROW, GAP, W = 150, 16, 140
+    rows = max(len(exits), len(relays), 1)
+    height = rows * ROW + (rows - 1) * GAP
+
+    def y_of(i, n):
+        # Each column is centred on the same middle line.
+        top = (height - (n * ROW + (n - 1) * GAP)) / 2.0
+        return top + i * (ROW + GAP) + ROW / 2.0
+    lines = []
+    for ri, r in enumerate(relays):
+        ei = exits.index(relay_exit(r)) if relay_exit(r) in exits else 0
+        y1, y2 = y_of(ri, len(relays)), y_of(ei, len(exits))
+        chip = tunnel_chip(r)
+        cls = "carry" if chip[2] else "idle"
+        lines.append("<path class='%s' d='M %d %.0f C %d %.0f, %d %.0f, 0 %.0f'/>"
+                     % (cls, W, y1, W // 2, y1, W // 2, y2, y2))
+    exit_col, relay_col = [], []
+    for ip in exits:
+        users = [r for r in relays if relay_exit(r) == ip]
+        exit_col.append(node_card_html(
+            p, ip, "exit", "<div class='foot'>%d رله از این سرور می‌رود</div>" % len(users)))
+    for ip in relays:
+        chip = tunnel_chip(ip)
+        relay_col.append(node_card_html(
+            p, ip, "relay", "<div class='foot'><span class='pill %s'>%s</span></div>"
+            % (chip[0], html.escape(chip[1]))))
+    out = ["<div class='card' id='map'><h2>نقشهٔ سرورها</h2><p class='muted'>هر سرور یک کارت دارد؛ "
+           "روی نامش بزنید و یک اسم دلخواه بگذارید (فقط خودتان می‌بینید). خط سبز یعنی ترافیک از "
+           "تونل رد می‌شود، خط‌چین یعنی رله مستقیم به سرور خارج وصل است.</p>"
+           "<div class='topo'><div class='col' style='min-height:%dpx'><h4>سرورهای خارج</h4>%s</div>"
+           "<svg class='wires' style='height:%dpx' viewBox='0 0 %d %d' preserveAspectRatio='none' aria-hidden='true'>%s"
+           "</svg><div class='col' style='min-height:%dpx'><h4>رله‌ها (ایران)</h4>%s</div></div>"
+           % (height, "".join(exit_col), height, W, height, "".join(lines), height,
+              "".join(relay_col) or "<p class='muted'>هنوز رله‌ای اضافه نشده.</p>")]
+    if singles:
+        out.append("<h3>تک‌سرورها</h3><div class='singles'>%s</div>"
+                   % "".join(node_card_html(p, ip, "single") for ip in singles))
+    out.append("</div>")
+    return "".join(out)
+
+
 def nodes_page():
     """The relays this exit serves and their tunnels - a page of its own, not
     part of the settings."""
     if one_server():
         return ("<div class='card'><h2>نودها</h2><p class='muted'>این سرور به‌صورت تک‌سرور کار می‌کند و "
                 "رلهٔ جداگانه‌ای ندارد.</p></div>")
-    return (alerts_card() + servers_card() + nodes_card(CFG["ADMIN_PATH"])
+    return (alerts_card() + topology_card(CFG["ADMIN_PATH"]) + servers_card()
+            + nodes_card(CFG["ADMIN_PATH"])
             + singles_card(CFG["ADMIN_PATH"]) + relays_card(CFG["ADMIN_PATH"])
             + customer_servers_card(CFG["ADMIN_PATH"])
             + standby_card(CFG["ADMIN_PATH"]))
@@ -3122,7 +3463,8 @@ def forget_server(ip):
     STORE.run("DELETE FROM metrics WHERE host = ?", (ip,))
     STORE.run("DELETE FROM settings WHERE key LIKE ? OR key LIKE ?",
               ("alert_state:%:" + ip, "alert_state:exit:" + ip + ":%"))
-    STORE.run("DELETE FROM settings WHERE key IN (?, ?)", ("net_month:" + ip, "cap:" + ip))
+    STORE.run("DELETE FROM settings WHERE key IN (?, ?, ?)",
+              ("net_month:" + ip, "cap:" + ip, "server_name:" + ip))
     # Its WireGuard configs too: they point at a server that is gone, and
     # each would keep a device of its customer's.
     STORE.run("DELETE FROM wg_devices WHERE relay = ?", (ip,))
@@ -3305,9 +3647,9 @@ def nodes_card(p):
                             if res.get("error") else "")
             seen = seen_cell(ip)
             remove = ("<form method='post' action='/%s/node-del' onsubmit=\"return confirm('این سرور از پنل جدا می‌شود و رله‌هایی که از آن می‌روند به این سرور برمی‌گردند. ادامه؟')\"><input type='hidden' name='ip' value='%s'><button class='danger'>برداشتن</button></form>" % (p, ip))
-        out.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td><td>%s</td>"
+        out.append("<tr><td>%s</td><td>%s</td><td>%s</td>"
                    "<td dir='ltr'>%s</td><td>%s</td></tr>"
-                   % (html.escape(ip or "?"), kind, seen,
+                   % (ip_cell(ip), kind, seen,
                       html.escape(", ".join(users)) or "<span class='muted'>-</span>", remove))
     out.append("</table>")
     out.append("<form method='post' action='/%s/node-add' class='row' style='margin-top:12px'><input name='ip' dir='ltr' placeholder='آی‌پی سرور خارج تازه' style='min-width:200px'><button>افزودن "
@@ -3337,8 +3679,8 @@ def singles_card(p):
         for ip in ips:
             remove = ("" if len(relay_list()) < 2 else
                       "<form method='post' action='/%s/relay-del' onsubmit=\"return confirm('این تک‌سرور از پنل جدا می‌شود و مشتری‌هایی که DNS را رویش گذاشته‌اند قطع می‌شوند. ادامه؟')\"><input type='hidden' name='ip' value='%s'><button class='danger'>برداشتن</button></form>" % (p, ip))
-            out.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td><td>%s</td></tr>"
-                       % (ip, seen_cell(ip), remove))
+            out.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+                       % (ip_cell(ip), seen_cell(ip), remove))
         out.append("</table>")
     out.append("<form method='post' action='/%s/single-add' class='row' style='margin-top:12px'><input name='ip' dir='ltr' placeholder='آی‌پی تک‌سرور تازه' style='min-width:200px'><button>افزودن "
                "تک‌سرور</button></form>" % p)
@@ -3370,9 +3712,9 @@ def relays_card(p):
             state = seen_cell(ip)
             remove = ("" if len(relay_list()) < 2 else
                       "<form method='post' action='/%s/relay-del' onsubmit=\"return confirm('این رله دیگر به این سرور راه ندارد و مشتری‌هایی که DNS را رویش گذاشته‌اند قطع می‌شوند. ادامه؟')\"><input type='hidden' name='ip' value='%s'><button class='danger'>برداشتن</button></form>" % (p, ip))
-            out.append("<tr><td dir='ltr'><code>%s</code></td><td>%s</td>%s<td>%s</td>"
+            out.append("<tr><td>%s</td><td>%s</td>%s<td>%s</td>"
                        "<td>%s</td></tr>" % (
-                           ip, state, "<td>%s</td>" % exit_cell(p, ip) if exits else "",
+                           ip_cell(ip), state, "<td>%s</td>" % exit_cell(p, ip) if exits else "",
                            tunnel_cell(p, ip), remove))
         out.append("</table>")
         if len(ips) > 1:
@@ -3388,7 +3730,7 @@ def relays_card(p):
             "<ol class='muted'><li>آی‌پی رلهٔ تازه را این بالا اضافه کنید.</li>"
             "<li>روی رله نصب‌کننده را اجرا کنید و «relay» را انتخاب کنید؛ آدرس این سرور "
             "<code dir='ltr'>%s</code> است.</li>"
-            "<li>وقتی توکن جفت‌کردن خواست، این را بدهید:</li></ol>"
+            "<li>وقتی کد اتصال خواست، این را بدهید:</li></ol>"
             "<pre dir='ltr' style='white-space:pre-wrap;word-break:break-all'>%s</pre>"
             "<p class='muted'>وقتی رله در جدول «وصل» شد، اگر تونل می‌خواهد، از ستون «تونل» "
             "روشنش کنید؛ رله تا یک دقیقه بعد خودش آن را برپا می‌کند.</p>"
@@ -3948,7 +4290,7 @@ html[dir=ltr] .side nav a:hover{transform:translateX(4px)}
 .tools button.theme{position:static;width:34px;height:34px;margin:0;top:auto;left:auto;right:auto}
 .tools .accents{position:static;height:auto}
 /* ---- surfaces ---- */
-.card{border-radius:26px;box-shadow:var(--shadow);padding:24px;animation:md-rise .55s cubic-bezier(.2,.8,.2,1) both;
+.card{border-radius:26px;box-shadow:var(--shadow);padding:24px;animation:md-rise .55s cubic-bezier(.2,.8,.2,1) backwards;
  background:color-mix(in srgb,var(--card) 94%,transparent)}
 .wrap>.card:nth-of-type(2){animation-delay:.05s}.wrap>.card:nth-of-type(3){animation-delay:.1s}
 .wrap>.card:nth-of-type(4){animation-delay:.15s}.wrap>.card:nth-of-type(n+5){animation-delay:.2s}
@@ -3998,7 +4340,7 @@ td.row,tr.row{padding:0;background:none;border:0;margin:0}
 table.users tr.row{background:none;border:0}
 td:first-child{font-weight:600}
 td{padding-block:12px}
-tbody tr:nth-child(-n+10){animation:md-row .45s cubic-bezier(.2,.8,.2,1) both}
+tbody tr:nth-child(-n+10){animation:md-row .45s cubic-bezier(.2,.8,.2,1) backwards}
 tbody tr:nth-child(2){animation-delay:.03s}tbody tr:nth-child(3){animation-delay:.06s}tbody tr:nth-child(4){animation-delay:.09s}
 tbody tr:nth-child(5){animation-delay:.12s}tbody tr:nth-child(6){animation-delay:.15s}tbody tr:nth-child(7){animation-delay:.18s}
 tbody tr:nth-child(8){animation-delay:.21s}tbody tr:nth-child(9){animation-delay:.24s}tbody tr:nth-child(10){animation-delay:.27s}
@@ -4208,6 +4550,52 @@ table.users td.acts .menu form.resetdays small{flex-basis:100%}
   top:calc(100% + 4px);right:0;box-shadow:var(--pop)}
  table.users td.acts details>.menu{right:auto;left:0}
 }
+/* A row's or card's open menu floats over the rows and cards after it. Without a
+   stacking order of its own the next row painted over it, so the menu looked
+   as if it had no background. */
+tbody tr:has(details[open]),.card:has(details[open]){position:relative;z-index:40}
+table.users details>.menu,table.users details>form{background:var(--card);opacity:1;
+ backdrop-filter:none;isolation:isolate}
+/* ---- the map of servers ---- */
+.topo{display:grid;grid-template-columns:1fr 140px 1fr;direction:ltr;align-items:start;gap:0}
+.topo .col{display:flex;flex-direction:column;gap:16px;justify-content:center;direction:rtl}
+.topo .col h4{margin:0 0 -4px;font-size:11.5px;color:var(--faint);font-weight:600;text-align:center}
+.topo svg.wires{width:140px;margin-top:26px;overflow:visible}
+.topo svg.wires path{fill:none;stroke-width:2.5;stroke-linecap:round}
+.topo svg.wires path.carry{stroke:var(--accent)}
+.topo svg.wires path.idle{stroke:var(--line2);stroke-dasharray:6 7}
+.singles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.tnode{position:relative;border:1px solid var(--line);border-radius:20px;padding:14px 16px;min-height:150px;
+ background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg)),var(--bg) 70%);
+ display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .2s}
+.tnode:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));transform:translateY(-2px)}
+.tnode.off{opacity:.8;border-style:dashed}
+.tnode .top{display:flex;align-items:center;gap:12px}
+.tnode .ico{font-size:24px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;
+ background:color-mix(in srgb,var(--accent) 14%,var(--card))}
+.tnode .nm{flex:1;min-width:0}
+.tnode .nm input{width:100%;border:1px solid transparent;background:transparent;padding:2px 6px;border-radius:8px;
+ font-weight:700;font-size:15px;color:var(--fg)}
+.tnode .nm input:hover,.tnode .nm input:focus{border-color:var(--line2);background:var(--bg)}
+.tnode .nm small{display:block;color:var(--muted);font-size:11.5px;padding:0 6px}
+.tnode .st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;flex:none}
+.tnode .st i{width:9px;height:9px;border-radius:50%;background:currentColor}
+.tnode .st.ok{color:var(--accent)}.tnode .st.bad{color:var(--bad)}
+.tnode .st.ok i{box-shadow:0 0 0 4px color-mix(in srgb,currentColor 22%,transparent)}
+.tnode .gs{display:flex;flex-direction:column;gap:5px}
+.tnode .g{display:grid;grid-template-columns:44px 1fr 38px;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.tnode .g .bar{margin:0}.tnode .g b{font-weight:600;color:var(--dim);text-align:left;direction:ltr}
+.tnode .foot{font-size:12px;color:var(--muted)}
+.tun{padding:12px 0;border-top:1px solid var(--line)}.tun:first-of-type{border-top:0}
+.tun .tunhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media (max-width:860px){
+ .topo{grid-template-columns:1fr;direction:rtl}.topo svg.wires{display:none}
+ .topo .col{min-height:0!important;margin-bottom:12px}
+}
+.chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 18px}
+a.chip{padding:5px 14px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--dim)}
+a.chip:hover{background:var(--row);color:var(--accent);border-color:var(--accent)}
+html{scroll-behavior:smooth}h3.sec{scroll-margin-top:16px}
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
  white-space:nowrap;background:var(--row);color:var(--dim)}
 .pill.ok{background:var(--good-bg);color:var(--accent)}
@@ -6027,6 +6415,21 @@ def plan_user_exits(plan):
     return None
 
 
+SERVER_NAME_MAX = 32
+
+
+def server_name(ip):
+    """The name the admin gave a server - for the admin's eyes only - or its
+    address when it has none."""
+    return (setting("server_name:" + ip) or "").strip() or ip
+
+
+def server_title(ip, role=""):
+    """A server as a person reads it: name, then address."""
+    name = server_name(ip)
+    return name if name != ip else ip
+
+
 def server_label(ip):
     note = setting("server_note:" + ip) or ""
     return "%s%s" % (ip, " — " + note if note else "")
@@ -6305,7 +6708,7 @@ ACTION_SECTION = {
     "node-add": "nodes", "node-del": "nodes", "relay-add": "nodes", "relay-del": "nodes",
     "single-add": "nodes", "relay-exit": "nodes", "relay-tunnel": "nodes", "cap-save": "nodes",
     "upgrade-start": "nodes", "upgrade-stop": "nodes", "update-check": "settings",
-    "public-dns": "settings", "server-list-save": "nodes", "seller-server-notes": ANYONE,
+    "public-dns": "settings", "server-list-save": "nodes", "server-name-save": "nodes", "seller-server-notes": ANYONE,
     "dns-bench": "settings", "dns-upstream": "settings", "doh-name": "settings",
     "telegram-required": "settings", "portal-open": "settings", "calendar-save": "settings", "watch-start": "logs", "diagnose-start": "logs",
     "me-password": ANYONE, "view-as-stop": ANYONE}
@@ -7197,6 +7600,20 @@ def bar(used, total):
 # Failed attempts stay in memory. Losing that count on restart only makes
 # guessing slightly easier for someone who cannot cause restarts anyway.
 ATTEMPTS = {}          # address -> [count, first_failure_time]
+ADMIN_CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+             "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
+             "form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'")
+
+
+def cross_site(origin, host):
+    """Whether a POST says it comes from a page of another site. Browsers send
+    Origin on every POST; a form on someone else's page cannot be made to send
+    this panel's. Not sent at all (a script, curl): not cross-site."""
+    if not origin:
+        return False
+    if origin == "null":
+        return True
+    return (urllib.parse.urlparse(origin).netloc or "").lower() != (host or "").lower()
 # ------------------------------------------------------------------ logging
 # journald reads a leading <N> on a line as its syslog level. Warnings and
 # errors carry one, so `journalctl -p warning` - which is what
@@ -7545,6 +7962,15 @@ class Admin(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
+        # Nothing here loads from, posts to or is framed by another site. The
+        # pages' own inline scripts and styles stay allowed: they are the
+        # pages, and nothing a visitor types is ever put in one unescaped.
+        self.send_header("Content-Security-Policy", ADMIN_CSP)
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), "
+                         "payment=(), usb=(), interest-cohort=()")
+        self.send_header("Strict-Transport-Security", "max-age=31536000")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         for k, v in headers.items():
             self.send_header(k, v)
         self.end_headers()
@@ -8073,6 +8499,11 @@ class Admin(http.server.BaseHTTPRequestHandler):
         rest = self.route()
         if rest is None:
             return self.lost()
+        if cross_site(self.headers.get("Origin", ""), self.headers.get("Host", "")) \
+                or self.headers.get("Sec-Fetch-Site", "") == "cross-site":
+            log(WARN, "admin POST %s refused from %s: it came from another site"
+                % (rest, self.client_address[0]))
+            return self.send("<meta charset='utf-8'>درخواست از سایت دیگری آمده بود و انجام نشد.", 403)
         params = self.body_params()
         if not self.session_ok():
             if self.locked_out():
@@ -9261,6 +9692,8 @@ class Admin(http.server.BaseHTTPRequestHandler):
     def settings(self):
         p = CFG["ADMIN_PATH"]
         out = []
+        marks = []
+        marks.append(('file', len(out)))
         out.append(
             "<div class='card'><h2>فایل پشتیبان</h2><p class='muted'>یک فایل sqlite شامل همهٔ "
             "کاربران، آی‌پی‌ها، قالب‌ها، تراکنش‌ها و تنظیمات. آمار سلامت سرورها داخلش نیست — حجم "
@@ -9270,13 +9703,18 @@ class Admin(http.server.BaseHTTPRequestHandler):
             "برای بکاپ تلگرام'><button class='ghost'>بررسی فایل</button></form><p class='muted'>فایل "
             "ابتدا فقط بررسی و توصیف می‌شود؛ جایگزینی‌اش تأیید جداگانه می‌خواهد. بکاپی که ربات "
             "فرستاده (<code>.enc</code>) با رمز بکاپش باز می‌شود.</p>%s</div>" % (p, p, sealing_note(p)))
+        marks.append(('backup', len(out)))
         out.append(backup_card(p))
+        marks.append(('github', len(out)))
         out.append(github_card(p))
+        marks.append(('pubdns', len(out)))
         out.append(public_dns_card(p))
+        marks.append(("cs", len(out)))
         if one_server():
             # No nodes page here: its one server's words for customers live here.
             out.append(customer_servers_card(p))
 
+        marks.append(('cal', len(out)))
         cal = calendar()
         out.append("<div class='card'><h2>تقویم</h2><form method='post' action='/%s/calendar-save' class='row'><label style='display:inline'><input type='radio' name='cal' value='gregorian'%s> میلادی (2026-09-29)</label> <label style='display:inline'><input type='radio' name='cal' value='jalali'%s> شمسی (1405/07/07)</label> <button class='ghost'>ذخیره</button></form><p class='muted'>همهٔ "
                    "تاریخ‌ها به همین شکل و به وقت تهران نشان داده می‌شود: در پنل ادمین، پنل مشتری و "
@@ -9284,6 +9722,7 @@ class Admin(http.server.BaseHTTPRequestHandler):
                    % (p, " checked" if cal != "jalali" else "",
                       " checked" if cal == "jalali" else ""))
 
+        marks.append(('portal', len(out)))
         opened = STORE.one("SELECT value FROM settings WHERE key = 'portal_open'")
         opened = not (opened and opened["value"] == "0")
         out.append("<div class='card'><h2>صفحهٔ ورود برای مشتریِ بدون "
@@ -9296,6 +9735,7 @@ class Admin(http.server.BaseHTTPRequestHandler):
                    "دقیقه دیگر.</p></div>"
                    % (p, " checked" if opened else ""))
 
+        marks.append(('tg', len(out)))
         need = STORE.one("SELECT value FROM settings WHERE key = 'require_telegram'")
         bot = STORE.one("SELECT 1 FROM api_tokens WHERE revoked_at IS NULL"
                         " AND COALESCE(webhook_url, '') != ''")
@@ -9311,9 +9751,12 @@ class Admin(http.server.BaseHTTPRequestHandler):
                       "" if bot else "<p class='bad'>هنوز رباتی به پنل وصل نیست (صفحهٔ API)؛ "
                       "تا وقتی نباشد این قانون اعمال نمی‌شود تا کسی گیر نیفتد.</p>"))
 
+        marks.append(('upstream', len(out)))
         out.append(upstream_card())
+        marks.append(('doh', len(out)))
         out.append(doh_name_card(p))
 
+        marks.append(('addr', len(out)))
         out.append("<div class='card'><h2>نشانی همین پنل</h2><p class='muted'>نشانی "
                    "فعلی: <code>https://%s:%s/%s/</code></p><div class='f'><label>پورت</label><form method='post' action='/%s/panel-port' class='row'><input name='port' value='%s' size='6'><button class='ghost'>تغییر "
                    "پورت</button></form></div><div class='f'><label>مسیر "
@@ -9329,11 +9772,13 @@ class Admin(http.server.BaseHTTPRequestHandler):
                       p, html.escape(CFG["ADMIN_PORT"]),
                       p, html.escape(CFG["ADMIN_PATH"])))
 
+        marks.append(('owner', len(out)))
         out.append("<div class='card'><h2>شناسهٔ ورود به "
                    "پنل</h2><form method='post' action='/%s/owner-name-save' class='row'><input name='username' dir='ltr' required value='%s'><button>تغییر "
                    "نام کاربری</button></form><p class='muted'>میان ۳ تا ۳۲ نویسه: حرف کوچک انگلیسی، عدد، "
                    "نقطه، خط تیره یا زیرخط. از روی سرور هم: <code>smartdns-access username</code></p></div>"
                    % (p, html.escape(owner_name(), quote=True)))
+        marks.append(('pw', len(out)))
         out.append("<div class='card'><h2>گذرواژهٔ "
                    "پنل</h2><form method='post' action='/%s/password'><div class='f'><label>رمز "
                    "تازه (دست‌کم ۸ "
@@ -9342,7 +9787,26 @@ class Admin(http.server.BaseHTTPRequestHandler):
                    "تازه</label><input type='password' name='password_again' style='width:100%%'></div><button>تغییر "
                    "رمز</button></form><p class='muted'>خودِ گذرواژه ذخیره نمی‌شود و فقط هش آن نگه داشته "
                    "می‌شود. با تغییرش همهٔ نشست‌های دیگر بسته می‌شوند.</p></div>" % p)
-        return "".join(out)
+        marks.append(("end", len(out)))
+        spans = {}
+        for k, (name, at) in enumerate(marks[:-1]):
+            spans[name] = out[at:marks[k + 1][1]]
+
+        def section(sid, title, *names):
+            cards = [c for n in names for c in spans.get(n, [])]
+            return ("<h3 class='sec' id='%s'>%s</h3>%s" % (sid, title, "".join(cards))) \
+                if cards else ""
+        tunnel = tunnel_settings_card(p)
+        chips = [("conn", "اتصال و DNS"), ("cust", "مشتری‌ها"), ("safe", "ورود و امنیت"),
+                 ("keep", "پشتیبان و به‌روزرسانی")]
+        nav = ("<div class='card chips'><span class='muted'>برو به:</span> %s</div>"
+               % " ".join("<a class='chip' href='#%s'>%s</a>" % c for c in chips))
+        return (nav
+                + "<h3 class='sec' id='conn'>اتصال و DNS</h3>" + tunnel
+                + "".join(c for n in ("pubdns", "upstream", "doh") for c in spans.get(n, []))
+                + section("cust", "مشتری‌ها", "cs", "portal", "tg", "cal")
+                + section("safe", "ورود و امنیت پنل", "owner", "pw", "addr")
+                + section("keep", "پشتیبان و به‌روزرسانی", "file", "backup", "github"))
 
     def logs(self):
         """Everything in one place: this machine's two services, the bot if
@@ -10932,6 +11396,14 @@ class Admin(http.server.BaseHTTPRequestHandler):
         if rest == "upgrade-start":
             return self.redirect("settings?m=" + start_upgrade_job())
 
+        if rest == "server-name-save":
+            ip = one("ip").strip()
+            if ip not in {exit_address()} | set(relay_list()) | set(node_list()):
+                return self.redirect("nodes?m=!این سرور در فهرست نیست")
+            name = re.sub(r"[\x00-\x1f<>&\"']", "", one("name")).strip()[:SERVER_NAME_MAX]
+            put_setting("server_name:" + ip, name)
+            return self.redirect("nodes?m=%s" % ("نام ذخیره شد" if name else "نام برداشته شد"))
+
         if rest == "server-list-save":
             servers, _ = ordered_servers()
             # Which keep their customer panel: asked before anything is saved,
@@ -11085,47 +11557,55 @@ class Admin(http.server.BaseHTTPRequestHandler):
 
         if rest == "relay-tunnel":
             ip = one("ip").strip()
+            # Said from the settings page, answered on the settings page.
+            back = "settings" if one("back") == "settings" else "nodes"
+
+            def redirect(where):
+                return self.redirect(where.replace("nodes?m=", back + "?m=", 1))
             if ip not in relay_list():
-                return self.redirect("nodes?m=!این رله در فهرست نیست")
+                return redirect("nodes?m=!این رله در فهرست نیست")
             to = one("exit").strip() or exit_address()
             if to != exit_address():
-                return self.redirect(save_node_tunnel(ip, to, one))
+                return redirect(save_node_tunnel(ip, to, one))
             mine = installer_tunnel()
-            if mine and ip == mine["relay"]:
-                return self.redirect("nodes?m=!تونل این رله مال نصب‌کننده است؛ با --tunnel "
-                                     "عوضش کنید")
+            owned = bool(mine and ip == mine["relay"])
+            if owned and one("on") != "1":
+                return redirect("nodes?m=!این تونل از نصب‌کننده است؛ برای خاموش کردنش روی "
+                                     "سرور بنویسید: smartdns-tunnel off")
             if one("on") != "1":
                 STORE.run("DELETE FROM settings WHERE key = ?", ("relay_tunnel:" + ip,))
                 apply_exit_tunnel(ip)
-                return self.redirect("nodes?m=تونل رلهٔ %s خاموش شد؛ رله تا یک دقیقه دیگر "
+                return redirect("nodes?m=تونل رلهٔ %s خاموش شد؛ رله تا یک دقیقه دیگر "
                                      "مستقیم وصل می‌شود" % ip)
             direction, transport = one("direction"), one("transport")
             if direction == "direct" and (relay_tunnel(ip) or {}).get("direction") != "direct":
-                return self.redirect("nodes?m=!" + OLD_DIRECT_GONE)
+                return redirect("nodes?m=!" + OLD_DIRECT_GONE)
             if direction not in TUNNEL_TRANSPORTS:
-                return self.redirect("nodes?m=!جهت تونل را انتخاب کنید")
+                return redirect("nodes?m=!جهت تونل را انتخاب کنید")
             if transport not in TUNNEL_TRANSPORTS[direction]:
-                return self.redirect("nodes?m=!" + TRANSPORT_LIMIT[direction])
+                return redirect("nodes?m=!" + TRANSPORT_LIMIT[direction])
             try:
                 port = int(one("port").strip())
             except ValueError:
-                return self.redirect("nodes?m=!درگاه را عددی بنویسید")
+                return redirect("nodes?m=!درگاه را عددی بنویسید")
             why = tunnel_port_problem(port, ip, direction) \
                 or preset_problem(direction, transport, one("preset"))
             if why:
-                return self.redirect("nodes?m=!%s" % why)
+                return redirect("nodes?m=!%s" % why)
             spec = {"transport": transport, "direction": direction, "port": port,
                     "exit": exit_address()}
             if one("preset"):
                 spec["preset"] = one("preset")
+            if owned:
+                spec["main"] = True
             STORE.run("INSERT INTO settings (key, value) VALUES (?, ?)"
                       " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                       ("relay_tunnel:" + ip, json.dumps(spec, sort_keys=True)))
             STORE.run("DELETE FROM settings WHERE key = ?", ("relay_tunnel_state:" + ip,))
-            why = apply_exit_tunnel(ip)
+            why = apply_main_tunnel(ip) if owned else apply_exit_tunnel(ip)
             if why:
-                return self.redirect("nodes?m=!%s" % why)
-            return self.redirect("nodes?m=تونل رلهٔ %s ذخیره شد؛ رله تا یک دقیقه دیگر سر خودش "
+                return redirect("nodes?m=!%s" % why)
+            return redirect("nodes?m=تونل رلهٔ %s ذخیره شد؛ رله تا یک دقیقه دیگر سر خودش "
                                  "را برپا می‌کند — وضعیتش همین‌جاست" % ip)
 
         if rest in ("relay-add", "relay-del", "single-add"):

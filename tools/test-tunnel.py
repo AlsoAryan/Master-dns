@@ -92,24 +92,28 @@ def ask(answers):
               "\n".join(answers) + "\n").strip()
 
 
-check("enter at the first question keeps the direct path", ask([""]) == "off", ask([""]))
-check("  and so does 1", ask(["1"]) == "off", ask(["1"]))
-got = ask(["2", "", "", ""])
+check("enter at the first question is the suggested secure tunnel, with nothing else asked",
+      ask([""]) == "backpack reverse stealth 8444", ask([""]))
+check("  and so is 1", ask(["1"]) == "backpack reverse stealth 8444", ask(["1"]))
+check("  2 is the plain connection, nothing installed", ask(["2"]) == "off", ask(["2"]))
+check("  and the suggested port is refused when it is taken",
+      "DIE" in sh("CUR_PORT=443; ask_tunnel", "1\n"))
+got = ask(["3", "", "", ""])
 check("every other default: a reverse stealth tunnel on 8444", got == "backpack reverse stealth 8444", got)
-got = ask(["2", "2", "2", "9443"])
+got = ask(["3", "2", "2", "9443"])
 check("direct is BackPack's direct as its menu makes it now, so its second is xdi",
       got == "backpack l3 xdi 9443", got)
 check("  and the old direct engine is not offered", "answer 1 or 2" in function("ask_tunnel")
       and "2) TUNNEL_DIRECTION=l3 ;;" in function("ask_tunnel")
       and "TUNNEL_DIRECTION=direct" not in function("ask_tunnel"))
-got = ask(["2", "1", "12", ""])
+got = ask(["3", "1", "12", ""])
 check("the twelfth reverse transport is udp", got == "backpack reverse udp 8444", got)
-got = ask(["2", "1", "1", "443", "8447"])
+got = ask(["3", "1", "1", "443", "8447"])
 check("a port that is taken is refused and asked again", got == "backpack reverse stealth 8447", got)
 check("a number past the list is refused",
-      "DIE" in sh("ask_tunnel", "2\n1\n13\n"), sh("ask_tunnel", "2\n1\n13\n")[-120:])
-check("so is an answer that is not a number", "DIE" in sh("ask_tunnel", "2\n1\nstealth\n"))
-menu = sh("ask_tunnel", "2\n1\n\n\n")
+      "DIE" in sh("ask_tunnel", "3\n1\n13\n"), sh("ask_tunnel", "3\n1\n13\n")[-120:])
+check("so is an answer that is not a number", "DIE" in sh("ask_tunnel", "3\n1\nstealth\n"))
+menu = sh("ask_tunnel", "3\n1\n\n\n")
 # How fast a transport is depends on the route, so the menu does not say -
 # neither a figure nor fast or slow. Only which did not connect at all.
 check("the menu says which did not connect, and nothing about speed",
@@ -128,17 +132,18 @@ got = ask_now(["", "", "", ""])
 check("enter at every question keeps what the machine has", got == "backpack reverse wss 9443", got)
 got = ask_now(["", "", "", "8447"])
 check("changing only the port is one line typed", got == "backpack reverse wss 8447", got)
-got = ask_now(["1"])
-check("and 1 at the first question goes back to plain TCP", got == "off", got)
-check("it says what the machine has now", "now: BackPack, wss, reverse, port 9443" in sh(NOW + "ask_tunnel", "\n\n\n\n"))
+got = ask_now(["2"])
+check("and 2 at the first question goes back to the plain connection", got == "off", got)
+check("it says what the machine has now",
+      "now: secure tunnel (wss, reverse, port 9443)" in sh(NOW + "ask_tunnel", "\n\n\n\n"))
 check("--tunnel is an argument the installer takes", "--tunnel|tunnel) ASK_TUNNEL=1 ;;" in LOGIC)
 check("and --help names it", "--tunnel       choose the tunnel" in LOGIC)
 check("on the exit it asks with what it has as the defaults",
       re.search(r'if \[ -n "\$\{ASK_TUNNEL:-\}" \].*?CUR_TUNNEL=.*?ask_tunnel', LOGIC, re.S) is not None)
 check("on the relay it asks for the exit's new pairing token",
-      re.search(r'ASK_TUNNEL.*?read -r -p "  pairing token: " SYNC_TOKEN', LOGIC, re.S) is not None)
+      re.search(r'ASK_TUNNEL.*?read -r -p "  connection code: " SYNC_TOKEN', LOGIC, re.S) is not None)
 check("and the exit tells the operator to do that next",
-      "Now the relay%s: run the installer there with --tunnel" in LOGIC)
+      "Now the Iran server%s: run the installer there with --tunnel" in LOGIC)
 check("turning it off takes BackPack's metrics away too, not only the config",
       'rm -rf "$TUNNEL_DIR"' in function("apply_tunnel"))
 check("the installer puts smartdns-tunnel and smartdns-menu on both machines",
