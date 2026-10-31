@@ -250,6 +250,7 @@ elderscrollsonline.com
 electronicarts.com
 element14.com
 embark.games
+embark.net
 en25.com
 endfield.hypergryph.com
 enlisted.net
@@ -261,6 +262,7 @@ epicgames.com
 epicgames.dev
 epicgames.net
 epicgames.statuspage.io
+es-dis.net
 es.io
 escapefromtarkov.com
 eslint.org

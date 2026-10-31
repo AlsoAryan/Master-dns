@@ -251,8 +251,8 @@ check("  the relay sends those addresses through it, and no others",
 conf = read("templates/relay-nginx.conf")
 check("  by the customer's address, this relay's own exit for everybody else",
       "map $remote_addr $to_exit {\n        include /etc/nginx/smartdns-customer-exits.map;\n"
-      "        default to_exit;" in conf and "proxy_pass ${to_exit}_https;" in conf
-      and "default       ${to_exit}_https;" in conf)
+      "        default to_exit;" in conf and "default ${to_exit}_https;" in conf
+      and "proxy_pass $egress_https;" in conf and "default       $egress_https;" in conf)
 check("  the installer leaves the list empty, never naming upstreams it did not write",
       'CUSTOMER_EXITS=/etc/nginx/smartdns-customer-exits.map' in logic
       and '> "$CUSTOMER_EXITS"' in logic)
@@ -390,7 +390,7 @@ check("  the same when the panel gives it - a receipt, a trial, the bot",
       store.one("SELECT exit FROM users WHERE id = ?", (nima,))["exit"] == "93.184.216.20")
 page = admin.Admin.plans(Rec())
 check("the plans page has a line per server, with the exits",
-      "<th>سرورها</th>" in page and "name='re_198.51.100.2'" in page
+      "<legend>سرورها</legend>" in page and "name='re_198.51.100.2'" in page
       and "<option value='93.184.216.20' selected>" in page)
 act("user-exit", id=str(nima), **{"r_198.51.100.1": "93.184.216.20", "r_198.51.100.2": ""})
 # What a node leaves on the home page once taken off: its samples, and an

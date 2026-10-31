@@ -133,7 +133,7 @@ every = lambda way="auto": {TR: way, DE: way, SG: way}
 print("the plans page")
 page = Rec().plans()
 check("a line per server, each with not on it, automatic", page.count("name='re_") >= 3
-      and "<th>سرورها</th>" in page and "<option value='off'" in page
+      and "<legend>سرورها</legend>" in page and "<option value='off'" in page
       and "خودکار" in page)
 act("plan-save", **plan_form(route={TR: "auto", DE: "off", SG: "off"}))
 check("a plan on one server is sold on that one", plan("ترکیه")["relays"] == TR)

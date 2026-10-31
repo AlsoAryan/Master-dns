@@ -235,10 +235,10 @@ owner.post("admin-save", id=str(sara["id"]), username="sara", password="",
            tpl=[str(t_given), str(did)])
 b.login("sara", "sara-pw-123")
 body = b.get("templates")[2]
-counts = dict(_re.findall(r"<tr><td>([^<]+?)(?: <span[^>]*>[^<]*</span>)?</td><td>(\d+)</td>", body))
+counts = dict(_re.findall(r"<strong class='ptitle'>([^<]+)</strong>.*?👥 (\d+) مشتری", body, _re.S))
 theirs = store.one("SELECT count(*) c FROM users WHERE owner_admin = ?", (sara["id"],))["c"]
 check("  ticked, it is theirs to give, each template counting their own customers only",
-      "(پیش‌فرض)" in body and sum(int(v) for v in counts.values()) == theirs, str(counts))
+      "پیش‌فرض</span>" in body and sum(int(v) for v in counts.values()) == theirs, str(counts))
 check("  not making one when they are to pick", b.post("template-new", name="mine")[0] == 403)
 check("  nor changing the owner's", b.post("template-rules", id=str(t_given))[0] == 403)
 owner.post("admin-save", id=str(sara["id"]), username="sara", password="",

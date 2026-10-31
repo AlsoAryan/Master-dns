@@ -24,16 +24,52 @@ Nothing is decrypted on the way: the Iran server only reads which site is being 
 for and passes the connection on. And it is a whole service, not just a proxy — customers,
 quotas, speed limits, a customer page, a control panel, selling, a Telegram bot and an API.
 
-## What's new in 0.0.9
+## Who it is for
+
+- **You run a Smart DNS service** and want customers, quotas, prices and receipts handled for you,
+  with a Telegram bot that sells while you sleep.
+- **You sell to gamers**: PlayStation, Xbox, Steam, Call of Duty, THE FINALS, Valorant... each
+  service is a ticked box in a template; a new game is one tick, not a new config.
+- **You resell**: give a reseller their own plans, templates and bot, and keep the panel in charge.
+- **You just want your own connection to work** (family, friends, a console): the *One server only*
+  mode needs a single machine abroad.
+
+## A customer's day
+
+1. They pick a plan in their panel (or in the bot), pay, and send the receipt.
+2. You press *approve*. Their address is allowed, their quota and speed are set, their template
+   decides which services go out through you. Nothing else to configure.
+3. They set their console's DNS to your Iran server and play. When the quota is at 80% and 95% they are told;
+   when it ends they renew with one tap.
+
+## Why this one
 
 | | |
 |---|---|
-| 🔀 **Change the tunnel from the panel** | *Settings → "How the Iran server connects to the exit server"*: pick another connection style and both servers switch within a minute. No SSH. |
-| 🗺️ **A map of your servers** | The *Nodes* page now shows every server as a card with its own **name**, health bars and a live line to the server it goes through. |
-| 🧰 **A friendlier installer** | Plain words, one suggested answer for every question, a secure tunnel in one keypress, and a "what to do next" list at the end. |
-| 🧭 **A tidier Settings page** | Four clear sections with quick links on top. |
-| 🛡️ **Safer panel** | A content-security policy, a check that refuses requests coming from other websites, and stricter browser headers. |
-| 🐞 **Fixed** | The menu behind a user's three dots had no background and was drawn under the next rows. |
+| **Sales built in** | Plans, receipts, discount codes, a wallet, a free trial, extra devices, invitation links, resellers. |
+| **Nothing is decrypted** | The Iran server reads the name being asked for and passes the connection on, untouched. |
+| **Fails soft** | If the tunnel, an upstream or an exit is down, traffic falls back instead of cutting customers off. |
+| **One panel, many servers** | Several Iran servers and several exits, each with a name, health bars and a live line between them. |
+| **Plain to run** | One script, plain-language questions, one panel for everything; encrypted backups and one-button upgrades. |
+| **Fixes at the network's level** | Names a network chokes can leave from the Iran server itself, to addresses checked from Iran, every few minutes. |
+
+## What's new in 0.1.0
+
+| | |
+|---|---|
+| 🛰️ **Names that leave from the Iran server** | *Settings → "Names that go out of the Iran relay itself"*. Some operators (Irancell, for Akamai) choke part of a CDN's addresses, and PlayStation or Call of Duty logins fail with errors like DETRICK or PUGET-LAKES. A name on this list is carried by the relay itself, to addresses that answered a real TLS handshake from Iran a minute ago, re-checked every ninety seconds; when none is healthy the name goes through the exit as before. One tap adds the four PlayStation / Call of Duty names. |
+| 🎮 **THE FINALS login fixed** | `embark.net` and `es-dis.net` are in its group, so the console's login (TFLA0020) no longer goes around the relay. |
+| 🧾 **Plans, redone from scratch** | Every plan is a card - price, days, quota, speed, devices, template, customers - and a clean dialog edits it, grouped as *what it is / what it gives / what it costs*. |
+| 🧩 **Templates, redone from scratch** | Cards with a meter of how much of the catalogue each routes and the services it carries; **copy a template** in one step; an editor with an on/off filter, a live count and a save bar that stays in view. |
+
+### Earlier, in 0.0.9
+
+| | |
+|---|---|
+| 🔀 **Change the tunnel from the panel** | *Settings → "How the Iran server connects to the exit server"*: pick another connection style and both servers switch within a minute. |
+| 🗺️ **A map of your servers** | The *Nodes* page shows every server as a card with its own **name**, health bars and a live line to the server it goes through. |
+| 🧰 **A friendlier installer** | Plain words, one suggested answer for every question, a secure tunnel in one keypress. |
+| 🛡️ **Safer panel** | A content-security policy, a check that refuses requests coming from other websites, stricter browser headers. |
 
 ## Quick start
 
@@ -72,11 +108,12 @@ route to Google over IPv6); **udp** 53, 3478.
 ## What is in it
 
 - **Routing**: about 800 blocked domains, 150 games and platforms, AAAA
-  filtering, STUN/TURN so console NAT checks pass.
+  filtering, STUN/TURN so console NAT checks pass, and names an operator chokes
+  carried from Iran itself.
 - **Customers**: an allowlist on their address with kernel byte counters,
   monthly or one-off quotas with warnings at 80% and 95%, per-customer speed
-  caps, service templates down to single domains.
-- **Selling**: plans, receipts, discount codes, a free trial, a wallet,
+  caps, service templates down to single domains, copied in one step.
+- **Selling**: plans shown as cards, receipts, discount codes, a free trial, a wallet,
   invitation links, extra devices, and resellers with their own plans and bot.
 - **Panels**: a dashboard-style operator panel and a customer panel in Persian or
   English, light and dark, with a blue, pink, green, red, purple or orange accent. The admin panel opens a
@@ -209,14 +246,14 @@ behind it, and raises the connection-tracking table, whose overflow drops packet
   (ISC). Each logo is its owner's trademark.
 - **[HyperDNS](https://github.com/IzumiRain/HyperDNS)**, by **Rain**
   ([@IzumiRain](https://github.com/IzumiRain)), a standalone smart DNS written in Go
-  and released under the AGPL-3.0. Reading it showed us what Doctor DNS was
-  missing, and several features here began as its ideas: DNS over HTTPS and over
+  and released under the AGPL-3.0. Reading it showed us what was
+  missing here, and several features began as its ideas: DNS over HTTPS and over
   TLS, with the customer usage dashboard and the choice of public resolvers planned
   beside them (0.7.0); the sealed, encrypted receipts (0.7.2); the DNS report that
   says which rule each name met (0.7.3); an answer that says the resolver failed,
   rather than silence (0.7.4); blocked domains and the single-server install (0.8.0);
   the services' logos, and groups of your own domains with an icon (0.9.10).
-  Doctor DNS used none of its code - each was written here, in Python, for this
+  None of its code was used - each was written here, in Python, for this
   design - but the ideas were theirs first. Thank you, Rain.
 - The installer's check of whose name an exit's address is registered in asks the
   regional internet registries' public RDAP service, through [rdap.org](https://rdap.org/).
@@ -225,5 +262,5 @@ behind it, and raises the connection-tracking table, whose overflow drops packet
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Master DNS is a fork of Doctor DNS, which is MIT
-as well; its copyright notice stays in the licence file.
+MIT, see [LICENSE](LICENSE). The copyright notices of the work this project grew
+from stay in the licence file.

@@ -5597,6 +5597,16 @@ def node_tunnel_specs(store, relay=None, node=None):
     return out
 
 
+def local_egress(store):
+    """The names the admin panel wants carried by the relay itself: a list of
+    {"name", "ips"}, as saved. An unreadable list is no list."""
+    try:
+        raw = json.loads(store.setting("local_egress") or "[]")
+    except ValueError:
+        return []
+    return raw if isinstance(raw, list) else []
+
+
 def relay_tunnel(store, relay, relays, installer_tunnel):
     """What the admin panel set for this relay's tunnel, for its sync: None
     for the first relay while the exit's installer tunnels to it - that one
@@ -6081,6 +6091,15 @@ class API(http.server.BaseHTTPRequestHandler):
                                    "error": str(state.get("error") or "")[:400]}, sort_keys=True)
                 if self.store.setting("relay_tunnel_state:" + who) != text:
                     self.store.set_setting("relay_tunnel_state:" + who, text)
+            # And how far the names that leave from this relay got: for each,
+            # how many addresses answered of those it tried.
+            seen = body.get("local_egress_state")
+            if isinstance(seen, dict):
+                text = json.dumps({str(n)[:253]: [int(v.get("ok") or 0), int(v.get("tried") or 0)]
+                                   for n, v in list(seen.items())[:64] if isinstance(v, dict)},
+                                  sort_keys=True)
+                if self.store.setting("local_egress_state:" + who) != text:
+                    self.store.set_setting("local_egress_state:" + who, text)
             state = body.get("doh_name")
             if isinstance(state, dict):
                 text = json.dumps({k: str(state.get(k) or "")[:400]
@@ -6184,6 +6203,9 @@ class API(http.server.BaseHTTPRequestHandler):
                                     # panel is the one to say.
                                     "tunnel": relay_tunnel(self.store, who, self.relays,
                                                            self.tunnel),
+                                    # Names it carries itself, from Iran,
+                                    # instead of through the exit.
+                                    "local_egress": local_egress(self.store),
                                     # Which exit this relay uses, and the
                                     # others after it for when it is down.
                                     "exits": relay_exits(self.store, who, self.relays,

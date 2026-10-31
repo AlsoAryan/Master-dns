@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.9"
+VERSION="0.1.0"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -739,6 +739,11 @@ install_backpack() {
 # same file, to the byte, when the admin panel turns the tunnel on or off.
 EXIT_CONF=/etc/nginx/smartdns-exit.conf
 CUSTOMER_EXITS=/etc/nginx/smartdns-customer-exits.map
+# The names the admin panel sends out of this relay itself, not through the
+# exit: which upstream each goes to, and the upstreams. Empty until
+# smartdns-sync says; kept as they are when they are already there.
+LOCAL_EGRESS_MAP=/etc/nginx/smartdns-local-egress.map
+LOCAL_EGRESS_UPS=/etc/nginx/smartdns-local-egress.conf
 exit_upstreams() {
     local line name here there tmp
     tmp="$(mktemp)"
@@ -763,6 +768,13 @@ exit_upstreams() {
     printf '# Customers the admin panel sent through another exit than this relay'"'"'s:\n# written by the installer (empty) and smartdns-sync.\n' \
         > "$CUSTOMER_EXITS"
     chmod 644 "$CUSTOMER_EXITS"
+    for f in "$LOCAL_EGRESS_MAP" "$LOCAL_EGRESS_UPS"; do
+        if [ ! -f "$f" ]; then
+            note_file "$f"
+            printf '# Names sent out of this relay itself: written by the installer (empty) and smartdns-sync.\n' > "$f"
+            chmod 644 "$f"
+        fi
+    done
     note_file "$EXIT_CONF"
     if [ -f "$EXIT_CONF" ] && cmp -s "$tmp" "$EXIT_CONF"; then rm -f "$tmp"; return 0; fi
     mv "$tmp" "$EXIT_CONF"; chmod 644 "$EXIT_CONF"

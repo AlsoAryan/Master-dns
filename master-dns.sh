@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.0.9"
+VERSION="0.1.0"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -739,6 +739,11 @@ install_backpack() {
 # same file, to the byte, when the admin panel turns the tunnel on or off.
 EXIT_CONF=/etc/nginx/smartdns-exit.conf
 CUSTOMER_EXITS=/etc/nginx/smartdns-customer-exits.map
+# The names the admin panel sends out of this relay itself, not through the
+# exit: which upstream each goes to, and the upstreams. Empty until
+# smartdns-sync says; kept as they are when they are already there.
+LOCAL_EGRESS_MAP=/etc/nginx/smartdns-local-egress.map
+LOCAL_EGRESS_UPS=/etc/nginx/smartdns-local-egress.conf
 exit_upstreams() {
     local line name here there tmp
     tmp="$(mktemp)"
@@ -763,6 +768,13 @@ exit_upstreams() {
     printf '# Customers the admin panel sent through another exit than this relay'"'"'s:\n# written by the installer (empty) and smartdns-sync.\n' \
         > "$CUSTOMER_EXITS"
     chmod 644 "$CUSTOMER_EXITS"
+    for f in "$LOCAL_EGRESS_MAP" "$LOCAL_EGRESS_UPS"; do
+        if [ ! -f "$f" ]; then
+            note_file "$f"
+            printf '# Names sent out of this relay itself: written by the installer (empty) and smartdns-sync.\n' > "$f"
+            chmod 644 "$f"
+        fi
+    done
     note_file "$EXIT_CONF"
     if [ -f "$EXIT_CONF" ] && cmp -s "$tmp" "$EXIT_CONF"; then rm -f "$tmp"; return 0; fi
     mv "$tmp" "$EXIT_CONF"; chmod 644 "$EXIT_CONF"
@@ -3699,6 +3711,13 @@ exit 0
 #    # the tunnel is down. Written by the installer, and by smartdns-sync when
 #    # the admin panel turns this relay's tunnel on or off.
 #    include /etc/nginx/smartdns-exit.conf;
+#    # The names the admin panel sends out of this relay itself - from Iran, not
+#    # through the exit - and the upstreams they go to. Kept by smartdns-sync.
+#    include /etc/nginx/smartdns-local-egress.conf;
+#    map $ssl_preread_server_name $egress_https {
+#        include /etc/nginx/smartdns-local-egress.map;
+#        default ${to_exit}_https;
+#    }
 #    # Which exit each customer goes through: this relay's own - to_exit -
 #    # unless the admin panel sent them through another, whose upstreams put
 #    # it first. By their address; kept by smartdns-sync.
@@ -3718,7 +3737,7 @@ exit 0
 #        # The DoH names this machine answers - its own, and any the admin
 #        # panel set - kept by the installer and smartdns-sync.
 #        include /etc/nginx/smartdns-doh-names.map;
-#        default       ${to_exit}_https;
+#        default       $egress_https;
 #    }
 #    server {
 #        listen 443;
@@ -3776,7 +3795,7 @@ exit 0
 #        ssl_preread on;
 #        proxy_connect_timeout 10s;
 #        proxy_timeout 10m;
-#        proxy_pass ${to_exit}_https;
+#        proxy_pass $egress_https;
 #    }
 #    # nodoh end
 #
@@ -10457,6 +10476,16 @@ exit 0
 #    return out
 #
 #
+#def local_egress(store):
+#    """The names the admin panel wants carried by the relay itself: a list of
+#    {"name", "ips"}, as saved. An unreadable list is no list."""
+#    try:
+#        raw = json.loads(store.setting("local_egress") or "[]")
+#    except ValueError:
+#        return []
+#    return raw if isinstance(raw, list) else []
+#
+#
 #def relay_tunnel(store, relay, relays, installer_tunnel):
 #    """What the admin panel set for this relay's tunnel, for its sync: None
 #    for the first relay while the exit's installer tunnels to it - that one
@@ -10941,6 +10970,15 @@ exit 0
 #                                   "error": str(state.get("error") or "")[:400]}, sort_keys=True)
 #                if self.store.setting("relay_tunnel_state:" + who) != text:
 #                    self.store.set_setting("relay_tunnel_state:" + who, text)
+#            # And how far the names that leave from this relay got: for each,
+#            # how many addresses answered of those it tried.
+#            seen = body.get("local_egress_state")
+#            if isinstance(seen, dict):
+#                text = json.dumps({str(n)[:253]: [int(v.get("ok") or 0), int(v.get("tried") or 0)]
+#                                   for n, v in list(seen.items())[:64] if isinstance(v, dict)},
+#                                  sort_keys=True)
+#                if self.store.setting("local_egress_state:" + who) != text:
+#                    self.store.set_setting("local_egress_state:" + who, text)
 #            state = body.get("doh_name")
 #            if isinstance(state, dict):
 #                text = json.dumps({k: str(state.get(k) or "")[:400]
@@ -11044,6 +11082,9 @@ exit 0
 #                                    # panel is the one to say.
 #                                    "tunnel": relay_tunnel(self.store, who, self.relays,
 #                                                           self.tunnel),
+#                                    # Names it carries itself, from Iran,
+#                                    # instead of through the exit.
+#                                    "local_egress": local_egress(self.store),
 #                                    # Which exit this relay uses, and the
 #                                    # others after it for when it is down.
 #                                    "exits": relay_exits(self.store, who, self.relays,
@@ -13270,6 +13311,7 @@ exit 0
 #import os
 #import re
 #import socket
+#import struct
 #import ssl
 #import subprocess
 #import sys
@@ -14160,6 +14202,11 @@ exit 0
 #        body += ["address=/%s/%s" % (d, me)
 #                 for d in sorted(set(spec.get("custom") or []))
 #                 if not is_overridden(d, taken)]
+#        # Names that leave from this relay itself: for every template, because
+#        # what is wrong with the way to them is wrong for every customer.
+#        body += ["address=/%s/%s" % (e["name"], me)
+#                 for e in sorted(LOCAL_EGRESS["spec"], key=lambda e: e["name"])
+#                 if not is_overridden(e["name"], taken)]
 #        # The default template's stand-in: the main resolver's own rules, as
 #        # read from its files.
 #        body += drop_overridden(spec.get("raw") or [], taken)
@@ -15680,6 +15727,278 @@ exit 0
 #    return True
 #
 #
+## ---- Names that leave from this relay itself --------------------------------
+##
+## Some networks cut the way to part of a CDN's addresses (Irancell and Akamai's,
+## for the PlayStation and Call of Duty logins): a name sent through the exit
+## is then answered from an address the customer's own line cannot use, or from
+## abroad where the CDN gives an edge that line chokes. Such a name is better
+## carried by this relay, from Iran, to an address checked from here.
+##
+## dnsmasq answers the name with this relay, as for any routed name, and nginx's
+## 443 sends it to an upstream of CDN addresses that answered a TLS handshake a
+## moment ago instead of to the exit. Port 80 is not touched: nginx cannot tell
+## one name from another there without reading the request.
+#LOCAL_EGRESS_MAP = "/etc/nginx/smartdns-local-egress.map"
+#LOCAL_EGRESS_UPS = "/etc/nginx/smartdns-local-egress.conf"
+#LOCAL_EGRESS_DNS = "/etc/dnsmasq.d/55-smartdns-local-egress.conf"
+#LOCAL_EGRESS_EVERY = 90          # seconds between looks at the addresses
+#LOCAL_EGRESS_NAMES = 40          # names, at most
+#LOCAL_EGRESS_IPS = 8             # addresses kept for one name
+#LOCAL_EGRESS_LOOKS = 4           # times a name is asked for, to see more of the CDN's addresses
+#NAME_RE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$")
+#LOCAL_EGRESS = {"spec": [], "state": {}, "at": 0.0, "running": False, "report": None}
+#
+#
+#def clean_egress(raw):
+#    """The names and addresses the panel sent, less whatever is not one: a
+#    list of {"name", "ips"}, a name once, addresses that are public IPv4."""
+#    out, seen = [], set()
+#    for item in raw if isinstance(raw, list) else []:
+#        if not isinstance(item, dict):
+#            continue
+#        name = str(item.get("name") or "").strip().lower().rstrip(".")
+#        if name in seen or not NAME_RE.match(name):
+#            continue
+#        ips = []
+#        for ip in item.get("ips") if isinstance(item.get("ips"), list) else []:
+#            try:
+#                a = ipaddress.IPv4Address(str(ip).strip())
+#            except ValueError:
+#                continue
+#            if a.is_global and str(a) not in ips:
+#                ips.append(str(a))
+#        seen.add(name)
+#        out.append({"name": name, "ips": ips[:LOCAL_EGRESS_IPS]})
+#        if len(out) >= LOCAL_EGRESS_NAMES:
+#            break
+#    return out
+#
+#
+#def dns_lookup(server, name, timeout=2.0):
+#    """The A records `server` gives for `name`, or []. One question, one
+#    answer; a resolver that does not answer, or answers with an error, gives
+#    nothing."""
+#    server, _, port = server.partition("#")
+#    qid = os.urandom(2)
+#    query = (qid + bytes([1, 0, 0, 1, 0, 0, 0, 0, 0, 0])
+#             + b"".join(bytes([len(p)]) + p.encode() for p in name.split("."))
+#             + bytes([0, 0, 1, 0, 1]))
+#    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#    sock.settimeout(timeout)
+#    try:
+#        sock.sendto(query, (server, int(port or 53)))
+#        while True:
+#            data, _ = sock.recvfrom(4096)
+#            if len(data) >= 12 and data[:2] == qid:
+#                break
+#    except OSError:
+#        return []
+#    finally:
+#        sock.close()
+#    if not data[2] & 0x80 or data[3] & 0x0F != 0:
+#        return []
+#
+#    def skip(pos):
+#        # A name: labels, ending in a zero or a pointer.
+#        while pos < len(data):
+#            n = data[pos]
+#            if n == 0:
+#                return pos + 1
+#            if n & 0xC0 == 0xC0:
+#                return pos + 2
+#            pos += n + 1
+#        return len(data)
+#    pos = 12
+#    for _ in range(int.from_bytes(data[4:6], "big")):
+#        pos = skip(pos) + 4
+#    found = []
+#    for _ in range(int.from_bytes(data[6:8], "big")):
+#        pos = skip(pos)
+#        if pos + 10 > len(data):
+#            break
+#        kind, _, _, length = struct.unpack_from("!HHIH", data, pos)
+#        pos += 10
+#        if kind == 1 and length == 4 and pos + 4 <= len(data):
+#            found.append(socket.inet_ntoa(data[pos:pos + 4]))
+#        pos += length
+#    return found
+#
+#
+#def egress_candidates(entry):
+#    """The addresses to try for a name: the ones the admin gave, or - when
+#    none - what the resolvers this relay asks say for it, asked a few times,
+#    because a CDN gives a different set each time."""
+#    if entry["ips"]:
+#        return list(entry["ips"])
+#    servers = current_upstream() or ["1.1.1.1", "8.8.8.8"]
+#    found = []
+#    for i in range(LOCAL_EGRESS_LOOKS):
+#        for ip in dns_lookup(servers[i % len(servers)], entry["name"]):
+#            try:
+#                ok = ipaddress.IPv4Address(ip).is_global
+#            except ValueError:
+#                ok = False
+#            if ok and ip not in found:
+#                found.append(ip)
+#    return found[:LOCAL_EGRESS_IPS * 2]
+#
+#
+#def egress_ip_answers(ip, name, timeout=4.0):
+#    """Whether a TLS handshake with `name` completes through `ip` from here.
+#    Not verified: what is asked is whether the line lets the session through,
+#    which is what a choked address does not."""
+#    try:
+#        raw = socket.create_connection((ip, 443), timeout=timeout)
+#    except OSError:
+#        return False
+#    try:
+#        ctx = ssl.create_default_context()
+#        ctx.check_hostname = False
+#        ctx.verify_mode = ssl.CERT_NONE
+#        with ctx.wrap_socket(raw, server_hostname=name):
+#            return True
+#    except (OSError, ssl.SSLError, ValueError):
+#        return False
+#    finally:
+#        raw.close()
+#
+#
+#def look_at_egress(spec):
+#    """Try every name's addresses at once: {name: {"ips": the ones that
+#    answered, "tried": how many were tried}}."""
+#    state, lock = {}, threading.Lock()
+#
+#    def one(entry):
+#        tried = egress_candidates(entry)
+#        good = []
+#        for ip in tried:
+#            if egress_ip_answers(ip, entry["name"]):
+#                good.append(ip)
+#            if len(good) >= LOCAL_EGRESS_IPS:
+#                break
+#        with lock:
+#            state[entry["name"]] = {"ips": good, "tried": len(tried)}
+#    workers = [threading.Thread(target=one, args=(e,), daemon=True) for e in spec]
+#    for w in workers:
+#        w.start()
+#    for w in workers:
+#        w.join(40)
+#    return state
+#
+#
+#def egress_group(name):
+#    return "local_" + re.sub(r"[^a-z0-9]", "_", name)
+#
+#
+#def egress_nginx_texts(spec, state):
+#    """nginx's two files for what answered: the map from a name to its
+#    upstream, and the upstreams. A name no address answered for is left out,
+#    so it goes through the exit as it would have without the list."""
+#    maps, ups = [], []
+#    for entry in spec:
+#        good = (state.get(entry["name"]) or {}).get("ips") or []
+#        if not good:
+#            continue
+#        group = egress_group(entry["name"])
+#        maps.append("~*(^|\\.)%s$ %s;" % (re.escape(entry["name"]).replace("\\-", "-"), group))
+#        ups.append("upstream %s {\n%s}\n" % (group, "".join(
+#            "    server %s:443 max_fails=2 fail_timeout=20s;\n" % ip for ip in good)))
+#    head = "# Written by smartdns-sync from the admin panel's list - do not edit.\n"
+#    return head + "\n".join(maps) + ("\n" if maps else ""), head + "\n".join(ups)
+#
+#
+#def apply_egress_nginx(spec, state):
+#    """Put what answered in nginx, as one: the upstreams first, because the
+#    map names them. Put back as it was if nginx refuses."""
+#    map_text, ups_text = egress_nginx_texts(spec, state)
+#    old_map, old_ups = read_text(LOCAL_EGRESS_MAP), read_text(LOCAL_EGRESS_UPS)
+#    if old_map == map_text and old_ups == ups_text:
+#        return True
+#    write_if_changed(LOCAL_EGRESS_UPS, ups_text)
+#    write_if_changed(LOCAL_EGRESS_MAP, map_text)
+#    if sh("nginx", "-t").returncode != 0:
+#        for path, old in ((LOCAL_EGRESS_UPS, old_ups), (LOCAL_EGRESS_MAP, old_map)):
+#            if old is None:
+#                try:
+#                    os.unlink(path)
+#                except OSError:
+#                    pass
+#            else:
+#                write_if_changed(path, old)
+#        return False
+#    sh("systemctl", "reload", "nginx")
+#    return True
+#
+#
+#def refresh_local_egress(force=False):
+#    """Look at the addresses again, in the background, when the list changed
+#    or it has been a while; and keep nginx at what answered. Several looks a
+#    minute would only add load to somebody else's resolvers."""
+#    st = LOCAL_EGRESS
+#    if st["running"] or not (force or time.time() - st["at"] >= LOCAL_EGRESS_EVERY):
+#        return
+#
+#    def run():
+#        try:
+#            spec = list(st["spec"])
+#            state = look_at_egress(spec) if spec else {}
+#            if spec != st["spec"]:
+#                return      # changed while looking: the next pass looks again
+#            st["state"] = state
+#            if not apply_egress_nginx(spec, state):
+#                log(WARN, "nginx refused the names that leave from this relay - kept what it had")
+#            st["report"] = {n: {"ok": len(v["ips"]), "tried": v["tried"]}
+#                            for n, v in state.items()}
+#        except Exception as e:
+#            log(WARN, "names that leave from this relay not looked at: %r" % e)
+#        finally:
+#            st["at"] = time.time()
+#            st["running"] = False
+#    st["running"] = True
+#    threading.Thread(target=run, daemon=True).start()
+#
+#
+#def egress_dns_text(names, me):
+#    return ("# Names that leave from this relay itself, not through the exit. Generated by\n"
+#            "# smartdns-sync from the admin panel's list - edit it there, not here.\n"
+#            + "".join("address=/%s/%s\n" % (n, me) for n in sorted(names)))
+#
+#
+#def apply_local_egress(raw):
+#    """Take the panel's list of names that leave from this relay. Returns
+#    whether the main resolver's rules changed - it is restarted then, as for
+#    the operator's own domains - so the profiles are restarted too."""
+#    if is_single():
+#        return False
+#    spec = clean_egress(raw)
+#    st = LOCAL_EGRESS
+#    changed_spec = spec != st["spec"]
+#    st["spec"] = spec
+#    me = CFG.get("SELF_IP") or ""
+#    changed = False
+#    if is_ipv4(me):
+#        names = [e["name"] for e in spec]
+#        text = egress_dns_text(names, me)
+#        current = read_text(LOCAL_EGRESS_DNS)
+#        if (current or "") != text and not (not names and current is None):
+#            write_if_changed(LOCAL_EGRESS_DNS, text)
+#            if sh("/usr/sbin/dnsmasq", "--test", "-C", "/etc/dnsmasq.conf").returncode != 0:
+#                if current is None:
+#                    os.unlink(LOCAL_EGRESS_DNS)
+#                else:
+#                    write_if_changed(LOCAL_EGRESS_DNS, current)
+#                log(ERROR, "names that leave from this relay rejected by dnsmasq - reverted")
+#            else:
+#                sh("systemctl", "restart", "dnsmasq")
+#                changed = True
+#                print("names that leave from this relay: %d" % len(names), flush=True)
+#    if changed_spec:
+#        st["state"], st["report"] = {}, None
+#    refresh_local_egress(force=changed_spec)
+#    return changed
+#
+#
 #def apply_node_relays(raw, tunnels=None):
 #    """Let in exactly the relays the panel serves. An empty or unreadable
 #    list changes nothing: it would shut every relay out. A relay with a
@@ -16602,6 +16921,8 @@ exit 0
 #        payload["probe_result"] = checked
 #    if TUNNEL_REPORT["state"] is not None:
 #        payload["tunnel_state"] = TUNNEL_REPORT["state"]
+#    if LOCAL_EGRESS["report"] is not None:
+#        payload["local_egress_state"] = LOCAL_EGRESS["report"]
 #    if WG_REPORT["state"] is not None:
 #        if WG_REPORT["state"].get("on"):
 #            try:
@@ -16749,6 +17070,13 @@ exit 0
 #    try:
 #        custom = answer.get("extra_domains") or []
 #        changed = apply_custom_domains(custom)
+#        # The names that leave from this relay itself. Before the profiles,
+#        # which route them too; and a restart of the main resolver is a
+#        # restart of theirs.
+#        try:
+#            changed = apply_local_egress(answer.get("local_egress")) or changed
+#        except Exception as e:
+#            log(WARN, "names that leave from this relay not applied: %r" % e)
 #        assignment = {a["ip"]: a.get("profile", "")
 #                      for a in answer.get("allowed", []) if a.get("profile")}
 #        profiles = dict(answer.get("profiles") or {})
@@ -23428,6 +23756,106 @@ exit 0
 #}
 #
 #
+## Names a network is known to choke when they go through the exit - the CDN's
+## addresses abroad are not the ones its own line can use - and the way out of
+## it: carried by the relay itself, from Iran. One tap adds them.
+#EGRESS_PRESETS = (
+#    ("PlayStation و Call of Duty روی ایرانسل",
+#     ("rex-ps5-loginservice.prod.demonware.net", "ps5.np.playstation.net",
+#      "gs-sec.ww.np.dl.playstation.net", "uef.np.dl.playstation.net")),
+#)
+#EGRESS_MAX = 40
+#
+#
+#def egress_list():
+#    """The saved list: [{"name", "ips"}]."""
+#    try:
+#        raw = json.loads(setting("local_egress") or "[]")
+#    except ValueError:
+#        return []
+#    return [e for e in raw if isinstance(e, dict) and e.get("name")] if isinstance(raw, list) else []
+#
+#
+#def egress_save(items):
+#    put_setting("local_egress", json.dumps(items[:EGRESS_MAX], sort_keys=True))
+#
+#
+#def egress_ips(text):
+#    """Addresses typed in a box - spaces, commas or lines between them - as
+#    public IPv4 ones, once each. ValueError names the one that is not."""
+#    out = []
+#    for part in re.split(r"[\s,;]+", text or ""):
+#        if not part:
+#            continue
+#        try:
+#            ip = ipaddress.IPv4Address(part)
+#        except ValueError:
+#            raise ValueError("%s آدرس IPv4 نیست" % part[:40])
+#        if not ip.is_global:
+#            raise ValueError("%s آدرس عمومی نیست" % part)
+#        if str(ip) not in out:
+#            out.append(str(ip))
+#    return out[:8]
+#
+#
+#def egress_card(p):
+#    """Settings: the names the relay carries itself, from Iran, instead of
+#    sending them through the exit - with how many addresses answered, as the
+#    relays last said."""
+#    if one_server() or not [ip for ip in relay_list() if not is_single_server(ip)]:
+#        return ""
+#    items = egress_list()
+#    states = {}
+#    for ip in relay_list():
+#        row = STORE.one("SELECT value FROM settings WHERE key = ?", ("local_egress_state:" + ip,))
+#        try:
+#            states[ip] = json.loads(row["value"]) if row and row["value"] else None
+#        except ValueError:
+#            states[ip] = None
+#    rows = []
+#    for e in items:
+#        seen = [st.get(e["name"]) for st in states.values() if st]
+#        if not seen:
+#            state = "<span class='muted'>هنوز رله جوابی نداده</span>"
+#        else:
+#            good = min(s[0] for s in seen if s) if all(seen) else 0
+#            tried = max((s[1] for s in seen if s), default=0)
+#            state = ("<span class='ok'>%d آدرس سالم از %d</span>" % (good, tried) if good else
+#                     "<span class='warn'>آدرس سالمی پیدا نشد؛ از سرور خارج می‌رود</span>")
+#        rows.append(
+#            "<tr><td dir='ltr'><code>%s</code></td><td>%s</td><td>%s</td><td>"
+#            "<form method='post' action='/%s/egress-del'><input type='hidden' name='name' "
+#            "value='%s'><button class='ghost'>حذف</button></form></td></tr>"
+#            % (html.escape(e["name"]),
+#               "<span dir='ltr'>%s</span>" % html.escape(" ".join(e.get("ips") or []))
+#               if e.get("ips") else "<span class='muted'>خودکار، از روی رله</span>",
+#               state, p, html.escape(e["name"], quote=True)))
+#    have = {e["name"] for e in items}
+#    presets = "".join(
+#        "<form method='post' action='/%s/egress-preset' style='display:inline'>"
+#        "<input type='hidden' name='i' value='%d'><button class='ghost'%s>+ %s</button></form> "
+#        % (p, i, " disabled" if all(n in have for n in names) else "", html.escape(label))
+#        for i, (label, names) in enumerate(EGRESS_PRESETS))
+#    return (
+#        "<div class='card' id='egress'><h2>نام‌هایی که از خود رلهٔ ایران بروند</h2>"
+#        "<p class='muted'>بعضی اپراتورها راه به بخشی از آدرس‌های CDN را می‌بندند (مثلاً ایرانسل و "
+#        "آکامای برای ورود PlayStation و Call of Duty). نامی که این‌جا بنویسید، نه از سرور خارج، "
+#        "بلکه از خود رله و با آدرسی که همان لحظه از ایران جواب داده می‌رود. رله هر چند دقیقه "
+#        "آدرس‌ها را دوباره امتحان می‌کند و خراب‌ها را کنار می‌گذارد؛ اگر هیچ آدرسی سالم نبود، "
+#        "نام مثل قبل از سرور خارج می‌رود. فقط درگاه ۴۴۳ (HTTPS) را شامل می‌شود.</p>%s"
+#        "<form method='post' action='/%s/egress-add' class='row' style='margin-top:12px'>"
+#        "<label style='margin:0'>نام</label><input name='name' dir='ltr' placeholder='auth.example.com' "
+#        "style='min-width:260px'><label style='margin:0'>آدرس‌ها (اختیاری)</label>"
+#        "<input name='ips' dir='ltr' placeholder='خالی = خودکار' style='min-width:200px'>"
+#        "<button>افزودن</button></form>"
+#        "<p class='muted'>نام را با زیردامنه‌هایش می‌گیرد. آدرس خالی بماند، رله خودش پیدا می‌کند "
+#        "(پیشنهاد می‌شود)؛ اگر آدرس بدهید فقط همان‌ها امتحان می‌شوند.</p>"
+#        "<div style='margin-top:8px'>%s</div></div>"
+#        % ("<div class='card wide' style='padding:0;box-shadow:none'><table><tr><th>نام</th>"
+#           "<th>آدرس‌ها</th><th>وضعیت</th><th></th></tr>%s</table></div>" % "".join(rows)
+#           if rows else "<p class='muted'>هنوز نامی نیست.</p>", p, presets))
+#
+#
 #def tunnel_settings_card(p):
 #    """Settings: how the relay and the exit are joined, changed for both of
 #    them with one button - the form is the relays card's, in plainer words,
@@ -25640,6 +26068,60 @@ exit 0
 #a.chip{padding:5px 14px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--dim)}
 #a.chip:hover{background:var(--row);color:var(--accent);border-color:var(--accent)}
 #html{scroll-behavior:smooth}h3.sec{scroll-margin-top:16px}
+#/* ---- plans ---- */
+#.pagehead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+#.pagehead h2{margin-bottom:4px}
+#.plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-top:18px}
+#.plan{border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;
+# background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 8%,var(--bg)),var(--bg) 65%);
+# transition:border-color .2s,transform .2s}
+#.plan:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));transform:translateY(-2px)}
+#.plan.off{opacity:.65;border-style:dashed}
+#.plan .phead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#.plan .ptitle{font-size:17px;flex:1}
+#.plan .price{font-size:13px;color:var(--muted)}
+#.plan .price b{font-size:26px;color:var(--fg);margin-inline-end:6px}
+#.plan .facts{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#.plan .facts li{display:flex;justify-content:space-between;gap:10px;font-size:13px;
+# padding:6px 0;border-bottom:1px dashed var(--line)}
+#.plan .facts li span{color:var(--muted)}
+#.plan footer{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#.plan footer .acts{display:flex;gap:6px;align-items:center}.plan footer .acts form{margin:0}
+#dialog.pd{border:1px solid var(--line2);border-radius:24px;padding:0;background:var(--card);color:var(--fg);
+# width:min(640px,94vw);max-height:90vh;overflow:auto;box-shadow:var(--pop)}
+#dialog.pd::backdrop{background:rgba(0,0,0,.45);backdrop-filter:blur(6px)}
+#dialog.pd form{padding:24px;display:flex;flex-direction:column;gap:14px}
+#dialog.pd .ptitle{font-size:19px}
+#dialog.pd fieldset{border:1px solid var(--line);border-radius:16px;padding:12px 16px 16px;margin:0;min-width:0}
+#dialog.pd legend{padding:0 8px;font-size:12.5px;color:var(--muted);font-weight:600}
+#.pf{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+#.pf label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--dim)}
+#.pf label.wide{grid-column:1/-1}
+#.pf .check{display:flex;align-items:center;gap:6px;color:var(--muted)}
+#.pf input:disabled{opacity:.45}
+#label.srv{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
+#dialog.pd .bar2{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:-24px;padding:12px 0 0;
+# background:var(--card)}
+#/* ---- templates ---- */
+#.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:18px}
+#.tpl{border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;
+# background:linear-gradient(160deg,color-mix(in srgb,var(--accent2) 8%,var(--bg)),var(--bg) 65%);
+# transition:border-color .2s,transform .2s}
+#.tpl:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));transform:translateY(-2px)}
+#.tpl .phead{display:flex;align-items:center;gap:8px}.tpl .ptitle{font-size:17px;flex:1}
+#.tpl p{margin:0}
+#.meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+#.meter i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+#.tpl .chips{display:flex;flex-wrap:wrap;gap:6px;padding:0}
+#.tpl .chip{padding:3px 10px;border-radius:999px;font-size:12px;background:var(--row);color:var(--dim)}
+#.tpl .chip.more{background:transparent;border:1px dashed var(--line2)}
+#.tpl .foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#a.btn{display:inline-block;padding:7px 16px;border-radius:12px;background:var(--accent);color:var(--card);font-weight:600}
+#.seg{display:inline-flex;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+#.seg button{border:0;border-radius:0;background:transparent;color:var(--dim);box-shadow:none;margin:0}
+#.seg button.on{background:var(--accent);color:var(--card)}
+#.savebar{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;
+# margin-top:16px;padding:12px 0;background:var(--card);border-top:1px solid var(--line);z-index:5}
 #.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
 # white-space:nowrap;background:var(--row);color:var(--dim)}
 #.pill.ok{background:var(--good-bg);color:var(--accent)}
@@ -27468,24 +27950,57 @@ exit 0
 #    return (setting("server_name:" + ip) or "").strip() or ip
 #
 #
-#def server_title(ip, role=""):
-#    """A server as a person reads it: name, then address."""
-#    name = server_name(ip)
-#    return name if name != ip else ip
-#
-#
 #def server_label(ip):
 #    note = setting("server_note:" + ip) or ""
 #    return "%s%s" % (ip, " — " + note if note else "")
 #
 #
-#def plan_fields(form, tpls, plan=None, servers=None, exits=None):
-#    """The inputs of one plan, bound to the form with that id - a row of
-#    the table or the new-plan card use the same ones. With `servers`, the
-#    relays and single servers, a line for each: not on it, automatic - the
-#    server abroad that relay goes out of - or one of `exits`, the servers
-#    abroad, which it then goes out of for this plan's customers."""
+## What the plans page does with a click: open a plan's dialog, close it, and
+## grey out what a tick makes pointless. The page works without it for reading.
+#PLAN_SCRIPT = """<script>
+#(function () {
+#  document.addEventListener('click', function (e) {
+#    var open = e.target.closest('[data-dlg]');
+#    if (open) return document.getElementById(open.dataset.dlg).showModal();
+#    var close = e.target.closest('[data-close]');
+#    if (close) return close.closest('dialog').close();
+#    // A click on the dim area around a dialog is outside its box.
+#    if (e.target.tagName === 'DIALOG') e.target.close();
+#  });
+#  function tie(form) {
+#    var unlimited = form.querySelector('[name=unlimited]'), quota = form.querySelector('[name=quota_gb]');
+#    var trial = form.querySelector('[name=trial]'), price = form.querySelector('[name=price]');
+#    function sync() {
+#      if (quota) quota.disabled = unlimited && unlimited.checked;
+#      if (price) price.disabled = trial && trial.checked;
+#    }
+#    form.addEventListener('change', sync);
+#    sync();
+#  }
+#  document.querySelectorAll('dialog.pd form').forEach(tie);
+#})();
+#</script>"""
+#
+#
+#def money(n):
+#    """A price as people write it: 1,200,000."""
+#    return "{:,}".format(int(n or 0))
+#
+#
+#def plan_form_fields(plan, tpls, servers=None, exits=None):
+#    """The inputs of one plan, in the groups a person thinks in - what it is,
+#    how much it gives, what it costs - for the form of a plan's dialog. With
+#    `servers`, the relays and single servers, one more group: a line for each,
+#    not on it, automatic - the server abroad that relay goes out of - or one of
+#    `exits`, which it then goes out of for this plan's customers."""
 #    plan = plan or {}
+#    tid = plan.get("template_id")
+#    template = "".join("<option value='%d'%s>%s</option>"
+#                       % (t["id"], " selected" if t["id"] == tid else "", html.escape(t["name"]))
+#                       for t in tpls)
+#    quota = plan.get("quota_bytes")
+#    unlimited = bool(plan) and not quota
+#    kbps = plan.get("speed_kbps") or 0
 #    where = ""
 #    if servers:
 #        route = plan_route(plan, servers) if plan else {ip: "auto" for ip in servers}
@@ -27496,35 +28011,89 @@ exit 0
 #            if not is_single_server(ip):
 #                choices += [(x, x) for x in exits or []]
 #            lines.append(
-#                "<label style='display:block;white-space:nowrap' dir='ltr'>%s "
-#                "<select form='%s' name='re_%s'>%s</select></label>"
-#                % (html.escape(server_label(ip)), form, ip, "".join(
-#                    "<option value='%s'%s>%s</option>" % (v, " selected" if v == now else "",
-#                                                          html.escape(t))
-#                    for v, t in choices)))
-#        where = "<td>%s</td>" % "".join(lines)
-#    tid = plan.get("template_id")
-#    sel = "".join("<option value='%d'%s>%s</option>"
-#                  % (t["id"], " selected" if t["id"] == tid else "",
-#                     html.escape(t["name"])) for t in tpls)
-#    quota = plan.get("quota_bytes")
-#    unlimited = plan and not quota
-#    kbps = plan.get("speed_kbps") or 0
+#                "<label class='srv'><span>%s</span><select name='re_%s'>%s</select></label>"
+#                % (ip_cell(ip), ip, "".join(
+#                    "<option value='%s'%s>%s</option>"
+#                    % (v, " selected" if v == now else "", html.escape(t)) for v, t in choices)))
+#        where = ("<fieldset><legend>سرورها</legend>%s<p class='muted'>برای هر سرور انتخاب کنید پلن "
+#                 "روی آن فروخته شود یا نه، و مشتری از آن رله از کدام سرور خارج بیرون برود. «—» یعنی "
+#                 "پلن روی این سرور نیست. «خودکار» یعنی سرور خارج خود آن رله. یک سرور خارج مشخص یعنی "
+#                 "مشتری فقط از همان بیرون می‌رود و اگر از کار بیفتد، تا برگشتنش از بقیه. روشن یا "
+#                 "خاموش‌شدن پلن روی یک سرور همان لحظه برای همهٔ دارندگانش اعمال می‌شود؛ سرور خارج از "
+#                 "خرید یا تمدید بعدی.</p></fieldset>" % "".join(lines))
 #    return (
-#        "<td><input form='%s' name='name' value='%s' size='12' required maxlength='60' placeholder='مثلاً گیمینگ ماهانه'></td><td><select form='%s' name='template_id'>%s</select></td><td><input form='%s' name='days' value='%s' size='3' required inputmode='numeric' placeholder='۳۰'></td><td><input form='%s' name='quota_gb' value='%s' size='4' inputmode='decimal' placeholder='گیگ'><label style='display:inline;margin-right:6px'><input form='%s' type='checkbox' name='unlimited' value='1'%s> "
-#        "نامحدود</label></td><td><input form='%s' name='price' value='%s' size='7' inputmode='numeric' placeholder='تومان'><label style='display:block;margin-top:4px' title='رایگان، با یک کلیک، هر تلگرام و هر حساب یک بار'><input form='%s' type='checkbox' name='trial' value='1'%s> "
-#        "🎁 تست "
-#        "رایگان</label></td><td><input form='%s' name='speed_mb' value='%s' size='3' inputmode='decimal' title='مگابیت بر ثانیه؛ خالی یا ۰ یعنی بی‌حد'></td><td><input form='%s' name='devices' value='%s' size='2' inputmode='numeric' title='چند آی‌پی هم‌زمان، ۱ تا ۵'></td><td><input form='%s' name='note' value='%s' size='14' maxlength='120' placeholder='اختیاری'></td>%s"
-#        % (form, html.escape(plan.get("name") or "", quote=True),
-#           form, sel,
-#           form, plan.get("days") or "",
-#           form, ("%g" % (quota / GB)) if quota else "",
-#           form, " checked" if unlimited else "",
-#           form, plan.get("price") if plan else "",
-#           form, " checked" if plan.get("is_trial") else "",
-#           form, ("%g" % (kbps / 1000.0)) if kbps else "",
-#           form, plan.get("devices") or 1,
-#           form, html.escape(plan.get("note") or "", quote=True), where))
+#        "<fieldset><legend>پلن</legend><div class='pf'>"
+#        "<label>نام<input name='name' value='%s' required maxlength='60' "
+#        "placeholder='مثلاً گیمینگ ماهانه'></label>"
+#        "<label>قالب سرویس<select name='template_id'>%s</select></label></div></fieldset>"
+#        "<fieldset><legend>چه چیزی می‌دهد</legend><div class='pf'>"
+#        "<label>مدت (روز)<input name='days' value='%s' required inputmode='numeric' "
+#        "placeholder='۳۰'></label>"
+#        "<label>حجم (گیگ)<input name='quota_gb' value='%s' inputmode='decimal' placeholder='گیگ'>"
+#        "<span class='check'><input type='checkbox' name='unlimited' value='1'%s> نامحدود</span>"
+#        "</label>"
+#        "<label>سرعت (Mb/s)<input name='speed_mb' value='%s' inputmode='decimal' "
+#        "placeholder='بی‌حد'></label>"
+#        "<label>دستگاه هم‌زمان<input name='devices' value='%s' inputmode='numeric' "
+#        "placeholder='۱ تا ۵'></label></div></fieldset>"
+#        "<fieldset><legend>فروش</legend><div class='pf'>"
+#        "<label>قیمت (تومان)<input name='price' value='%s' inputmode='numeric' placeholder='تومان'>"
+#        "<span class='check' title='رایگان، با یک کلیک، هر تلگرام و هر حساب یک بار'>"
+#        "<input type='checkbox' name='trial' value='1'%s> 🎁 تست رایگان</span></label>"
+#        "<label class='wide'>توضیح برای مشتری<input name='note' value='%s' maxlength='120' "
+#        "placeholder='اختیاری'></label></div></fieldset>%s"
+#        % (html.escape(plan.get("name") or "", quote=True), template,
+#           plan.get("days") or "",
+#           ("%g" % (quota / GB)) if quota else "", " checked" if unlimited else "",
+#           ("%g" % (kbps / 1000.0)) if kbps else "", plan.get("devices") or 1,
+#           plan.get("price") if plan else "", " checked" if plan.get("is_trial") else "",
+#           html.escape(plan.get("note") or "", quote=True), where))
+#
+#
+#def plan_dialog(p, dialog_id, plan, tpls, servers, exits):
+#    """One plan's editor, a dialog: the same form whether it makes a plan or
+#    changes one."""
+#    return (
+#        "<dialog class='pd' id='%s'><form method='post' action='/%s/plan-save'>"
+#        "<input type='hidden' name='id' value='%d'><strong class='ptitle'>%s</strong>%s"
+#        "<div class='bar2'><button>ذخیره</button><button type='button' class='ghost' "
+#        "data-close='1'>بستن</button></div></form></dialog>"
+#        % (dialog_id, p, plan.get("id") or 0,
+#           "ویرایش پلن" if plan else "پلن تازه",
+#           plan_form_fields(plan, tpls, servers, exits)))
+#
+#
+#def plan_card(p, r, tpls, servers, exits):
+#    """One plan as the customer would weigh it - what it gives, for how long,
+#    at what price - and what the operator can do with it."""
+#    trial = bool(r["is_trial"]) if "is_trial" in r.keys() else False
+#    quota = ("%g گیگ" % (r["quota_bytes"] / GB)) if r["quota_bytes"] else "نامحدود"
+#    speed = ("%g Mb/s" % (r["speed_kbps"] / 1000.0)) if r["speed_kbps"] else "بی‌حد"
+#    tpl = next((t["name"] for t in tpls if t["id"] == r["template_id"]), "—")
+#    ask = html.escape(json.dumps("پلن «%s» حذف شود؟" % r["name"], ensure_ascii=False), quote=True)
+#    badges = ("<span class='pill ok'>🎁 تست رایگان</span>" if trial else "") \
+#        + ("" if r["active"] else "<span class='pill warn'>خاموش</span>")
+#    return (
+#        "<article class='plan%s'><div class='phead'><strong class='ptitle'>%s</strong>%s</div>"
+#        "<div class='price'>%s<small>%s</small></div>"
+#        "<ul class='facts'><li><span>حجم</span><b>%s</b></li><li><span>سرعت</span><b dir='ltr'>%s"
+#        "</b></li><li><span>دستگاه</span><b>%d</b></li><li><span>قالب</span><b>%s</b></li></ul>"
+#        "<footer><span class='muted'>👥 %d مشتری</span><span class='acts'>"
+#        "<button type='button' data-dlg='pd%d'>ویرایش</button>"
+#        "<form method='post' action='/%s/plan-active'><input type='hidden' name='id' value='%d'>"
+#        "<input type='hidden' name='to' value='%d'><button class='ghost' title='%s'>%s</button></form>"
+#        "<form method='post' action='/%s/plan-delete' onsubmit='return confirm(%s)'>"
+#        "<input type='hidden' name='id' value='%d'><button class='del'>حذف</button></form>"
+#        "</span></footer>%s</article>"
+#        % ("" if r["active"] else " off", html.escape(r["name"]), badges,
+#           "رایگان" if trial else "<b>%s</b>" % money(r["price"]),
+#           "" if trial else " تومان · %d روز" % r["days"],
+#           quota, speed, r["devices"] or 1, html.escape(tpl), r["holders"],
+#           r["id"], p, r["id"], 0 if r["active"] else 1,
+#           "دیگر فروخته نشود؛ دارندگانش تا آخر دوره می‌مانند" if r["active"]
+#           else "دوباره فروخته شود",
+#           "خاموش کردن" if r["active"] else "روشن کردن", p, ask, r["id"],
+#           plan_dialog(p, "pd%d" % r["id"], dict(r), tpls, servers, exits)))
 #
 #
 #def plan_cell(user, plans):
@@ -27752,7 +28321,9 @@ exit 0
 #    "node-add": "nodes", "node-del": "nodes", "relay-add": "nodes", "relay-del": "nodes",
 #    "single-add": "nodes", "relay-exit": "nodes", "relay-tunnel": "nodes", "cap-save": "nodes",
 #    "upgrade-start": "nodes", "upgrade-stop": "nodes", "update-check": "settings",
-#    "public-dns": "settings", "server-list-save": "nodes", "server-name-save": "nodes", "seller-server-notes": ANYONE,
+#    "public-dns": "settings", "server-list-save": "nodes", "server-name-save": "nodes",
+#    "seller-server-notes": ANYONE, "egress-add": "settings", "egress-del": "settings",
+#    "egress-preset": "settings",
 #    "dns-bench": "settings", "dns-upstream": "settings", "doh-name": "settings",
 #    "telegram-required": "settings", "portal-open": "settings", "calendar-save": "settings", "watch-start": "logs", "diagnose-start": "logs",
 #    "me-password": ANYONE, "view-as-stop": ANYONE}
@@ -29992,59 +30563,40 @@ exit 0
 #                       " ORDER BY p.active DESC, p.template_id, p.price, p.id",
 #                       (s["id"] if s else 0,))
 #        p = CFG["ADMIN_PATH"]
-#        # With more than one server, a tick for each: the ones the plan is
-#        # sold on, which are then the only ones that serve its customers.
+#        # With more than one server, a line for each in a plan's dialog: the
+#        # ones the plan is sold on, which are then the only ones that serve its
+#        # customers. Once there is anything to choose: more than one relay, or
+#        # more than one server abroad to go out of.
 #        may_route = s is None or s["can_route"]
-#        # One line per server once there is anything to choose: more than
-#        # one relay, or more than one server abroad to go out of.
 #        exits = [exit_address()] + node_list()
 #        servers = ordered_servers()[0] if may_route and (
 #            len(relay_list()) > 1 or node_list()) else None
-#        head = ("<tr><th>نام</th><th>قالب</th><th>روز</th><th>حجم (گیگ)</th>"
-#                "<th>قیمت (تومان)</th><th>سرعت Mb/s</th><th>دستگاه</th>"
-#                "<th>توضیح برای مشتری</th>"
-#                + ("<th>سرورها</th>" if servers else "") + "<th>%s</th><th></th></tr>")
-#        out = ["<div class='card'><h2>پلن‌ها (%d)</h2>" % len(rows)]
-#        if not rows:
-#            out.append("<p class='muted'>هنوز پلنی تعریف نکرده‌اید. تا وقتی پلنی نباشد، مشتری رسید را بدون "
-#                       "انتخاب پلن می‌فرستد و سهمیه را خودتان می‌گذارید.</p>")
-#        else:
-#            out.append("<table>" + head % "مشتری")
-#            for r in rows:
-#                form = "p%d" % r["id"]
-#                ask = html.escape(json.dumps("پلن «%s» حذف شود؟" % r["name"],
-#                                             ensure_ascii=False), quote=True)
-#                out.append(
-#                    "<tr%s>%s<td>%d</td><td class='acts'><form id='%s' method='post' action='/%s/plan-save'><input type='hidden' name='id' value='%d'></form><button form='%s'>ذخیره</button><form method='post' action='/%s/plan-active'><input type='hidden' name='id' value='%d'><input type='hidden' name='to' value='%d'><button class='ghost' title='%s'>%s</button></form><form method='post' action='/%s/plan-delete' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='del'>حذف</button></form></td></tr>"
-#                    % ("" if r["active"] else " class='off'",
-#                       plan_fields(form, tpls, dict(r), servers, exits), r["holders"],
-#                       form, p, r["id"], form,
-#                       p, r["id"], 0 if r["active"] else 1,
-#                       "دیگر فروخته نشود؛ دارندگانش تا آخر دوره می‌مانند"
-#                       if r["active"] else "دوباره فروخته شود",
-#                       "خاموش" if r["active"] else "روشن",
-#                       p, ask, r["id"]))
-#            out.append("</table>")
+#        selling = sum(1 for r in rows if r["active"])
+#        customers = sum(r["holders"] for r in rows)
+#        out = ["<div class='card'><div class='pagehead'><div><h2>پلن‌ها</h2>"
+#               "<span class='muted'>%s</span></div><button type='button' data-dlg='pdnew'%s>＋ پلن "
+#               "تازه</button></div>"
+#               % ("%d پلن در فروش · %d مشتری روی پلن" % (selling, customers) if rows else
+#                  "هنوز پلنی تعریف نکرده‌اید. تا وقتی پلنی نباشد، مشتری رسید را بدون انتخاب پلن "
+#                  "می‌فرستد و سهمیه را خودتان می‌گذارید.",
+#                  "" if tpls else " disabled title='اول یک قالب بسازید'")]
+#        if rows:
+#            out.append("<div class='plans'>%s</div>"
+#                       % "".join(plan_card(p, r, tpls, servers, exits) for r in rows))
 #        out.append("</div>")
-#        out.append("<div class='card'><h2>ساخت "
-#                   "پلن</h2><form id='pnew' method='post' action='/%s/plan-save'></form><table>%s<tr>%s<td></td><td><button form='pnew'>ساختن</button></td></tr></table><p class='muted'>هر "
-#                   "پلن ترکیبی است از یک قالب، چند روز مدت، یک حجم و یک قیمت. مشتری در پنل خودش پلن را "
-#                   "برمی‌گزیند و رسید می‌فرستد؛ با تأیید شما همه‌چیز خودکار روی حسابش اعمال می‌شود. خرید "
-#                   "دوبارهٔ همان پلن پیش از تمام شدنش تمدید است: روزها و حجم روی باقی‌مانده اضافه "
-#                   "می‌شوند. خرید پلن دیگر از همان لحظه از نو شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ "
-#                   "این را پیش از خرید به مشتری می‌گوییم. «نامحدود» فقط با تیک خودش؛ خانهٔ خالیِ حجم "
-#                   "پذیرفته نمی‌شود.</p>%s<p class='muted'>🎁 «تست رایگان» فروخته نمی‌شود؛ مشتری با یک کلیک "
-#                   "آن را از پنل خودش یا ربات برمی‌دارد. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب "
-#                   "فقط یک بار. کسی که همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین "
-#                   "نرود. یک پلن تست در یک زمان.</p></div>"
-#                   % (p, head % "", plan_fields("pnew", tpls, servers=servers, exits=exits),
-#                      "<p class='muted'>سرورها: برای هر سرور انتخاب کنید پلن روی آن باشد یا "
-#                      "نه، و مشتری از آن رله از کدام سرور خارج بیرون برود. «—» یعنی پلن روی "
-#                      "این سرور نیست: مشتری DNS آن را نمی‌بیند و اگر بزند، پنل مشتری برایش "
-#                      "باز می‌شود. «خودکار» یعنی سرور خارج خود آن رله. یک سرور خارج مشخص "
-#                      "یعنی مشتری از آن رله فقط از همان بیرون می‌رود، و اگر از کار بیفتد، تا "
-#                      "برگشتنش از بقیه. روی/نبودن پلن همان لحظه برای همهٔ دارندگانش اعمال "
-#                      "می‌شود؛ سرور خارج از خرید یا تمدید بعدی.</p>" if servers else ""))
+#        out.append(plan_dialog(p, "pdnew", {}, tpls, servers, exits))
+#        out.append(
+#            "<div class='card'><h3 style='margin-top:0'>این صفحه چطور کار می‌کند؟</h3>"
+#            "<p class='muted'>هر پلن ترکیبی است از یک قالب، چند روز مدت، یک حجم و یک قیمت. مشتری در "
+#            "پنل خودش پلن را برمی‌گزیند و رسید می‌فرستد؛ با تأیید شما همه‌چیز خودکار روی حسابش اعمال "
+#            "می‌شود.</p><p class='muted'><b>تمدید:</b> خرید دوبارهٔ همان پلن پیش از تمام شدنش تمدید "
+#            "است؛ روزها و حجم روی باقی‌مانده اضافه می‌شوند. <b>پلن دیگر:</b> از همان لحظه از نو "
+#            "شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ این را پیش از خرید به مشتری می‌گوییم.</p>"
+#            "<p class='muted'><b>نامحدود</b> فقط با تیک خودش؛ خانهٔ خالیِ حجم پذیرفته نمی‌شود.</p>"
+#            "<p class='muted'>🎁 <b>تست رایگان</b> فروخته نمی‌شود؛ مشتری با یک کلیک آن را از پنل خودش "
+#            "یا ربات برمی‌دارد. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب فقط یک بار. کسی که "
+#            "همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین نرود. یک پلن تست در یک "
+#            "زمان.</p></div>" + PLAN_SCRIPT)
 #        if s is None:
 #            out.append(devices_card(p))
 #            out.append(discounts_card(p))
@@ -30447,50 +30999,71 @@ exit 0
 #        default = STORE.one("SELECT id FROM templates WHERE is_default = 1")
 #        did = default["id"] if default else 0
 #        p = CFG["ADMIN_PATH"]
-#        out = ["<div class='card'><h2>قالب‌های "
-#               "سرویس</h2><table><tr><th>نام</th><th>کاربر</th><th>سرویس‌ها</th><th>دامنه‌ها</th><th></th></tr>"]
+#        extra, more = mine()      # a seller counts their own customers only
+#        catalogue = catalogue_now()
+#        total_dom = sum(len(g["domains"]) for svc in catalogue for g in svc["groups"])
+#        cards = []
 #        for t in tpls:
-#            # A seller counts their own customers only.
-#            extra, more = mine()
 #            users = STORE.one("SELECT count(*) c FROM users u"
 #                              " WHERE COALESCE(u.template_id, ?) = ?" + extra,
 #                              (did, t["id"]) + more)["c"]
-#            name = html.escape(t["name"])
+#            editable = s is None or t["owner_admin"] == s["id"]
 #            if t["is_default"]:
-#                out.append("<tr><td>%s <span class='muted'>(پیش‌فرض)</span></td>"
-#                           "<td>%d</td><td colspan='2' class='muted'>همه، از جمله "
-#                           "سرویس‌هایی که بعداً اضافه شوند</td><td></td></tr>"
-#                           % (name, users))
-#                continue
-#            groups = STORE.template_groups(t["id"])
-#            off = STORE.template_domains_off(t["id"])
-#            n_groups = n_dom = total_dom = 0
-#            for svc in catalogue_now():
-#                for g in svc["groups"]:
-#                    total_dom += len(g["domains"])
-#                    if (svc["key"], g["key"]) in groups:
-#                        n_groups += 1
-#                        n_dom += sum(1 for d in g["domains"] if d not in off)
-#            out.append("<tr><td>%s</td><td>%d</td><td>%d</td>"
-#                       "<td>%d <span class='muted'>از %d</span></td>"
-#                       "<td>%s</td></tr>"
-#                       % (name, users, n_groups, n_dom, total_dom,
-#                          "<a href='/%s/templates?t=%d'>ویرایش</a>" % (p, t["id"])
-#                          if s is None or t["owner_admin"] == s["id"] else ""))
-#        out.append("</table></div>")
+#                body = ("<p class='muted'>همهٔ سرویس‌ها، از جمله سرویس‌هایی که بعداً اضافه شوند. "
+#                        "قابل ویرایش نیست؛ یک قالب تازه بسازید.</p>")
+#                bar = ""
+#                badge = "<span class='pill ok'>پیش‌فرض</span>"
+#            else:
+#                groups = STORE.template_groups(t["id"])
+#                off = STORE.template_domains_off(t["id"])
+#                on_services, n_dom = [], 0
+#                for svc in catalogue:
+#                    kept = [g for g in svc["groups"] if (svc["key"], g["key"]) in groups]
+#                    if kept:
+#                        on_services.append(svc["label"])
+#                        n_dom += sum(1 for g in kept for d in g["domains"] if d not in off)
+#                chips = "".join("<span class='chip'>%s</span>" % html.escape(x)
+#                                for x in on_services[:8])
+#                if len(on_services) > 8:
+#                    chips += "<span class='chip more'>+%d</span>" % (len(on_services) - 8)
+#                body = ("<div class='meter' title='%d از %d دامنه'><i style='width:%d%%'></i></div>"
+#                        "<p class='muted'>%d سرویس · %d از %d دامنه</p><div class='chips'>%s</div>"
+#                        % (n_dom, total_dom, int(100.0 * n_dom / total_dom) if total_dom else 0,
+#                           len(on_services), n_dom, total_dom,
+#                           chips or "<span class='muted'>هیچ سرویسی روشن نیست</span>"))
+#                badge = ""
+#                bar = ("<a class='btn' href='/%s/templates?t=%d'>ویرایش</a>" % (p, t["id"])
+#                       if editable else "")
+#            cards.append("<article class='tpl'><div class='phead'><strong class='ptitle'>%s</strong>"
+#                         "%s</div>%s<div class='foot'><span class='muted'>👥 %d مشتری</span>%s"
+#                         "</div></article>"
+#                         % (html.escape(t["name"]), badge, body, users, bar))
+#        out = ["<div class='card'><div class='pagehead'><div><h2>قالب‌های سرویس</h2>"
+#               "<span class='muted'>هر قالب می‌گوید کدام سرویس‌ها از رله بروند. مشتری‌ها و پلن‌ها "
+#               "هر کدام یک قالب دارند.</span></div></div><div class='tpls'>%s</div></div>"
+#               % "".join(cards)]
 #        if s is not None:
 #            made = sum(1 for t in tpls if t["owner_admin"] == s["id"])
 #            if s["templates_mode"] != "own":
-#                return "".join(out) + ("<div class='card'><p class='muted'>قالب‌های زیر را می‌توانید به مشتری‌ها و پلن‌هایتان "
-#                                       "اختصاص دهید.</p></div>")
+#                return "".join(out) + ("<div class='card'><p class='muted'>قالب‌های بالا را می‌توانید به "
+#                                       "مشتری‌ها و پلن‌هایتان اختصاص دهید.</p></div>")
 #            if made >= (s["templates_max"] or 1):
-#                return "".join(out) + ("<div class='card'><p class='muted'>به سقف %d قالب رسیده‌اید و قالب دیگری نمی‌توانید "
-#                                       "بسازید.</p></div>" % (s["templates_max"] or 1))
-#        out.append("<div class='card'><h2>ساخت "
-#                   "قالب</h2><form method='post' action='/%s/template-new' class='row'><input name='name' placeholder='نام "
-#                   "قالب'><button>ساختن</button></form><p class='muted'>قالب تازه با همهٔ سرویس‌ها ساخته "
-#                   "می‌شود؛ سپس تیک سرویس‌های ناخواسته را بردارید.</p>%s</div>"
-#                   % (p, templates_in_use_note(did) if s is None else ""))
+#                return "".join(out) + ("<div class='card'><p class='muted'>به سقف %d قالب رسیده‌اید و "
+#                                       "قالب دیگری نمی‌توانید بسازید.</p></div>"
+#                                       % (s["templates_max"] or 1))
+#        mine_ids = [t for t in tpls if not t["is_default"]
+#                    and (s is None or t["owner_admin"] == s["id"])]
+#        copy = "".join("<option value='%d'>%s</option>" % (t["id"], html.escape(t["name"]))
+#                       for t in mine_ids)
+#        out.append(
+#            "<div class='card'><h2>قالب تازه</h2><form method='post' action='/%s/template-new' "
+#            "class='row'><input name='name' placeholder='نام قالب' required>"
+#            "<select name='from'><option value=''>از صفر، با همهٔ سرویس‌ها</option>%s</select>"
+#            "<button>ساختن</button></form><p class='muted'>از صفر: همهٔ سرویس‌ها روشن است و شما "
+#            "ناخواسته‌ها را خاموش می‌کنید. یا از روی یک قالب دیگر کپی بگیرید: سرویس‌ها، دامنه‌های "
+#            "خاموش‌شده و فهرست‌های مسدودی‌اش با هم می‌آیند.</p>%s</div>"
+#            % (p, ("<optgroup label='کپی از'>%s</optgroup>" % copy) if copy else "",
+#               templates_in_use_note(did) if s is None else ""))
 #        return "".join(out)
 #
 #    def template_editor(self, t):
@@ -30520,7 +31093,8 @@ exit 0
 #               "<p class='muted'>هر ردیف یک تیک دارد و روشن بودنش یعنی همهٔ دامنه‌های آن از رله عبور "
 #               "می‌کند، از جمله دامنه‌هایی که بعداً اضافه شوند. کشو را باز کنید تا خود دامنه‌ها را "
 #               "ببینید و یکی‌یکی انتخاب کنید.</p>",
-#               "<div class='row gtools'><input class='gsearch' type='search' autocomplete='off' placeholder='جستجوی بازی یا دامنه…'><button type='button' data-all-rows='1'>همه</button><button type='button' data-all-rows='0'>هیچ‌کدام</button></div>"]
+#               "<div class='row gtools'><input class='gsearch' type='search' autocomplete='off' placeholder='جستجوی بازی یا دامنه…'><button type='button' data-all-rows='1'>همه</button><button type='button' data-all-rows='0'>هیچ‌کدام</button>"
+#               "<span class='seg' role='group'><button type='button' data-show='all' class='on'>همه</button><button type='button' data-show='on'>روشن</button><button type='button' data-show='off'>خاموش</button></span></div>"]
 #
 #        in_group = games_by_group()
 #        logos = set()
@@ -30592,9 +31166,9 @@ exit 0
 #                              html.escape(d)))
 #            out.append("</div></details>")
 #
-#        out.append("<div style='margin-top:16px'><button>ذخیره</button> "
+#        out.append("<div class='savebar'><span class='muted' id='tcount'></span><span>"
 #                   "<button class='danger' formaction='/%s/template-delete' formnovalidate>حذف "
-#                   "قالب</button></div></form>%s</div>"
+#                   "قالب</button> <button>ذخیره</button></span></div></form>%s</div>"
 #                   % (p, logo_sprite(logos)))
 #        # Convenience only. Every checkbox above is a plain form control, so
 #        # the page works with this script blocked or broken - it just means
@@ -30651,28 +31225,45 @@ exit 0
 #  // and "riotgames.com" land on the same row.
 #  var rows = [].slice.call(document.querySelectorAll('details.svc:not(.blk)'));
 #
-#  var search = document.querySelector('.gsearch');
-#  if (search) {
-#    search.addEventListener('input', function () {
-#      var q = this.value.trim().toLowerCase();
-#      rows.forEach(function (d) {
-#        d.style.display = !q || d.dataset.name.indexOf(q) >= 0 ? '' : 'none';
-#      });
-#      // A heading with nothing under it is noise while a search is on.
-#      document.querySelectorAll('h3.sec').forEach(function (h) {
-#        var any = false, n = h.nextElementSibling;
-#        while (n && n.tagName !== 'H3') {
-#          if (n.matches('details.svc') && n.style.display !== 'none') any = true;
-#          n = n.nextElementSibling;
-#        }
-#        h.style.display = any || !q ? '' : 'none';
-#      });
+#  // What is shown is the search and the on/off filter together.
+#  var search = document.querySelector('.gsearch'), show = 'all';
+#  function refresh() {
+#    var q = search ? search.value.trim().toLowerCase() : '';
+#    rows.forEach(function (d) {
+#      var on = d.querySelector('summary input[name=g]').checked;
+#      var wanted = show === 'all' || (show === 'on') === on;
+#      d.style.display = wanted && (!q || d.dataset.name.indexOf(q) >= 0) ? '' : 'none';
 #    });
+#    // A heading with nothing under it is noise while a search is on.
+#    document.querySelectorAll('h3.sec').forEach(function (h) {
+#      var any = false, n = h.nextElementSibling;
+#      while (n && n.tagName !== 'H3') {
+#        if (n.matches('details.svc') && n.style.display !== 'none') any = true;
+#        n = n.nextElementSibling;
+#      }
+#      h.style.display = any || (!q && show === 'all') ? '' : 'none';
+#    });
+#    var left = document.getElementById('tcount');
+#    if (left) left.textContent = rows.filter(function (d) {
+#      return d.querySelector('summary input[name=g]').checked;
+#    }).length + ' سرویس روشن از ' + rows.length;
 #  }
+#  if (search) search.addEventListener('input', refresh);
+#  document.addEventListener('change', function (e) {
+#    if (e.target.closest('details.svc')) refresh();
+#  });
+#  document.addEventListener('click', function (e) {
+#    var seg = e.target.closest('.seg button');
+#    if (!seg) return;
+#    show = seg.dataset.show;
+#    document.querySelectorAll('.seg button').forEach(function (b) { b.classList.toggle('on', b === seg); });
+#    refresh();
+#  });
+#  refresh();
 #
 #  document.addEventListener('click', function (e) {
 #    var mass = e.target.closest('.gtools button');
-#    if (!mass) return;
+#    if (!mass || mass.dataset.allRows === undefined) return;
 #    // Only what the search is showing, so "tick all" after a search means
 #    // what it says rather than everything in the catalogue.
 #    var on = mass.dataset.allRows === '1';
@@ -30686,6 +31277,7 @@ exit 0
 #      d.querySelectorAll('.doms input').forEach(function (i) { i.checked = on; });
 #      count(d);
 #    });
+#    refresh();
 #  });
 #})();
 #</script>""")
@@ -30840,7 +31432,7 @@ exit 0
 #            cards = [c for n in names for c in spans.get(n, [])]
 #            return ("<h3 class='sec' id='%s'>%s</h3>%s" % (sid, title, "".join(cards))) \
 #                if cards else ""
-#        tunnel = tunnel_settings_card(p)
+#        tunnel = tunnel_settings_card(p) + egress_card(p)
 #        chips = [("conn", "اتصال و DNS"), ("cust", "مشتری‌ها"), ("safe", "ورود و امنیت"),
 #                 ("keep", "پشتیبان و به‌روزرسانی")]
 #        nav = ("<div class='card chips'><span class='muted'>برو به:</span> %s</div>"
@@ -31882,6 +32474,21 @@ exit 0
 #                                (name, now(), seller()["id"] if seller() else None))
 #            except sqlite3.IntegrityError:
 #                return self.redirect("templates?m=!قالبی با این نام هست")
+#            source = STORE.one("SELECT * FROM templates WHERE id = ?",
+#                               (int(one("from")) if one("from").isdigit() else 0,))
+#            if source is not None and (seller() is None
+#                                       or source["owner_admin"] == seller()["id"]):
+#                # A copy: what the other one routes, what it leaves out of that,
+#                # and what it blocks or asks elsewhere.
+#                for table, keys in (("template_services", "service_key, group_key"),
+#                                    ("template_domains_off", "domain"),
+#                                    ("blocked_templates", "domain"),
+#                                    ("forward_templates", "domain")):
+#                    STORE.run("INSERT OR IGNORE INTO %s (template_id, %s)"
+#                              " SELECT ?, %s FROM %s WHERE template_id = ?"
+#                              % (table, keys, keys, table), (cur.lastrowid, source["id"]))
+#                return self.redirect("templates?t=%d&m=قالب از روی «%s» کپی شد"
+#                                     % (cur.lastrowid, source["name"]))
 #            # Everything except the opt-in groups. A new template starting
 #            # with those already ticked would be the panel deciding something
 #            # it just told the operator was theirs to decide.
@@ -32439,6 +33046,39 @@ exit 0
 #
 #        if rest == "upgrade-start":
 #            return self.redirect("settings?m=" + start_upgrade_job())
+#
+#        if rest in ("egress-add", "egress-del", "egress-preset"):
+#            items = egress_list()
+#            if rest == "egress-del":
+#                items = [e for e in items if e["name"] != one("name").strip().lower()]
+#                egress_save(items)
+#                return self.redirect("settings?m=نام برداشته شد")
+#            if rest == "egress-preset":
+#                try:
+#                    names = EGRESS_PRESETS[int(one("i"))][1]
+#                except (ValueError, IndexError):
+#                    return self.redirect("settings?m=!این فهرست آماده نیست")
+#                have = {e["name"] for e in items}
+#                items += [{"name": n, "ips": []} for n in names if n not in have]
+#                egress_save(items)
+#                return self.redirect("settings?m=%d نام اضافه شد" % len(names))
+#            names = []
+#            try:
+#                for raw in re.split(r"[\s,;]+", one("name")):
+#                    if raw:
+#                        names.append(clean_domain(raw))
+#                ips = egress_ips(one("ips"))
+#            except ValueError as e:
+#                return self.redirect("settings?m=!%s" % e)
+#            if not names:
+#                return self.redirect("settings?m=!نامی نوشته نشده")
+#            if len({e["name"] for e in items} | set(names)) > EGRESS_MAX:
+#                return self.redirect("settings?m=!بیشتر از %d نام نمی‌شود" % EGRESS_MAX)
+#            items = [e for e in items if e["name"] not in names]
+#            items += [{"name": n, "ips": ips} for n in names]
+#            egress_save(items)
+#            return self.redirect("settings?m=%d نام اضافه شد؛ رله تا چند دقیقه دیگر آدرس‌ها را "
+#                                 "می‌سنجد" % len(names))
 #
 #        if rest == "server-name-save":
 #            ip = one("ip").strip()
@@ -37949,6 +38589,7 @@ exit 0
 #electronicarts.com
 #element14.com
 #embark.games
+#embark.net
 #en25.com
 #endfield.hypergryph.com
 #enlisted.net
@@ -37960,6 +38601,7 @@ exit 0
 #epicgames.dev
 #epicgames.net
 #epicgames.statuspage.io
+#es-dis.net
 #es.io
 #escapefromtarkov.com
 #eslint.org
@@ -39149,6 +39791,8 @@ exit 0
 #          "label": "THE FINALS",
 #          "domains": [
 #            "embark.games",
+#            "embark.net",
+#            "es-dis.net",
 #            "thefinals.com"
 #          ]
 #        },
@@ -43861,7 +44505,6 @@ exit 0
 # "سر تونل روی رله": "Tunnel end on the relay",
 # "سرعت": "Speed",
 # "سرعت Mb": "Speed Mb",
-# "سرعت Mb/s": "Speed Mb/s",
 # "سرعت الان": "Speed now",
 # "سرعت باید عدد باشد؛ خالی یعنی بی‌حد": "Speed must be a number; empty means no limit",
 # "سرعت منفی نمی‌شود": "Speed cannot be negative",
@@ -43880,7 +44523,6 @@ exit 0
 # "سرور پشتیبانی تعیین نشده": "No standby server set",
 # "سرورها": "Servers",
 # "سرورها برای مشتری ذخیره شد": "Servers for customers saved",
-# "سرورها: برای هر سرور انتخاب کنید پلن روی آن باشد یا نه، و مشتری از آن رله از کدام سرور خارج بیرون برود. «—» یعنی پلن روی این سرور نیست: مشتری DNS آن را نمی‌بیند و اگر بزند، پنل مشتری برایش باز می‌شود. «خودکار» یعنی سرور خارج خود آن رله. یک سرور خارج مشخص یعنی مشتری از آن رله فقط از همان بیرون می‌رود، و اگر از کار بیفتد، تا برگشتنش از بقیه. روی/نبودن پلن همان لحظه برای همهٔ دارندگانش اعمال می‌شود؛ سرور خارج از خرید یا تمدید بعدی.": "Servers: for each server, pick whether the plan is on it, and which server abroad its customers go out of from that relay. \"—\" is not on it: the customer is not shown its DNS, and one who uses it is shown the customer panel. \"Automatic\" is that relay's own server abroad. A particular server abroad is the only one they go out of from that relay, and while it is down, the others. Being on a server or not applies at once to everyone on the plan; the server abroad from the next purchase or renewal.",
 # "سرورهای ایران": "Iran servers",
 # "سرورهای خارج (": "Exit servers (",
 # "سروری": "server",
@@ -43893,7 +44535,6 @@ exit 0
 # "سرویس روی سرور خارج کار نمی‌کند": "The service does not work on the exit server",
 # "سرویس روی همین آی‌پی باز می‌شود.": "The service opens on this IP.",
 # "سرویس فروشندهٔ شما موقتاً قطع است.": "Your seller’s service is paused for now.",
-# "سرویس‌ها": "Services",
 # "سقف آی‌پی روزانه": "The daily address limit",
 # "سقف استفادهٔ کل": "Total use limit",
 # "سقف باید بیشتر از صفر و روز بین ۱ و ۲۸ باشد": "The cap must be more than zero and the day between 1 and 28",
@@ -44203,7 +44844,6 @@ exit 0
 # "مگابیت بر ثانیه": "Mbit/s",
 # "مگابیت بر ثانیه، میانگین ۵ دقیقهٔ اخیر": "Mbit/s, average of the last 5 minutes",
 # "مگابیت بر ثانیه، ۰=بی‌حد": "Mbit/s, 0 = no limit",
-# "مگابیت بر ثانیه؛ خالی یا ۰ یعنی بی‌حد": "Mbit/s; empty or 0 means no limit",
 # "میانهٔ سه سؤال واقعی DNS، به میلی‌ثانیه؛ ✓ سریع‌ترین هر ستون و ● آن‌هایی که الان انتخاب شده‌اند. آنچه برای مشتری‌ها مهم است ستون رله‌هاست: سؤال‌هایشان از آن‌جا پرسیده می‌شود. ستون هر نود زمانی است که nginx همان نود برای پیدا کردن آدرس سرویس‌ها منتظر می‌ماند. آخرین اندازه‌گیری:": "The median of three real DNS questions, in milliseconds; ✓ the fastest in each column and ● the ones chosen now. What matters to customers is the relays' columns: their questions are asked from there. A node's column is how long that node's nginx waits to find the services' addresses. Last measured:",
 # "میانگین هر ۵ دقیقه. رله هر نیم دقیقه گزارش می‌دهد، پس اوج لحظه‌ای کوتاه در این نمودار دیده نمی‌شود.": "Average of every 5 minutes. The relay reports every half minute, so a brief momentary peak does not show in this chart.",
 # "میانگین ۵ دقیقهٔ اخیر": "Average of the last 5 minutes",
@@ -44312,7 +44952,6 @@ exit 0
 # "همان، روی چند اتصال مشترک": "The same, over several shared connections",
 # "همه": "All",
 # "همه (": "All (",
-# "همه، از جمله سرویس‌هایی که بعداً اضافه شوند": "All, including services added later",
 # "همهٔ این‌ها فقط روی اینترنتی کار می‌کنند که آی‌پی‌اش را ثبت کرده‌اید.": "All of these work only on the internet connection whose IP you registered.",
 # "همهٔ تیکت‌ها": "All tickets",
 # "همهٔ خریدها و تمدیدها": "Every purchase and renewal",
@@ -44486,7 +45125,6 @@ exit 0
 # "پلن:": "Plan:",
 # "پلنی که انتخاب کرده بود حذف شده؛ بعد از تأیید، سهمیه و زمان را خودتان بگذارید": "The plan they chose was deleted; after approving, set the quota and time yourself",
 # "پلن‌ها": "Plans",
-# "پلن‌ها (": "Plans (",
 # "پلن‌ها و پرداخت": "Plans and payment",
 # "پلن‌هایی این قالب را می‌فروشند؛ اول آن‌ها را حذف کنید یا قالبشان را عوض کنید": "Plans sell this template; delete them or change their template first",
 # "پلی‌استیشن": "PlayStation Network",
@@ -44537,7 +45175,6 @@ exit 0
 # "چت و لیست دوستانش روی pvp.net است — پورت ۵۲۲۳، که رله نمی‌برد. خود بازی کار می‌کند": "its chat and friends list are on pvp.net — port 5223, which the relay does not carry. The game itself works",
 # "چرا": "Why",
 # "چقدر می‌خواهید شارژ کنید؟ مبلغ را به تومان بنویسید (حداقل": "How much do you want to top up? Write the amount in Toman (at least",
-# "چند آی‌پی هم‌زمان، ۱ تا ۵": "How many IPs at once, 1 to 5",
 # "چند دقیقه دیگر دوباره.": "Try again in a few minutes.",
 # "چند روز اعتبار": "Valid for how many days",
 # "چند روز دیگر": "How many more days",
@@ -44928,7 +45565,6 @@ exit 0
 # "سرعت در ۲۴ ساعت گذشته": "Speed, last 24 hours",
 # "ساعات اوج مصرف — هفتهٔ اخیر": "Busiest hours — last 7 days",
 # "جدول روزها": "Daily table",
-# "ساخت پلن": "New plan",
 # "آنچه مشتری می‌بیند": "The customer sees this",
 # "تراکنش‌های کیف پول": "Wallet history",
 # "رابط API ربات": "Bot API",
@@ -44936,7 +45572,6 @@ exit 0
 # "اطلاع‌رسانی به ربات (webhook)": "Telling the bot (webhook)",
 # "ساخت کلید": "New key",
 # "قالب‌های سرویس": "Templates",
-# "ساخت قالب": "New template",
 # "فایل پشتیبان": "Backup",
 # "تقویم": "Date",
 # "صفحهٔ ورود برای مشتریِ بدون سرویس": "The customer panel for those without service",
@@ -45015,9 +45650,7 @@ exit 0
 # "شناسهٔ عددی تلگرام خودتان را از": "Get your numeric Telegram ID from",
 # "وقتی مشتری پلنی را برمی‌گزیند، در پنل و ربات همین متن را می‌بیند: به کجا و به نام چه کسی واریز کند. هر تغییری فوراً همه‌جا اعمال می‌شود.": "When a customer picks a plan, they see exactly this in their own panel and in the bot: where and in whose name to pay. Changing it changes it everywhere at once.",
 # "عدد مثبت به موجودی می‌افزاید و عدد منفی از آن کم می‌کند؛ موجودی هرگز زیر صفر نمی‌رود و مشتری هم پیام می‌گیرد.": "A positive number adds to the balance and a negative one takes from it; the balance never goes below zero. The customer is told too.",
-# "قالب‌های زیر را می‌توانید به مشتری‌ها و پلن‌هایتان اختصاص دهید.": "These are the templates you can give your customers and plans.",
 # "قالب رسیده‌اید و قالب دیگری نمی‌توانید بسازید.": "templates.",
-# "قالب تازه با همهٔ سرویس‌ها ساخته می‌شود؛ سپس تیک سرویس‌های ناخواسته را بردارید.": "A new template is made with every service; then untick what you do not want.",
 # "همهٔ تاریخ‌ها به همین شکل و به وقت تهران نشان داده می‌شود: در پنل ادمین، پنل مشتری و پیام‌های ربات.": "Every date is shown this way, in Tehran time: the admin panel, the customer panel and the bot’s messages.",
 # "نشانی فعلی:": "Right now:",
 # "خودِ گذرواژه ذخیره نمی‌شود و فقط هش آن نگه داشته می‌شود. با تغییرش همهٔ نشست‌های دیگر بسته می‌شوند.": "The password is not stored, only its hash. Changing it closes every other session.",
@@ -45053,7 +45686,6 @@ exit 0
 # "نام DNS رمزگذاری‌شده (DoH و DoT)": "Secure DNS name (DoH and DoT)",
 # "هر تلگرام فقط به یک حساب وصل می‌شود، پس ساختن چند حساب برای یک نفر دشوار می‌شود. سرویس هیچ‌کس قطع نمی‌شود؛ فقط خرید و تمدید تا اتصال تلگرام در انتظار می‌ماند. ارسال تیکت آزاد است.": "Each Telegram account links to only one account, so it is hard for anyone to make more than one account. Nobody’s service is cut; only new purchases and renewals wait until they link. Tickets stay open.",
 # "هر ردیف یک تیک دارد و روشن بودنش یعنی همهٔ دامنه‌های آن از رله عبور می‌کند، از جمله دامنه‌هایی که بعداً اضافه شوند. کشو را باز کنید تا خود دامنه‌ها را ببینید و یکی‌یکی انتخاب کنید.": "Each row has one tick: ticking it means all its domains go through the relay, including domains added later. Open the drawer to see the domains themselves and pick them one by one.",
-# "هر پلن ترکیبی است از یک قالب، چند روز مدت، یک حجم و یک قیمت. مشتری در پنل خودش پلن را برمی‌گزیند و رسید می‌فرستد؛ با تأیید شما همه‌چیز خودکار روی حسابش اعمال می‌شود. خرید دوبارهٔ همان پلن پیش از تمام شدنش تمدید است: روزها و حجم روی باقی‌مانده اضافه می‌شوند. خرید پلن دیگر از همان لحظه از نو شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ این را پیش از خرید به مشتری می‌گوییم. «نامحدود» فقط با تیک خودش؛ خانهٔ خالیِ حجم پذیرفته نمی‌شود.": "Each plan is a template, for a number of days, with a quota and a price. The customer picks a plan in their own panel and sends a receipt; on approval everything is put on their account automatically. Buying the same plan again before it ends is a renewal: the days and quota are added to what is left. Buying another plan starts over from that moment and what was left is lost; the customer is told this before buying. “Unlimited” only by its own tick; an empty quota box is not accepted.",
 # "هنوز پلنی تعریف نکرده‌اید. تا وقتی پلنی نباشد، مشتری رسید را بدون انتخاب پلن می‌فرستد و سهمیه را خودتان می‌گذارید.": "You have not made any plans yet. Until there is a plan, the customer sends a receipt without choosing one and you set the quota yourself.",
 # "وقتی در این جدول «وصل» شد، از ستون «سرور خارج» جدول رله‌ها رله‌هایی را که باید از آن بروند انتخاب کنید. توکن را فقط خودتان نگه دارید.": "When it shows “Connected” in this table, pick in the relays table’s “Exit server” column the relays that should go through it. Give the token only to yourself.",
 # "با روشن بودن این گزینه DNS روی همه باز است: نیازی به ثبت‌نام یا ثبت آی‌پی نیست، و سهمیه، تاریخ پایان و مسدود بودن مشتری‌ها هم جلوی کسی را نمی‌گیرد. ترافیک کسانی که آی‌پی ثبت نکرده‌اند در هیچ‌جا حساب نمی‌شود. تا یک دقیقه روی همهٔ رله‌ها و تک‌سرورها اعمال می‌شود؛ با خاموش کردن، همه‌چیز به حالت قبل برمی‌گردد. DoH و DoT همچنان فقط برای مشتری‌ها کار می‌کنند.": "When it is on, the DNS is open to everyone: nobody needs to sign up or register an IP, and quotas, end dates and blocked customers stop no one. The usage of those without a registered IP is not counted anywhere. It reaches every relay and single server within a minute; turning it off puts everything back as it was. DoH and DoT still work only for customers.",
@@ -45061,7 +45693,6 @@ exit 0
 # "یک فایل sqlite شامل همهٔ کاربران، آی‌پی‌ها، قالب‌ها، تراکنش‌ها و تنظیمات. آمار سلامت سرورها داخلش نیست — حجم زیادی است و ارزشی در بازگردانی ندارد.": "An sqlite file with all users, IPs, templates, transactions and settings. The servers’ health stats are not in it — they are large and not worth restoring.",
 # "یک فایل واحد که با همین رمز قفل شده و دیتابیس، کلید عکس‌ها و هر چه برای راه‌اندازی دوبارهٔ پنل روی سروری دیگر لازم است را در خود دارد. رمز را جایی جدا نگه دارید؛ بدون آن فایل باز نمی‌شود و این‌جا هم نشان داده نمی‌شود. برای بازگردانی، فایل را با همین رمز در کارت «نسخهٔ پشتیبان» بفرستید؛ یا روی هر سیستمی با openssl:": "One file, encrypted with this password: the database, the picture key, and what is needed to bring this panel up on another server. Keep the password somewhere separate; without it the file does not open, and it is not shown here either. To restore, upload the file with this password in the “Backup” card; or on any system with openssl:",
 # "میان ۳ تا ۳۲ نویسه: حرف کوچک انگلیسی، عدد، نقطه، خط تیره یا زیرخط. از روی سرور هم:": "3 to 32 lower-case English letters, digits, dots, dashes or underscores. From the server too:",
-# "🎁 «تست رایگان» فروخته نمی‌شود؛ مشتری با یک کلیک آن را از پنل خودش یا ربات برمی‌دارد. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب فقط یک بار. کسی که همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین نرود. یک پلن تست در یک زمان.": "🎁 “Free trial”: not sold; the customer gets it with one click, in their own panel or the bot. It needs a linked Telegram, and each Telegram account and each account only once. Someone who has an active service right now does not get it, so what is left of their plan is not lost. One trial plan at a time.",
 # "ثبت‌نام جدید با وضعیت «در انتظار پلن» می‌آید و تا پلنی برایش ذخیره نکنید ترافیکی دریافت نمی‌کند؛ اولین ذخیرهٔ همین سطر فعالش می‌کند. صفر در سهمیه یا سرعت یعنی بی‌حد. «زمان» خالی یعنی بدون تغییر؛ عددی که بنویسید تاریخ پایان را از امروز همان‌قدر روز جلو می‌برد، و رنگ خاکستریِ داخلش روزهای باقی‌مانده است. سرعت فقط دانلود را محدود می‌کند و حداکثر ۳۰ ثانیه بعد روی رله‌ها اعمال می‌شود.": "A new sign-up arrives as “Waiting for a plan” and gets no traffic until you save a plan for it; the first save of its row activates it. Zero in quota or speed means no limit. An empty “Time” means no change; a number you write moves the end date that many days on from today, and the grey number inside it is the days left. Speed only limits downloads and is applied on the relays within 30 seconds.",
 # "وقتی کسی از پیوند دعوت یک مشتری (پیوند ربات یا ثبت‌نام) حساب بسازد و پلن بخرد، این درصد از قیمت پلن به کیف پول همان مشتری افزوده می‌شود؛ فرقی نمی‌کند با رسید خریده باشد یا از کیف پول. شارژ کیف پول پورسانت ندارد، تا یک پول دو بار حساب نشود. دعوت‌کننده فقط موقع ساختن حساب ثبت می‌شود و بعداً عوض نمی‌شود، و هیچ‌کس نمی‌تواند خودش را دعوت کند. هر مشتری لینک دعوتش را در ربات (بخش کیف پول) و در پنل خودش می‌بیند.": "When someone signs up with a customer’s invitation link (the bot link or the sign-up link) and buys a plan, this percent of the plan’s price is added to that customer’s wallet, whether they paid by receipt or from the wallet. Wallet top-ups earn no commission, so the same money is not counted twice. The inviter is recorded only when the account is made and never changes, and nobody can invite themselves. Each customer sees their invitation link in the bot (under Wallet) and in their own panel.",
 # "این ادمین کارمند است و مشتری اختصاصی ندارد؛ همهٔ مشتری‌ها را در بخش‌هایی که برایش تیک خورده می‌بیند. هر کاری که کرده با نام کاربری‌اش در صفحهٔ": "Staff, with no customers of their own; they see every customer in the parts ticked for them. Everything they did is recorded with their username on the",
@@ -45169,7 +45800,64 @@ exit 0
 # "— خطا": " - error",
 # "— در حال وصل شدن": " - connecting",
 # "درخواست از سایت دیگری آمده بود و انجام نشد.": "The request came from another site and was not carried out.",
-# "وقتی کد اتصال خواست، این را بدهید:": "When it asks for the connection code, give it this:"
+# "وقتی کد اتصال خواست، این را بدهید:": "When it asks for the connection code, give it this:",
+# "PlayStation و Call of Duty روی ایرانسل": "PlayStation and Call of Duty on Irancell",
+# "آدرس IPv4 نیست": "is not an IPv4 address",
+# "آدرس سالم از": "healthy addresses of",
+# "آدرس سالمی پیدا نشد؛ از سرور خارج می‌رود": "No healthy address found; it goes through the exit server",
+# "آدرس عمومی نیست": "is not a public address",
+# "آدرس‌ها": "Addresses",
+# "آدرس‌ها (اختیاری)": "Addresses (optional)",
+# "این فهرست آماده نیست": "That ready-made list does not exist",
+# "بعضی اپراتورها راه به بخشی از آدرس‌های CDN را می‌بندند (مثلاً ایرانسل و آکامای برای ورود PlayStation و Call of Duty). نامی که این‌جا بنویسید، نه از سرور خارج، بلکه از خود رله و با آدرسی که همان لحظه از ایران جواب داده می‌رود. رله هر چند دقیقه آدرس‌ها را دوباره امتحان می‌کند و خراب‌ها را کنار می‌گذارد؛ اگر هیچ آدرسی سالم نبود، نام مثل قبل از سرور خارج می‌رود. فقط درگاه ۴۴۳ (HTTPS) را شامل می‌شود.": "Some operators block the way to part of a CDN's addresses (for example Irancell and Akamai, for the PlayStation and Call of Duty logins). A name you write here goes not through the exit server but out of the relay itself, to an address that answered from Iran a moment ago. The relay tries the addresses again every few minutes and sets aside the broken ones; if none is healthy, the name goes through the exit server as before. Only port 443 (HTTPS) is covered.",
+# "خالی = خودکار": "empty = automatic",
+# "خودکار، از روی رله": "Automatic, found from the relay",
+# "نام اضافه شد": "Names added",
+# "نام اضافه شد؛ رله تا چند دقیقه دیگر آدرس‌ها را می‌سنجد": "Names added; the relay will test their addresses within a few minutes",
+# "نام را با زیردامنه‌هایش می‌گیرد. آدرس خالی بماند، رله خودش پیدا می‌کند (پیشنهاد می‌شود)؛ اگر آدرس بدهید فقط همان‌ها امتحان می‌شوند.": "A name covers its subdomains too. Leave the addresses empty and the relay finds them itself (recommended); if you give addresses, only those are tried.",
+# "نام نمی‌شود": "No more names fit",
+# "نامی نوشته نشده": "No name was written",
+# "نام‌هایی که از خود رلهٔ ایران بروند": "Names that go out of the Iran relay itself",
+# "هنوز رله جوابی نداده": "The relay has not answered yet",
+# "هنوز نامی نیست.": "No names yet.",
+# "» کپی شد": "»",
+# "از صفر: همهٔ سرویس‌ها روشن است و شما ناخواسته‌ها را خاموش می‌کنید. یا از روی یک قالب دیگر کپی بگیرید: سرویس‌ها، دامنه‌های خاموش‌شده و فهرست‌های مسدودی‌اش با هم می‌آیند.": "From scratch: every service is on and you switch off what you don't want. Or copy another template: its services, its switched-off domains and its block lists come along.",
+# "از صفر، با همهٔ سرویس‌ها": "From scratch, with all services",
+# "از همان لحظه از نو شروع می‌شود و باقی‌ماندهٔ قبلی از بین می‌رود؛ این را پیش از خرید به مشتری می‌گوییم.": "It starts afresh from that moment and the previous balance is lost; we tell the customer this before they buy.",
+# "اول یک قالب بسازید": "Make a template first",
+# "این صفحه چطور کار می‌کند؟": "How does this page work?",
+# "برای هر سرور انتخاب کنید پلن روی آن فروخته شود یا نه، و مشتری از آن رله از کدام سرور خارج بیرون برود. «—» یعنی پلن روی این سرور نیست. «خودکار» یعنی سرور خارج خود آن رله. یک سرور خارج مشخص یعنی مشتری فقط از همان بیرون می‌رود و اگر از کار بیفتد، تا برگشتنش از بقیه. روشن یا خاموش‌شدن پلن روی یک سرور همان لحظه برای همهٔ دارندگانش اعمال می‌شود؛ سرور خارج از خرید یا تمدید بعدی.": "For each server, choose whether the plan is sold on it, and which exit server that relay sends the customer out of. \"—\" means the plan is not on this server. \"Automatic\" means that relay's own exit server. A specific exit server means the customer goes out only from that one, and from the others if it fails. Switching a plan on or off for a server applies at once to everyone who holds it; the exit server applies from the next purchase or renewal.",
+# "بستن": "Close",
+# "تست رایگان": "Free trial",
+# "تمدید:": "Renewal:",
+# "تومان ·": "toman ·",
+# "خرید دوبارهٔ همان پلن پیش از تمام شدنش تمدید است؛ روزها و حجم روی باقی‌مانده اضافه می‌شوند.": "Buying the same plan again before it ends is a renewal; days and quota are added to what is left.",
+# "دستگاه هم‌زمان": "Simultaneous devices",
+# "رایگان": "Free",
+# "سرعت (Mb/s)": "Speed (Mb/s)",
+# "سرویس ·": "services ·",
+# "سرویس روشن از": "services on out of",
+# "فروخته نمی‌شود؛ مشتری با یک کلیک آن را از پنل خودش یا ربات برمی‌دارد. شرطش تلگرامِ وصل‌شده است، و هر تلگرام و هر حساب فقط یک بار. کسی که همین حالا سرویس فعال دارد نمی‌گیردش، تا باقی‌ماندهٔ پلنش از بین نرود. یک پلن تست در یک زمان.": "is not sold; the customer takes it with one click from their own panel or the bot. It needs a connected Telegram, and each Telegram and each account gets it once. Someone with an active service right now cannot take it, so the rest of their plan is not lost. One trial plan at a time.",
+# "فروش": "Sale",
+# "فقط با تیک خودش؛ خانهٔ خالیِ حجم پذیرفته نمی‌شود.": "only with its own tick; an empty quota box is not accepted.",
+# "قالب از روی «": "Template copied from «",
+# "قالب تازه": "New template",
+# "قالب سرویس": "Service template",
+# "قالب‌های بالا را می‌توانید به مشتری‌ها و پلن‌هایتان اختصاص دهید.": "You can assign the templates above to your customers and plans.",
+# "مدت (روز)": "Duration (days)",
+# "مشتری روی پلن": "customers on a plan",
+# "هر قالب می‌گوید کدام سرویس‌ها از رله بروند. مشتری‌ها و پلن‌ها هر کدام یک قالب دارند.": "Each template says which services go through the relay. Customers and plans each have one template.",
+# "هر پلن ترکیبی است از یک قالب، چند روز مدت، یک حجم و یک قیمت. مشتری در پنل خودش پلن را برمی‌گزیند و رسید می‌فرستد؛ با تأیید شما همه‌چیز خودکار روی حسابش اعمال می‌شود.": "A plan is a mix of a template, a number of days, a quota and a price. The customer picks a plan in their own panel and sends a receipt; when you approve it, everything is applied to their account automatically.",
+# "همهٔ سرویس‌ها، از جمله سرویس‌هایی که بعداً اضافه شوند. قابل ویرایش نیست؛ یک قالب تازه بسازید.": "All services, including ones added later. It cannot be edited; make a new template.",
+# "هیچ سرویسی روشن نیست": "No service is on",
+# "ویرایش پلن": "Edit plan",
+# "پلن تازه": "New plan",
+# "پلن در فروش ·": "plans on sale ·",
+# "پلن دیگر:": "Another plan:",
+# "چه چیزی می‌دهد": "What it gives",
+# "کپی از": "Copy from",
+# "۱ تا ۵": "1 to 5",
+# "＋ پلن تازه": "＋ New plan"
 #}
 #__END_I18N_EN__
 

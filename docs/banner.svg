@@ -22,5 +22,5 @@
   </g>
   <text x="56" y="128" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="82" font-weight="800" fill="url(#ink)">Master DNS</text>
   <text x="60" y="176" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" fill="#e8ecff">Smart DNS for Iran — one script, two servers, one panel.</text>
-  <text x="60" y="214" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="18" fill="#9fb3ff">version 0.0.9</text>
+  <text x="60" y="214" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="18" fill="#9fb3ff">version 0.1.0</text>
 </svg>

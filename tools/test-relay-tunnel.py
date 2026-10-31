@@ -67,8 +67,8 @@ check("reaches the exit through the upstreams in their own file",
       conf.count("include /etc/nginx/smartdns-exit.conf;") == 1 and "__EXIT_" not in conf
       and not re.search(r"^\s*upstream ", conf, re.M))
 check("  on every port it passes on",
-      all(("proxy_pass ${to_exit}_%s;" % n) in conf for n in ("https", "http", "spotify", "blizzard"))
-      and "default       ${to_exit}_https;" in conf)
+      all(("proxy_pass ${to_exit}_%s;" % n) in conf for n in ("http", "spotify", "blizzard"))
+      and "default ${to_exit}_https;" in conf and "default       $egress_https;" in conf)
 check("the installer writes that file on a relay, before its nginx",
       logic.index('if [ "$ROLE" = relay ]; then exit_upstreams; fi')
       < logic.index("install_payload RELAY_NGINX /etc/nginx/nginx.conf && NGINX_CHANGED=1"))
