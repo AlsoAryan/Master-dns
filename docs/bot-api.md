@@ -396,11 +396,66 @@ def from_panel(secret, header, body):      # body: bytes، همان‌طور ک�
 | `POST /admin/users/{id}/adjust` | `{"days": 7, "gb": -2}` — روز و حجم را بدهید یا کم کنید؛ هر کدام جدا یا هر دو. `days` بیشتر از ۳۶۵۰ و `gb` بیشتر از حد نمی‌شود (`400` با `bad_amount`). حسابی که حجمش نامحدود است یا هنوز پلن ندارد حجم نمی‌گیرد (`409` با `no_quota`) و حسابی که تاریخ پایان ندارد روزش کم نمی‌شود (`409` با `no_expiry`). کم کردنِ بیش از باقی‌مانده حجم را به یک بایت می‌رساند، نه صفر (صفر یعنی نامحدود). به مشتری خبر `plan.adjusted` می‌رود |
 | `POST /admin/users/adjust` | تنظیم گروهی: `{"ids": [4, 9, 12], "days": 1}` یا `{"all": "active", "days": 2}` (مثلاً جبران یک قطعی). `days` و `gb` مثل تنظیم تکی. تا ۵۰۰ حساب در هر درخواست؛ حسابی که نمی‌تواند بپذیرد (`no_quota`، `no_expiry`) رد می‌شود و نامش می‌آید: `{"changed": 38, "skipped": [{"id": 7, "error": "no_quota"}]}` |
 | `GET /admin/expiring?days=3&usage=90` | مشتری‌هایی که تا `days` روز دیگر تمام می‌شوند، تمام شده‌اند یا `usage` درصد حجمشان مصرف شده؛ اول زودتر تمام‌شونده‌ها. هر مورد `why` دارد (`ending`، `expired`، `traffic`) و `used_percent`؛ تا ۲۰۰ مورد. برای یادآور تمدید |
+| `GET /admin/traffic?days=7` | گزارش ترافیک؛ `days` از ۱ تا ۶۰ (پیش‌فرض ۷). ← پایین‌تر |
+| `GET /admin/status` | سالم‌بودن سرویس، سرور به سرور؛ فقط کلید خود مالک. ← پایین‌تر |
 | `GET /admin/tickets?status=open` | تیکت‌ها؛ `open` (پیش‌فرض)، `answered`، `closed`، `all` |
 | `GET /admin/tickets/{id}` | یک تیکت با پیام‌ها و صاحبش |
 | `GET /admin/tickets/{id}/messages/{message_id}/image` | عکس یک پیام تیکت: `{"content_type", "data"}` (base64) |
 | `POST /admin/tickets/{id}/reply` | جواب: `{"body": "...", "image_type"?, "image_data"?}` |
 | `POST /admin/tickets/{id}/close` | بستن |
+
+#### گزارش ترافیک — `GET /admin/traffic`
+
+کل ترافیک مشتری‌ها (برای کلید نماینده: فقط مشتری‌های خودش) در `days` روز اخیر، به روز تهران و با احتساب امروز، کنار همان‌قدر روز پیش از آن:
+
+```sh
+curl -s -H "Authorization: Bearer $ADMIN_KEY" "$API/admin/traffic?days=7"
+```
+```json
+{"ok": true, "days": 7,
+ "total": {"up": 3000000000, "down": 16000000000},
+ "previous": {"up": 2000000000, "down": 8000000000},
+ "today": {"up": 1000000000, "down": 9000000000},
+ "change_percent": 90.0,
+ "daily": [{"day": "2026-10-26", "up": 0, "down": 0}, "..."],
+ "by_hour": [0, 0, "... ۲۴ عدد، بایت، ساعت ۰ تا ۲۳ به وقت تهران ..."],
+ "peak": {"hour": 21, "bytes": 15000000000},
+ "top_users": [{"id": 4, "label": "علی", "up": 1, "down": 9, "bytes": 10,
+                "share_percent": 78.9, "quota_percent": 40.0}],
+ "services": [{"key": "psn", "label": "PlayStation", "bytes": 10000000000, "share_percent": 52.6}],
+ "services_days": 7, "services_hidden": false,
+ "text": "ترافیک 7 روز اخیر: ..."}
+```
+
+- `change_percent` نسبت به دورهٔ قبل است و `null` اگر دورهٔ قبل ترافیکی نداشته. `quota_percent` برای مشتری با حجم نامحدود `null` است.
+- `by_hour` و `peak` فقط ۷ روز اخیر را می‌بینند (ساعت‌ها بیشتر نگه داشته نمی‌شوند)، و `services` فقط ۳۰ روز (`services_days` می‌گوید).
+- **سرویس‌ها فقط وقتی داده می‌شوند که دست‌کم ۵ مشتری در آن بوده باشند.** این‌که یک مشتری چه سرویسی می‌بیند مال خود اوست؛ جمعِ چند نفر مال اپراتور است ولی جمعِ دو نفر دوباره مال همان دو نفر. کمتر از آن، `services` خالی و `services_hidden` برابر `true` است.
+- `days` بیرون از ۱ تا ۶۰ یا غیرعدد: `400` با `bad_days`.
+- `text` همین گزارش در چند خط فارسی است، برای فرستادن به تلگرام خودتان.
+
+#### سالم بودن سرویس — `GET /admin/status`
+
+برای ربات مانیتور. فقط کلید خود مالک؛ کلید نماینده `403` با `owner_only` می‌گیرد، چون سرورها مال او نیست.
+
+```sh
+curl -s -H "Authorization: Bearer $ADMIN_KEY" $API/admin/status
+```
+```json
+{"ok": true, "healthy": false,
+ "servers": [
+   {"kind": "exit", "ip": "203.0.113.9", "name": "", "online": true, "seen_seconds_ago": 20,
+    "cpu_percent": 12.0, "memory_percent": 50.0, "disk_percent": 25.0,
+    "rx_bps": 100, "tx_bps": 200, "uptime_days": 2},
+   {"kind": "relay", "ip": "198.51.100.2", "name": "تهران ۱", "online": true,
+    "tunnel": {"on": true, "running": true, "error": ""}, "...": "..."}],
+ "problems": [{"key": "relay-down:198.51.100.2", "text": "...", "since": "2026-10-26T09:00:00+00:00"}],
+ "text": "مشکل هست\n..."}
+```
+
+- `kind` یکی از `exit`، `node` یا `relay` است، و سرور خارج اول می‌آید.
+- سروری که دو دقیقه گزارش نداده `online: false` است، هر چه آخرین بار گفته باشد؛ سروری که هنوز هیچ‌وقت گزارش نداده هم `online: false` (و `seen_seconds_ago: null`) است، نه حذف‌شده.
+- `healthy` فقط وقتی `true` است که همهٔ سرورها وصل باشند و هشداری باز نباشد. هشدار دربارهٔ سروری که از پنل برداشته شده نشان داده نمی‌شود.
+- `tunnel` فقط برای رله می‌آید، وقتی تونلش حالتی گزارش کرده است.
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $ADMIN_KEY" $API/admin/receipts/31/approve

@@ -53,7 +53,33 @@ quotas, speed limits, a customer page, a control panel, selling, a Telegram bot 
 | **Plain to run** | One script, plain-language questions, one panel for everything; encrypted backups and one-button upgrades. |
 | **Fixes at the network's level** | Names a network chokes can leave from the Iran server itself, to addresses checked from Iran, every few minutes. |
 
-## What's new in 0.1.0
+## A look inside
+
+Every picture below is the real panel (this repository's own code and stylesheet), photographed with invented customers and documentation-range addresses. `python3 tools/make-screenshots.py` takes them again.
+
+<p align="center"><img src="docs/screenshots/home.png" alt="The dashboard" width="49%"> <img src="docs/screenshots/home-dark.png" alt="The dashboard, dark theme" width="49%"></p>
+<p align="center"><sub><b>Dashboard</b>, in light and dark: who is online, what is flowing, the day's traffic and the busy hours.</sub></p>
+
+| | |
+|---|---|
+| <img src="docs/screenshots/plans.png" alt="Plans"><br><sub><b>Plans</b> as cards; a dialog edits one.</sub> | <img src="docs/screenshots/templates.png" alt="Templates"><br><sub><b>Templates</b>: what each routes, copied in one step.</sub> |
+| <img src="docs/screenshots/nodes.png" alt="Servers"><br><sub><b>Servers</b>: named cards, health bars, a live line between each relay and its exit.</sub> | <img src="docs/screenshots/settings.png" alt="Settings"><br><sub><b>Settings</b>: change the tunnel on both servers; names carried from Iran.</sub> |
+| <img src="docs/screenshots/user-usage.png" alt="A customer's usage"><br><sub><b>A customer's usage</b>: quota forecast, speed, daily and hourly charts.</sub> | <img src="docs/screenshots/api.png" alt="API"><br><sub><b>API</b>: keys as cards, webhooks, commands to copy.</sub> |
+| <img src="docs/screenshots/users.png" alt="Customers"><br><sub><b>Customers</b>: search, sort, act from a menu.</sub> | <img src="docs/screenshots/receipts.png" alt="Receipts"><br><sub><b>Receipts</b>: approve what a customer paid.</sub> |
+| <img src="docs/screenshots/template-editor.png" alt="Template editor"><br><sub><b>Template editor</b>: on/off filter, live count, a save bar that stays in view.</sub> | |
+
+## What's new in 0.1.1
+
+| | |
+|---|---|
+| 📡 **Two new API reports** | `GET /admin/traffic` answers *how much, when, who and for what*: the total set against the stretch before it, each day, the busiest hour of the day (Tehran time), the heaviest customers and services - for a reseller's key, only their own customers. `GET /admin/status` answers *is it up*: every server as last heard from, its load, its tunnel and the alerts still open - for a monitoring bot. |
+| 📈 **Usage, a step further** | The home page shows which **hours of the day** are busy and **what the traffic is for**; a customer's usage page shows a **quota forecast** (at this pace, does it last until the period ends?); reports across all customers read an index instead of scanning every row. |
+| 🔒 **Services are shown only in aggregate** | Which services one customer used stays theirs: the totals appear only when at least five customers are in them. |
+| 🧰 **The API page, rebuilt** | Keys as cards with last use and webhook, a dialog for a new key, the address and a test command to copy, and recipes for the commands people use most. |
+| 🖼️ **Screenshots of the panel** | The README has a gallery of the real panel, and a script that photographs it again after the interface changes. |
+| 🐞 **Fixed** | The *Edit* button on a template card let its hover sheen escape its box, which made the page scroll sideways. |
+
+### Earlier, in 0.1.0
 
 | | |
 |---|---|
@@ -128,6 +154,16 @@ route to Google over IPv6); **udp** 53, 3478.
 - **Telegram bot** for customers and operators, set up from the admin panel.
 
 ## API
+
+Two read-only reports for the operator's own bot, from an admin key:
+
+```sh
+curl -s -H "Authorization: Bearer $KEY" "https://PANEL/api/v1/admin/traffic?days=7"   # how much, when, who, for what
+curl -s -H "Authorization: Bearer $KEY" https://PANEL/api/v1/admin/status                # is every server up?
+```
+
+Both carry a ready-to-send `text` in Persian as well as the numbers. Which services were
+used is only given once at least five customers are in the total.
 
 A sales bot of your own can plug into the panel: [docs/bot-api.md](docs/bot-api.md)
 (Persian). To move one customer's days or traffic by hand, from an admin key:

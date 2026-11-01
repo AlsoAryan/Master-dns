@@ -187,6 +187,9 @@ check("the default one says what it is, with nothing to edit",
       "پیش‌فرض" in page and page.count("class='btn'") == page.count("<article class='tpl'>") - 1)
 check("the new-template form can copy another", "name='from'" in page and "کپی از" in page)
 
+check("the edit button keeps its hover sheen inside its own box, or the page grows sideways",
+      "a.btn{position:relative;overflow:hidden;" in admin.CSS)
+
 print("copying a template")
 src_id = GAME
 store.run("INSERT OR IGNORE INTO template_domains_off (template_id, domain) VALUES (?, 'example.org')",

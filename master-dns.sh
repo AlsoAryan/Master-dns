@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -5292,6 +5292,9 @@ exit 0
 #);
 #CREATE INDEX IF NOT EXISTS wallet_moves_user ON wallet_moves(user_id, id);
 #
+#-- A report over every customer reads a stretch of buckets, not one customer's.
+#CREATE INDEX IF NOT EXISTS usage_by_bucket ON usage(grain, bucket);
+#
 #CREATE TABLE IF NOT EXISTS usage_service (
 #    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 #    day     TEXT NOT NULL,
@@ -8527,6 +8530,10 @@ exit 0
 #                 ":1119": "blizzard"}
 #
 #
+## What the traffic that is not one of the catalogue's services is called.
+#SERVICE_LABELS = {"_http": "دانلود کنسول و HTTP", "_dns": "DNS رمزگذاری‌شده", "_other": "سایر"}
+#
+#
 #def service_of(name, index):
 #    """The catalogue service a connection belongs to, by the longest name of
 #    ours that the host it asked for ends with."""
@@ -8781,6 +8788,191 @@ exit 0
 #    store.run("DELETE FROM doh_users WHERE day < ?", (cutoff,))
 #
 #
+## ------------------------------------------------------- traffic and status
+#TRAFFIC_TOP = 10                # customers and services listed in a traffic report
+## What the services were is the customer's own to see. Added up over many it is
+## the operator's to know; over a few it is one customer's again - three
+## customers' PlayStation is three people's. Below this many, it is not given.
+#SERVICE_MIN_CUSTOMERS = 5
+#TRAFFIC_DAYS = (1, 60)          # the shortest and longest window it can be asked for
+#
+#
+#def traffic_report(store, seller=None, days=7):
+#    """The whole service's traffic as an operator weighs it - or one seller's
+#    customers' - over the last `days` days (Tehran's days, today included):
+#    what went through, set against the same stretch before; each day; the hour
+#    of the day it is busiest; who used the most; and what they used it for.
+#
+#    Read from the tables the charts are drawn from, which are for looking at,
+#    not for billing: nothing here changes what anybody has used.
+#    """
+#    low, high = TRAFFIC_DAYS
+#    days = max(low, min(high, int(days)))
+#    now_t = datetime.now(timezone.utc)
+#
+#    def day_of(back):
+#        return usage_buckets(now_t - timedelta(days=back))["1d"]
+#    since, before_since = day_of(days - 1), day_of(2 * days - 1)
+#    # Every query reads its customers through u, so a seller's are theirs by one
+#    # condition - the same as for the receipts and the accounts.
+#    mine = " AND u.owner_admin = ?" if seller else ""
+#    extra = (seller,) if seller else ()
+#
+#    def span(first, last):
+#        row = store.one("SELECT COALESCE(SUM(g.up), 0) up, COALESCE(SUM(g.down), 0) down"
+#                        " FROM usage g JOIN users u ON u.id = g.user_id"
+#                        " WHERE g.grain = '1d' AND g.bucket >= ? AND g.bucket <= ?" + mine,
+#                        (first, last) + extra)
+#        return {"up": row["up"], "down": row["down"]}
+#    total, previous = span(since, day_of(0)), span(before_since, day_of(days))
+#    today = span(day_of(0), day_of(0))
+#    now_sum, before_sum = total["up"] + total["down"], previous["up"] + previous["down"]
+#
+#    daily = {r["bucket"]: (r["up"], r["down"]) for r in store.q(
+#        "SELECT g.bucket, SUM(g.up) up, SUM(g.down) down FROM usage g"
+#        " JOIN users u ON u.id = g.user_id WHERE g.grain = '1d' AND g.bucket >= ?"
+#        + mine + " GROUP BY g.bucket", (since,) + extra)}
+#    series = []
+#    for back in range(days - 1, -1, -1):
+#        day = day_of(back)
+#        up, down = daily.get(day, (0, 0))
+#        series.append({"day": day, "up": up, "down": down})
+#
+#    # Hours are kept for a week, so a longer window still says "this week".
+#    hours = [0] * 24
+#    for r in store.q("SELECT substr(g.bucket, 12, 2) h, SUM(g.up + g.down) b FROM usage g"
+#                     " JOIN users u ON u.id = g.user_id WHERE g.grain = '1h' AND g.bucket >= ?"
+#                     + mine + " GROUP BY h", (usage_buckets(now_t - timedelta(days=min(days, 7)
+#                                                                              ))["1h"],) + extra):
+#        if r["h"] and r["h"].isdigit() and int(r["h"]) < 24:
+#            hours[int(r["h"])] = r["b"] or 0
+#    busiest = max(range(24), key=lambda h: hours[h])
+#    peak = {"hour": busiest, "bytes": hours[busiest]} if hours[busiest] else None
+#
+#    top = []
+#    for r in store.q("SELECT u.*, SUM(g.up) up, SUM(g.down) down FROM usage g"
+#                     " JOIN users u ON u.id = g.user_id WHERE g.grain = '1d' AND g.bucket >= ?"
+#                     + mine + " GROUP BY u.id ORDER BY SUM(g.up) + SUM(g.down) DESC LIMIT ?",
+#                     (since,) + extra + (TRAFFIC_TOP,)):
+#        used = r["up"] + r["down"]
+#        top.append({"id": r["id"], "label": who_label(r), "up": r["up"], "down": r["down"],
+#                    "bytes": used,
+#                    "share_percent": round(100.0 * used / now_sum, 1) if now_sum else 0,
+#                    "quota_percent": round(100.0 * (r["used_bytes"] or 0) / r["quota_bytes"], 1)
+#                    if r["quota_bytes"] else None})
+#
+#    # Which service the traffic went to is kept thirty days, not sixty.
+#    keep = min(days, SERVICE_KEEP_DAYS)
+#    labels = {svc["key"]: svc.get("label") or svc["key"] for svc in CATALOGUE}
+#    labels.update(SERVICE_LABELS)
+#    rows = store.q("SELECT s.service, SUM(s.bytes) b FROM usage_service s"
+#                   " JOIN users u ON u.id = s.user_id WHERE s.day >= ?" + mine
+#                   + " GROUP BY s.service ORDER BY b DESC LIMIT ?",
+#                   (day_of(keep - 1),) + extra + (TRAFFIC_TOP,))
+#    scope = store.one("SELECT COALESCE(SUM(s.bytes), 0) b, COUNT(DISTINCT s.user_id) n"
+#                      " FROM usage_service s JOIN users u ON u.id = s.user_id WHERE s.day >= ?"
+#                      + mine, (day_of(keep - 1),) + extra)
+#    whole, enough = scope["b"], scope["n"] >= SERVICE_MIN_CUSTOMERS
+#    services = [{"key": r["service"], "label": labels.get(r["service"], r["service"]),
+#                 "bytes": r["b"], "share_percent": round(100.0 * r["b"] / whole, 1) if whole else 0}
+#                for r in rows] if enough else []
+#    report = {"days": days, "total": total, "previous": previous, "today": today,
+#              "change_percent": round(100.0 * (now_sum - before_sum) / before_sum, 1)
+#              if before_sum else None,
+#              "daily": series, "by_hour": hours, "peak": peak, "top_users": top,
+#              "services": services, "services_days": keep,
+#              "services_hidden": bool(scope["n"]) and not enough}
+#    report["text"] = traffic_report_text(report)
+#    return report
+#
+#
+#def traffic_report_text(r):
+#    """The report in a few Persian lines, to send to the operator as it is."""
+#    now_sum = r["total"]["up"] + r["total"]["down"]
+#    lines = ["ترافیک %d روز اخیر: %s (دانلود %s، آپلود %s)"
+#             % (r["days"], human_fa(now_sum), human_fa(r["total"]["down"]),
+#                human_fa(r["total"]["up"]))]
+#    if r["change_percent"] is not None:
+#        lines.append("نسبت به %d روز قبلش: %s%d٪"
+#                     % (r["days"], "+" if r["change_percent"] >= 0 else "−",
+#                        abs(round(r["change_percent"]))))
+#    lines.append("امروز: %s" % human_fa(r["today"]["up"] + r["today"]["down"]))
+#    if r["peak"]:
+#        lines.append("شلوغ‌ترین ساعت: %02d تا %02d، %s"
+#                     % (r["peak"]["hour"], (r["peak"]["hour"] + 1) % 24, human_fa(r["peak"]["bytes"])))
+#    if r["top_users"]:
+#        lines.append("پرمصرف‌ها:")
+#        lines += ["%d. %s — %s (%s٪)" % (n, u["label"], human_fa(u["bytes"]), u["share_percent"])
+#                  for n, u in enumerate(r["top_users"][:5], 1)]
+#    if r["services"]:
+#        lines.append("پرمصرف‌ترین سرویس‌ها:")
+#        lines += ["%d. %s — %s (%s٪)" % (n, s["label"], human_fa(s["bytes"]), s["share_percent"])
+#                  for n, s in enumerate(r["services"][:5], 1)]
+#    return "\n".join(lines)
+#
+#
+#def status_report(store, relays, nodes, exit_ip):
+#    """Whether the service is up, server by server, as the panel last heard
+#    from each - the operator's question at three in the morning. A server
+#    that has said nothing for two minutes is not online, whatever it last said.
+#    """
+#    stamp = datetime.now(timezone.utc)
+#
+#    def one(kind, ip, host):
+#        m = store.one("SELECT * FROM metrics WHERE host = ? ORDER BY at DESC LIMIT 1", (host,))
+#        seen = parse_ts(m["at"]) if m else None
+#        age = int((stamp - seen).total_seconds()) if seen else None
+#
+#        def pct(a, b):
+#            return round(100.0 * (a or 0) / b, 1) if b else None
+#        row = {"kind": kind, "ip": ip, "name": store.setting("server_name:" + ip) or "",
+#               "online": age is not None and age < 120, "seen_seconds_ago": age}
+#        if m:
+#            row.update(cpu_percent=round(m["cpu"] or 0, 1),
+#                       memory_percent=pct(m["mem_used"], m["mem_total"]),
+#                       disk_percent=pct(m["disk_used"], m["disk_total"]),
+#                       rx_bps=m["rx_bps"], tx_bps=m["tx_bps"],
+#                       uptime_days=(m["uptime"] or 0) // 86400)
+#        if kind == "relay":
+#            try:
+#                tunnel = json.loads(store.setting("relay_tunnel_state:" + ip) or "null")
+#            except ValueError:
+#                tunnel = None
+#            if isinstance(tunnel, dict):
+#                row["tunnel"] = {"on": bool(tunnel.get("on")), "running": bool(tunnel.get("running")),
+#                                 "error": str(tunnel.get("error") or "")[:200]}
+#        return row
+#    servers = [one("exit", exit_ip, "exit")] if exit_ip else []
+#    servers += [one("node", ip, ip) for ip in sorted(nodes)]
+#    servers += [one("relay", ip, ip) for ip in sorted(relays)]
+#    known = {s["ip"] for s in servers}
+#    problems = []
+#    for r in store.q("SELECT key FROM settings WHERE key LIKE 'alert_state:%' AND value = 'down'"):
+#        key = r["key"][len("alert_state:"):]
+#        # Not one about a server taken off the panel: nothing would close it.
+#        if all(ip in known for ip in re.findall(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", key)):
+#            last = store.one("SELECT text, at FROM alerts WHERE key = ? ORDER BY id DESC LIMIT 1",
+#                             (key,))
+#            if last:
+#                problems.append({"key": key, "text": last["text"], "since": last["at"]})
+#    report = {"healthy": all(s["online"] for s in servers) and not problems,
+#              "servers": servers, "problems": problems}
+#    report["text"] = status_report_text(report)
+#    return report
+#
+#
+#def status_report_text(r):
+#    lines = ["همه‌چیز سالم است" if r["healthy"] else "مشکل هست"]
+#    for s in r["servers"]:
+#        word = {"exit": "سرور خارج", "node": "نود", "relay": "رله"}[s["kind"]]
+#        lines.append("%s %s%s: %s" % (word, s["ip"], " (%s)" % s["name"] if s["name"] else "",
+#                                       "وصل" if s["online"] else "قطع"
+#                                       + (" — %d ثانیه پیش" % s["seen_seconds_ago"]
+#                                          if s["seen_seconds_ago"] is not None else "")))
+#    lines += ["⚠️ " + p["text"] for p in r["problems"]]
+#    return "\n".join(lines)
+#
+#
 #def usage_view(store, user, catalogue, with_services=True):
 #    """Everything a usage page draws, in one dict: the customer's page and the
 #    admin's user page both build from this."""
@@ -8840,8 +9032,7 @@ exit 0
 #    }
 #    if with_services:
 #        label = {svc["key"]: svc.get("label") or svc["key"] for svc in catalogue}
-#        label.update({"_http": "دانلود کنسول و HTTP", "_dns": "DNS رمزگذاری‌شده",
-#                      "_other": "سایر"})
+#        label.update(SERVICE_LABELS)
 #        cutoff = usage_buckets(now_t - timedelta(days=SERVICE_KEEP_DAYS))["1d"]
 #        out["services"] = [
 #            {"key": r["service"], "label": label.get(r["service"], r["service"]),
@@ -11895,6 +12086,25 @@ exit 0
 #        s = admin_stats(self.store, getattr(self, "_seller", None))
 #        return 200, dict({"ok": True, "text": daily_report_text(s)}, **s)
 #
+#    def api_admin_traffic(self, body):
+#        """Traffic over the last `days` days (1 to 60, default 7): the total and
+#        how it moved, each day, the busiest hour, the heaviest customers and the
+#        services they used. A reseller's key sees its own customers'."""
+#        try:
+#            days = int((self.query.get("days") or ["7"])[0])
+#        except ValueError:
+#            return 400, refused("bad_days", "days باید یک عدد از ۱ تا ۶۰ باشد")
+#        if not TRAFFIC_DAYS[0] <= days <= TRAFFIC_DAYS[1]:
+#            return 400, refused("bad_days", "days باید یک عدد از ۱ تا ۶۰ باشد")
+#        return 200, dict(traffic_report(self.store, getattr(self, "_seller", None), days), ok=True)
+#
+#    def api_admin_status_report(self, body):
+#        """Is the service up? Every server, as last heard from, and what is wrong.
+#        The servers are the owner's: a reseller's key is told so."""
+#        if getattr(self, "_seller", None):
+#            return 403, refused("owner_only", "وضعیت سرورها فقط برای کلید خود مالک است")
+#        return 200, dict(status_report(self.store, self.relays, self.nodes, exit_self()), ok=True)
+#
 #    def api_admin_receipts(self, body):
 #        which = (self.query.get("status") or ["pending"])[0]
 #        extra, more = self.mine()
@@ -12308,6 +12518,8 @@ exit 0
 #                           r"(\d{1,12})/image$"), "ticket_image"),
 #        # The operator's own, for a key with admin rights only.
 #        ("GET", re.compile(r"/api/v1/admin/stats$"), "admin_stats"),
+#        ("GET", re.compile(r"/api/v1/admin/traffic$"), "admin_traffic"),
+#        ("GET", re.compile(r"/api/v1/admin/status$"), "admin_status_report"),
 #        ("GET", re.compile(r"/api/v1/admin/receipts$"), "admin_receipts"),
 #        ("GET", re.compile(r"/api/v1/admin/receipts/(\d{1,12})/image$"),
 #         "admin_receipt_image"),
@@ -22580,6 +22792,51 @@ exit 0
 #    return "".join(out)
 #
 #
+#def quota_forecast(user, week_bytes, today=None):
+#    """Where a customer's allowance stands and where it is going: the share
+#    used, the pace of the last seven days, and - at that pace - how many days
+#    it lasts and whether that is before the period ends. Whether it runs out
+#    first is what an operator needs to know before the customer writes."""
+#    quota, used = user["quota_bytes"] or 0, user["used_bytes"] or 0
+#    per_day = week_bytes / 7.0
+#    out = {"quota": quota, "used": used, "per_day": per_day, "percent": None,
+#           "days_left": None, "days_to_end": None, "runs_out_first": False}
+#    if not quota:
+#        return out
+#    out["percent"] = min(100, int(100.0 * used / quota))
+#    if used < quota and per_day > 0:
+#        out["days_left"] = int((quota - used) / per_day)
+#    expires = parse_ts(user["expires_at"])
+#    if expires:
+#        left = (expires - (today or datetime.now(timezone.utc))).total_seconds() / 86400.0
+#        out["days_to_end"] = max(0, int(left))
+#        out["runs_out_first"] = (out["days_left"] is not None and left > 0
+#                                 and out["days_left"] < left)
+#    return out
+#
+#
+#def forecast_card(user, week_bytes):
+#    """The usage page's top: the allowance as a bar, the pace, and the verdict."""
+#    f = quota_forecast(user, week_bytes)
+#    if not f["quota"]:
+#        return ("<div class='card'><h2>حجم</h2><p class='muted'>این حساب حجم نامحدود دارد یا هنوز "
+#                "پلنی ندارد. میانگین مصرف ۷ روز اخیر: <b dir='ltr'>%s</b> در روز.</p></div>"
+#                % human(f["per_day"]))
+#    if f["days_left"] is None:
+#        verdict = ("<span class='bad'>حجم تمام شده است.</span>" if f["used"] >= f["quota"] else
+#                   "<span class='muted'>مصرفی در هفتهٔ اخیر نبوده؛ پیش‌بینی ممکن نیست.</span>")
+#    elif f["runs_out_first"]:
+#        verdict = ("<span class='warn'>با این سرعت حجم تا <b>%d روز</b> دیگر تمام می‌شود، پیش از "
+#                   "پایان دوره (%d روز دیگر). شاید زود به تمدید یا پلن بزرگ‌تر نیاز داشته باشد."
+#                   "</span>" % (f["days_left"], f["days_to_end"]))
+#    else:
+#        verdict = ("<span class='ok'>با این سرعت حجم تا پایان دوره کافی است (حدود %d روز دیگر "
+#                   "می‌ماند).</span>" % f["days_left"])
+#    return ("<div class='card'><h2>حجم و پیش‌بینی</h2>%s<p>%s</p><p class='muted'>میانگین مصرف "
+#            "۷ روز اخیر: <b dir='ltr'>%s</b> در روز.</p></div>"
+#            % (bar(f["used"], f["quota"]), verdict, human(f["per_day"])))
+#
+#
 #def user_usage(uid):
 #    """The same numbers the customer's page is drawn from, straight from the
 #    panel's tables - this runs beside it, on the same database."""
@@ -22655,6 +22912,81 @@ exit 0
 #    return {"five": series("5m", now_t - timedelta(hours=24), "%Y-%m-%dT%H:%M"),
 #            "hours": series("1h", now_t - timedelta(days=7), "%Y-%m-%dT%H:00"),
 #            "days": series("1d", now_t - timedelta(days=60), "%Y-%m-%d")}
+#
+#
+## What the traffic that is not one of the catalogue's services is called.
+#SERVICE_LABELS = {"_http": "دانلود کنسول و HTTP", "_dns": "DNS رمزگذاری‌شده", "_other": "سایر"}
+## Fewest customers whose services may be added up and shown: below it, a
+## service's total is one customer's use again, and that is theirs alone to see.
+#SERVICE_MIN_CUSTOMERS = 5
+#
+#
+#def busy_hours(owner=None):
+#    """The last week's traffic by the hour of the day, Tehran's: 24 sums."""
+#    join, first = owner_filter(owner, "g.user_id")
+#    since = (datetime.now(TEHRAN) - timedelta(days=7)).strftime("%Y-%m-%dT%H:00")
+#    hours = [0] * 24
+#    for r in STORE.q("SELECT substr(g.bucket, 12, 2) h, SUM(g.up + g.down) b FROM usage g" + join
+#                     + " WHERE g.grain = '1h' AND g.bucket >= ? GROUP BY h", first + (since,)):
+#        if r["h"] and r["h"].isdigit() and int(r["h"]) < 24:
+#            hours[int(r["h"])] = r["b"] or 0
+#    return hours
+#
+#
+#def top_services(owner=None, limit=8):
+#    """What the last thirty days went to, most first: [(label, bytes)], and the
+#    whole of it."""
+#    join, first = owner_filter(owner, "s.user_id")
+#    since = (datetime.now(TEHRAN) - timedelta(days=29)).strftime("%Y-%m-%d")
+#    label = {svc["key"]: svc.get("label") or svc["key"] for svc in catalogue_now()}
+#    label.update(SERVICE_LABELS)
+#    rows = STORE.q("SELECT s.service, SUM(s.bytes) b FROM usage_service s" + join
+#                   + " WHERE s.day >= ? GROUP BY s.service ORDER BY b DESC", first + (since,))
+#    whole = sum(r["b"] or 0 for r in rows)
+#    # Which services a customer used is theirs to see. Added up over many it is
+#    # the operator's; over a few it is one customer's again.
+#    customers = STORE.one("SELECT COUNT(DISTINCT s.user_id) n FROM usage_service s" + join
+#                          + " WHERE s.day >= ?", first + (since,))["n"]
+#    if customers < SERVICE_MIN_CUSTOMERS:
+#        return [], whole
+#    return [(label.get(r["service"], r["service"]), r["b"] or 0) for r in rows[:limit]], whole
+#
+#
+#def traffic_insight_card(owner=None):
+#    """Under the home page's charts: which hours of the day are busy, and what
+#    the traffic is for - the two things that decide when to add a server and
+#    which services to put in a plan."""
+#    try:
+#        hours = busy_hours(owner)
+#        services, whole = top_services(owner)
+#    except sqlite3.OperationalError:
+#        return ""           # a panel that has not made the tables yet
+#    if not any(hours) and not services:
+#        return ""
+#    top = max(hours) or 1
+#    peak = hours.index(max(hours))
+#    bars = "".join(
+#        "<div class='hr%s' title='%02d:00 — %s'><i style='height:%d%%'></i><span>%s</span></div>"
+#        % (" peak" if h == peak and hours[h] else "", h, html.escape(human(hours[h])),
+#           max(2, int(100.0 * hours[h] / top)) if hours[h] else 0, "%02d" % h if h % 3 == 0 else "")
+#        for h in range(24))
+#    out = ["<div class='card'><h2>ساعت‌های شلوغ و مصرف سرویس‌ها</h2>"]
+#    if any(hours):
+#        out.append("<h3 class='chart-h'>ساعت‌های شبانه‌روز (۷ روز اخیر، به وقت تهران)</h3>"
+#                   "<div class='hours' dir='ltr'>%s</div><p class='muted'>شلوغ‌ترین ساعت: <b>%02d تا "
+#                   "%02d</b> — %s. اگر رله یا سرور خارج در همین ساعت‌ها به سقف CPU یا پهنای باند "
+#                   "می‌رسد، وقت اضافه‌کردن سرور است.</p>"
+#                   % (bars, peak, (peak + 1) % 24, human(hours[peak])))
+#    if services:
+#        out.append("<h3 class='chart-h'>سرویس‌ها (۳۰ روز اخیر)</h3><table>")
+#        for name, n in services:
+#            pct = round(100.0 * n / whole) if whole else 0
+#            out.append("<tr><td>%s</td><td dir='ltr'>%s</td><td style='min-width:160px'>%d٪"
+#                       "<div class='bar'><i style='width:%d%%'></i></div></td></tr>"
+#                       % (html.escape(name), human(n), pct, pct))
+#        out.append("</table>")
+#    out.append("</div>")
+#    return "".join(out)
 #
 #
 #def change_note(now_b, before_b, word):
@@ -26116,12 +26448,35 @@ exit 0
 #.tpl .chip{padding:3px 10px;border-radius:999px;font-size:12px;background:var(--row);color:var(--dim)}
 #.tpl .chip.more{background:transparent;border:1px dashed var(--line2)}
 #.tpl .foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
-#a.btn{display:inline-block;padding:7px 16px;border-radius:12px;background:var(--accent);color:var(--card);font-weight:600}
+#/* position and overflow: its hover sheen (a.btn::after, above) is drawn outside the box otherwise,
+#   and widened the whole page */
+#a.btn{position:relative;overflow:hidden;display:inline-block;padding:7px 16px;border-radius:12px;
+# background:var(--accent);color:var(--card);font-weight:600}
 #.seg{display:inline-flex;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
 #.seg button{border:0;border-radius:0;background:transparent;color:var(--dim);box-shadow:none;margin:0}
 #.seg button.on{background:var(--accent);color:var(--card)}
 #.savebar{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;
 # margin-top:16px;padding:12px 0;background:var(--card);border-top:1px solid var(--line);z-index:5}
+#/* ---- busy hours ---- */
+#.hours{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;align-items:end;height:120px;margin:12px 0 6px}
+#.hours .hr{position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center}
+#.hours .hr i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:var(--line2);min-height:0;
+# transition:background .2s}
+#.hours .hr.peak i{background:linear-gradient(180deg,var(--accent),var(--accent2))}
+#.hours .hr:hover i{background:var(--accent)}
+#.hours .hr span{position:absolute;bottom:-18px;font-size:10px;color:var(--muted)}
+#.hours{margin-bottom:26px}
+#/* ---- the API page ---- */
+#.codebox{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:10px 14px;
+# border:1px solid var(--line);border-radius:14px;background:var(--row)}
+#.codebox>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+#.codebox small{color:var(--muted);font-size:11px}
+#.codebox code{overflow-wrap:anywhere;font-size:12.5px}
+#.recipe{border-top:1px solid var(--line);padding:10px 0}.recipe:first-of-type{border-top:0}
+#.recipe summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}
+#.recipe .verb{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--row);color:var(--accent)}
+#.plan .hook{margin-top:4px}.plan .hook summary{cursor:pointer;color:var(--dim);font-size:13px}
+#.plan .hook form{margin:8px 0}.plan .hook input[name=url]{flex:1;min-width:0}
 #.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
 # white-space:nowrap;background:var(--row);color:var(--dim)}
 #.pill.ok{background:var(--good-bg);color:var(--accent)}
@@ -27823,6 +28178,190 @@ exit 0
 #    except (OSError, ValueError):
 #        pass
 #    return "https://%s:%d/api/v1/" % (panel_host(), port)
+#
+#
+## What the API page does with a click: copy a command, open and close the new-key
+## dialog. Nothing else on the page needs it.
+#API_SCRIPT = """<script>
+#(function () {
+#  document.addEventListener('click', function (e) {
+#    var copy = e.target.closest('[data-copy]');
+#    if (copy) {
+#      var text = copy.dataset.copy, done = function () {
+#        var was = copy.textContent;
+#        copy.textContent = '✓';
+#        setTimeout(function () { copy.textContent = was; }, 1200);
+#      };
+#      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
+#      return;
+#    }
+#    var open = e.target.closest('[data-dlg]');
+#    if (open) return document.getElementById(open.dataset.dlg).showModal();
+#    var close = e.target.closest('[data-close]');
+#    if (close) return close.closest('dialog').close();
+#    if (e.target.tagName === 'DIALOG') e.target.close();
+#  });
+#})();
+#</script>"""
+#
+## The commands the API page shows, each with what it is for and whose key may run
+## it. {api} is the panel's own address. The ones marked new are this release's.
+#API_RECIPES = (
+#    ("امتحان کلید", "کلید ربات", "GET", "", "اگر جواب {\"ok\": true} آمد، کلید و آدرس درست است.", False),
+#    ("پلن‌های در حال فروش", "کلید ربات", "GET", "plans", "قیمت، حجم و مدت هر پلن، برای نمایش در ربات.", False),
+#    ("حساب یک مشتری", "کلید ربات", "GET", "users/123456789",
+#     "با آیدی تلگرام: پلن، حجم مانده، تاریخ پایان، آی‌پی‌ها.", False),
+#    ("مصرف یک مشتری", "کلید ربات", "GET", "users/123456789/usage",
+#     "سرعت الان، هفته و ماه، روزها و ساعت‌ها، و چند روز دیگر حجمش تمام می‌شود.", False),
+#    ("آمار امروز", "کلید ادمین", "GET", "admin/stats",
+#     "کاربران، درآمد، رسید و تیکت منتظر، دوره‌های نزدیک به پایان.", False),
+#    ("گزارش ترافیک", "کلید ادمین", "GET", "admin/traffic?days=7",
+#     "کل ترافیک و تغییرش نسبت به دورهٔ قبل، هر روز، شلوغ‌ترین ساعت، پرمصرف‌ها و سرویس‌ها. "
+#     "days از ۱ تا ۶۰. برای کلید نماینده فقط مشتری‌های خودش.", True),
+#    ("وضعیت سرورها", "کلید ادمین (مالک)", "GET", "admin/status",
+#     "کدام سرور وصل است، چقدر پر است، تونل رله چه حالی دارد و چه هشداری باز است. برای ربات "
+#     "مانیتور.", True),
+#    ("رسیدهای منتظر", "کلید ادمین", "GET", "admin/receipts?status=pending",
+#     "رسیدهای تأییدنشده، قدیمی‌ترین اول، هر کدام با متن آمادهٔ جزئیات.", False),
+#    ("مشتری‌های نزدیک به پایان", "کلید ادمین", "GET", "admin/expiring?days=3",
+#     "برای یادآور تمدید: چه کسی تا ۳ روز دیگر تمام می‌شود.", False),
+#)
+#
+#
+#def api_hero_card(p, live):
+#    """The top of the API page: where it is, how to try it, and where to read more."""
+#    url = bot_api_url()
+#    test = 'curl -s -H "Authorization: Bearer dd_..." %s' % url
+#    return (
+#        "<div class='card'><div class='pagehead'><div><h2>رابط API</h2>"
+#        "<span class='muted'>ربات فروش یا مانیتور (از خودتان یا شخص دیگر) از همین دروازه به پنل "
+#        "وصل می‌شود: مشتری، پلن، رسید، تیکت، مصرف و وضعیت سرورها. رسیدها مثل همیشه منتظر تأیید "
+#        "شما می‌مانند.</span></div><span class='pill %s'>%d کلید فعال</span></div>"
+#        "<div class='codebox'><div><small>آدرس</small><code dir='ltr'>%s</code></div>"
+#        "<button type='button' class='ghost' data-copy='%s'>کپی</button></div>"
+#        "<div class='codebox'><div><small>امتحان</small><code dir='ltr'>%s</code></div>"
+#        "<button type='button' class='ghost' data-copy='%s'>کپی</button></div>"
+#        "<p class='muted'>راهنمای کامل: <a href='https://github.com/AlsoAryan/Master-dns/blob/main/"
+#        "docs/bot-api.md' target='_blank' rel='noopener'>docs/bot-api.md</a>. اگر سرور یا "
+#        "دیتاسنتر فایروال دارد، پورت <b>۸۴۴۵</b> را باز کنید.</p></div>"
+#        % ("ok" if live else "warn", live, html.escape(url), html.escape(url, quote=True),
+#           html.escape(test), html.escape(test, quote=True)))
+#
+#
+#def api_key_tile(p, r):
+#    """One key as a card: whose it is, when it last worked, where it may be used
+#    from, and - for a live one - its webhook and the button that ends it."""
+#    live = not r["revoked_at"]
+#    admin_key = r["scope"] == "admin"
+#    ask = html.escape(json.dumps(
+#        "کلید «%s» باطل شود؟ رباتی که با آن کار می‌کند فوراً قطع می‌شود." % r["name"],
+#        ensure_ascii=False), quote=True)
+#    used = ago(r["last_used_at"]) if r["last_used_at"] else "هرگز"
+#    hook = ""
+#    if live:
+#        sent = ("<form method='post' action='/%s/api-webhook-test' style='display:inline'>"
+#                "<input type='hidden' name='id' value='%d'><button class='ghost'>ارسال آزمایشی"
+#                "</button></form> <form method='post' action='/%s/api-webhook-save' "
+#                "style='display:inline'><input type='hidden' name='id' value='%d'>"
+#                "<input type='hidden' name='url' value=''><button class='del'>حذف</button></form>"
+#                % (p, r["id"], p, r["id"])) if r["webhook_url"] else ""
+#        hook = ("<details class='hook'%s><summary>اطلاع‌رسانی به ربات (webhook)</summary>"
+#                "<form method='post' action='/%s/api-webhook-save' class='row'>"
+#                "<input type='hidden' name='id' value='%d'><input name='url' value='%s' dir='ltr' "
+#                "placeholder='https://bot.example.com/master-dns'><button>ذخیره</button></form>"
+#                "<div>%s</div></details>"
+#                % (" open" if r["webhook_url"] else "", p, r["id"],
+#                   html.escape(r["webhook_url"] or "", quote=True), sent))
+#    return (
+#        "<article class='plan%s'><div class='phead'><strong class='ptitle'>%s</strong>%s%s</div>"
+#        "<ul class='facts'><li><span>ساخته شده</span><b>%s</b></li>"
+#        "<li><span>آخرین استفاده</span><b>%s</b></li>"
+#        "<li><span>فقط از آدرس</span><b dir='ltr'>%s</b></li></ul>%s%s</article>"
+#        % ("" if live else " off", html.escape(r["name"]),
+#           "<span class='pill warn'>ادمین</span>" if admin_key else "<span class='pill'>مشتری</span>",
+#           "" if live else "<span class='pill bad'>باطل شده</span>",
+#           html.escape(show_date(r["created_at"], True)), html.escape(used),
+#           html.escape(r["allow_ips"] or "همه"), hook,
+#           ("<form method='post' action='/%s/api-key-revoke' onsubmit='return confirm(%s)'>"
+#            "<input type='hidden' name='id' value='%d'><button class='del'>باطل کردن</button></form>"
+#            % (p, ask, r["id"])) if live else ""))
+#
+#
+#def api_new_key_dialog(p):
+#    return (
+#        "<dialog class='pd' id='keynew'><form method='post' action='/%s/api-key-new'>"
+#        "<strong class='ptitle'>کلید تازه</strong>"
+#        "<fieldset><legend>کلید</legend><div class='pf'>"
+#        "<label>نام (برای خودتان، مثلاً «ربات فروش»)<input name='name' required maxlength='40'></label>"
+#        "<label>فقط از این آدرس‌ها (اختیاری، با ویرگول)<input name='allow_ips' maxlength='200' "
+#        "dir='ltr' placeholder='203.0.113.7'></label></div>"
+#        "<p class='muted'>اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی که لو برود از جای دیگر "
+#        "کار نمی‌کند.</p></fieldset>"
+#        "<fieldset><legend>دسترسی</legend><label class='check'><input type='checkbox' name='admin' "
+#        "value='1'> دسترسی ادمین</label><p class='muted'>با این کلید ربات رسید تأیید یا رد می‌کند، "
+#        "کاربر مسدود می‌کند، پلن می‌دهد، به تیکت جواب می‌دهد و گزارش ترافیک و وضعیت سرورها را "
+#        "می‌خواند. فقط برای ربات خودتان، و حتماً با آدرس ثابت.</p></fieldset>"
+#        "<div class='bar2'><button>ساختن کلید</button><button type='button' class='ghost' "
+#        "data-close='1'>بستن</button></div></form></dialog>" % p)
+#
+#
+#def api_bot_link_card(p):
+#    bot = STORE.one("SELECT value FROM settings WHERE key = 'bot_link'")
+#    return (
+#        "<div class='card'><h2>ربات برای مشتری‌ها</h2><form method='post' action='/%s/bot-link-save' "
+#        "class='row'><label style='margin:0'>آدرس ربات</label><input name='link' value='%s' dir='ltr' "
+#        "size='30' placeholder='https://t.me/MyBot'><button class='ghost'>ذخیره</button></form>"
+#        "<p class='muted'>با این آدرس، دکمهٔ «اتصال به تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند "
+#        "و کد اتصال را خودش می‌فرستد (<code>/start link_...</code>). نشانی webhook باید https باشد "
+#        "(یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود تا ربات "
+#        "مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس نباشد، خبر تا حدود یک روز دوباره "
+#        "فرستاده می‌شود.</p></div>"
+#        % (p, html.escape(bot["value"] if bot and bot["value"] else "", quote=True)))
+#
+#
+#def api_log_card():
+#    """The last messages the panel sent to bots, and whether each arrived."""
+#    recent = STORE.q("SELECT o.*, k.name FROM webhook_outbox o"
+#                     " LEFT JOIN api_tokens k ON k.id = o.token_id ORDER BY o.id DESC LIMIT 15")
+#    if not recent:
+#        return ""
+#    rows = []
+#    for o in recent:
+#        if o["delivered_at"]:
+#            state = "<span class='ok'>رسید</span>"
+#        elif o["attempts"] >= WEBHOOK_MAX_TRIES:
+#            state = "<span class='bad'>نرسید</span> <span class='muted'>%s</span>" \
+#                % html.escape(o["last_error"] or "")
+#        elif o["attempts"]:
+#            state = ("<span class='warn'>تلاش دوباره (%d)</span> <span class='muted'>%s</span>"
+#                     % (o["attempts"], html.escape(o["last_error"] or "")))
+#        else:
+#            state = "<span class='muted'>در صف</span>"
+#        rows.append("<tr><td><code>%s</code></td><td>%s</td><td class='muted'>%s</td><td>%s</td></tr>"
+#                    % (html.escape(o["event"]), html.escape(o["name"] or "-"),
+#                       html.escape(show_date(o["created_at"], True)), state))
+#    return ("<div class='card'><details><summary><b>خبرهای فرستاده‌شده به ربات‌ها</b> "
+#            "<span class='muted'>(۱۵ تای آخر)</span></summary><table><tr><th>خبر</th><th>ربات</th>"
+#            "<th>زمان</th><th>وضعیت</th></tr>%s</table></details></div>" % "".join(rows))
+#
+#
+#def api_recipes_card():
+#    """What a key can do, as commands to copy: each one a line, and what comes
+#    back in words."""
+#    api = bot_api_url()
+#    items = []
+#    for title, who, method, path, what, new in API_RECIPES:
+#        cmd = "curl -s -H \"Authorization: Bearer $KEY\" %s%s" % (api, path)
+#        items.append(
+#            "<details class='recipe'><summary><span class='verb'>%s</span><b>%s</b>%s"
+#            "<span class='muted'>%s</span></summary><p class='muted'>%s</p><div class='codebox'>"
+#            "<div><code dir='ltr'>%s</code></div><button type='button' class='ghost' "
+#            "data-copy='%s'>کپی</button></div></details>"
+#            % (method, html.escape(title), "<span class='pill ok'>تازه</span>" if new else "",
+#               html.escape(who), html.escape(what), html.escape(cmd), html.escape(cmd, quote=True)))
+#    return ("<div class='card'><h2>چه کارهایی می‌شود کرد</h2><p class='muted'>چند دستور پرکاربرد؛ "
+#            "<code>$KEY</code> کلید شماست. همهٔ دستورها در راهنمای کامل است.</p>%s</div>"
+#            % "".join(items))
 #
 #
 #def api_key_card(name, key):
@@ -30267,7 +30806,8 @@ exit 0
 #            # Their own customers' usage, drawn as the owner's home page draws
 #            # everybody's.
 #            return (seller_card(CFG["ADMIN_PATH"], s) + "".join(out)
-#                    + total_usage_card(CFG["ADMIN_PATH"], s["id"], "مصرف مشتری‌های من"))
+#                    + total_usage_card(CFG["ADMIN_PATH"], s["id"], "مصرف مشتری‌های من")
+#                    + traffic_insight_card(s["id"]))
 #        if me() is not None and not may("nodes"):
 #            return "".join(out)
 #        out.append(sellers_summary_card(CFG["ADMIN_PATH"]))
@@ -30281,6 +30821,7 @@ exit 0
 #            out.append(total_usage_card(CFG["ADMIN_PATH"], "own", "مصرف مشتری‌های خودم"))
 #        else:
 #            out.append(total_usage_card(CFG["ADMIN_PATH"]))
+#        out.append(traffic_insight_card())
 #        out.append(doh_card())
 #
 #        # Only the servers the panel has now: one taken off before this
@@ -30374,6 +30915,7 @@ exit 0
 #            out.append("<div class='stat'><div class='n' dir='ltr'>%s</div>"
 #                       "<div class='l'>%s</div></div>" % (n, l))
 #        out.append("</div></div>")
+#        out.append(forecast_card(user, week[0] + week[1]))
 #        out.append("<div class='card'><h2>روند روزانه</h2>%s%s</div>" % (legend(), days_svg))
 #        out.append("<div class='card'><h2>سرعت در ۲۴ ساعت گذشته</h2>%s%s</div>"
 #                   % (legend(), speed_chart(view["five"])))
@@ -30873,108 +31415,28 @@ exit 0
 #    def api_keys(self):
 #        p = CFG["ADMIN_PATH"]
 #        rows = STORE.q("SELECT * FROM api_tokens ORDER BY revoked_at IS NOT NULL, id DESC")
-#        out = ["<div class='card'><h2>رابط API ربات</h2><p>ربات فروش (از خودتان یا شخص دیگر) از همین "
-#               "دروازه به پنل وصل می‌شود: ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن "
-#               "پلن‌ها و فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما "
-#               "می‌مانند.</p><p>آدرس: <code>%s</code></p><p class='muted'>راهنمای کامل "
-#               "دستورها: <a href='https://github.com/AlsoAryan/Master-dns/blob/main/docs/bot-api.md' target='_blank' rel='noopener'>docs/bot-api.md</a>. پورت "
-#               "۸۴۴۵ را اگر فایروال سرور یا دیتاسنتر دارد باز کنید.</p></div>"
-#               % html.escape(bot_api_url())]
-#        out.append("<div class='card'><h2>کلیدهای دسترسی</h2>")
-#        if not rows:
-#            out.append("<p class='muted'>هنوز کلیدی نساخته‌اید؛ اولین کلید را بسازید.</p>")
-#        else:
-#            out.append("<table><tr><th>نام</th><th>دسترسی</th><th>ساخته شده</th>"
-#                       "<th>آخرین استفاده</th><th>فقط از آدرس</th><th>وضعیت</th>"
-#                       "<th></th></tr>")
-#            for r in rows:
-#                live = not r["revoked_at"]
-#                ask = html.escape(json.dumps(
-#                    "کلید «%s» باطل شود؟ رباتی که با آن کار می‌کند فوراً قطع می‌شود."
-#                    % r["name"], ensure_ascii=False), quote=True)
-#                out.append(
-#                    "<tr%s><td>%s</td><td>%s</td><td class='muted'>%s</td>"
-#                    "<td class='muted'>%s</td><td><code>%s</code></td><td class='%s'>%s</td>"
-#                    "<td class='acts'>%s</td></tr>"
-#                    % ("" if live else " class='off'", html.escape(r["name"]),
-#                       "<span class='warn'>ادمین</span>" if r["scope"] == "admin"
-#                       else "مشتری",
-#                       html.escape(show_date(r["created_at"], True)),
-#                       html.escape(show_date(r["last_used_at"] or "هرگز", True)),
-#                       html.escape(r["allow_ips"] or "همه"),
-#                       "ok" if live else "bad", "فعال" if live else "باطل شده",
-#                       ("<form method='post' action='/%s/api-key-revoke' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='del'>باطل "
-#                        "کردن</button></form>"
-#                        % (p, ask, r["id"])) if live else ""))
-#            out.append("</table>")
-#        out.append("</div>")
 #        live = [r for r in rows if not r["revoked_at"]]
+#        gone = [r for r in rows if r["revoked_at"]]
+#        out = [api_hero_card(p, len(live)),
+#               "<div class='card'><div class='pagehead'><div><h2>کلیدهای دسترسی</h2>"
+#               "<span class='muted'>هر ربات یک کلید دارد؛ کلیدی که لو برود را باطل کنید و "
+#               "رباتی که با آن کار می‌کرد فوراً قطع می‌شود.</span></div>"
+#               "<button type='button' data-dlg='keynew'>＋ کلید تازه</button></div>"]
 #        if live:
-#            out.append("<div class='card'><h2>اطلاع‌رسانی به ربات (webhook)</h2><p>پنل به این آدرس ربات خبر "
-#                       "می‌دهد: تأیید یا رد رسید، جواب تیکت، ۸۰٪ و ۹۵٪ حجم، تمام شدن حجم، نزدیک شدن و تمام شدن "
-#                       "دوره. هر خبر یک متن فارسی آماده دارد که ربات می‌تواند عیناً برای مشتری "
-#                       "بفرستد.</p><table><tr><th>کلید</th><th>آدرس ربات</th><th></th></tr>")
-#            for r in live:
-#                out.append(
-#                    "<tr><td>%s</td><td><form id='w%d' method='post' action='/%s/api-webhook-save'><input type='hidden' name='id' value='%d'></form><input form='w%d' name='url' value='%s' dir='ltr' size='34' placeholder='https://bot.example.com/master-dns'></td><td class='acts'><button form='w%d'>ذخیره</button>%s</td></tr>"
-#                    % (html.escape(r["name"]), r["id"], p, r["id"], r["id"],
-#                       html.escape(r["webhook_url"] or "", quote=True), r["id"],
-#                       ("<form method='post' action='/%s/api-webhook-test'>"
-#                        "<input type='hidden' name='id' value='%d'>"
-#                        "<button class='ghost'>ارسال آزمایشی</button></form>"
-#                        "<form method='post' action='/%s/api-webhook-save'>"
-#                        "<input type='hidden' name='id' value='%d'>"
-#                        "<input type='hidden' name='url' value=''>"
-#                        "<button class='del'>حذف</button></form>"
-#                        % (p, r["id"], p, r["id"])) if r["webhook_url"] else ""))
-#            bot = STORE.one("SELECT value FROM settings WHERE key = 'bot_link'")
-#            out.append("</table><form method='post' action='/%s/bot-link-save' class='row' style='margin-top:12px'><label style='margin:0'>آدرس "
-#                       "ربات برای "
-#                       "مشتری‌ها</label><input name='link' value='%s' dir='ltr' size='30' placeholder='https://t.me/MyBot'><button class='ghost'>ذخیره</button></form><p class='muted'>با "
-#                       "این آدرس، دکمهٔ «اتصال به تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند و کد اتصال را "
-#                       "خودش می‌فرستد (<code>/start link_...</code>).</p>"
-#                       % (p, html.escape(bot["value"] if bot and bot["value"] else "",
-#                                         quote=True)))
-#            out.append("<p class='muted'>نشانی باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک "
-#                       "رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در "
-#                       "دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.</p>")
-#            recent = STORE.q("SELECT o.*, k.name FROM webhook_outbox o"
-#                             " LEFT JOIN api_tokens k ON k.id = o.token_id"
-#                             " ORDER BY o.id DESC LIMIT 15")
-#            if recent:
-#                out.append("<table><tr><th>خبر</th><th>ربات</th><th>زمان</th>"
-#                           "<th>وضعیت</th></tr>")
-#                for o in recent:
-#                    if o["delivered_at"]:
-#                        state = "<span class='ok'>رسید</span>"
-#                    elif o["attempts"] >= WEBHOOK_MAX_TRIES:
-#                        state = "<span class='bad'>نرسید</span> <span class='muted'>%s</span>" \
-#                            % html.escape(o["last_error"] or "")
-#                    elif o["attempts"]:
-#                        state = ("<span class='warn'>تلاش دوباره (%d)</span> "
-#                                 "<span class='muted'>%s</span>"
-#                                 % (o["attempts"], html.escape(o["last_error"] or "")))
-#                    else:
-#                        state = "<span class='muted'>در صف</span>"
-#                    out.append("<tr><td><code>%s</code></td><td>%s</td>"
-#                               "<td class='muted'>%s</td><td>%s</td></tr>"
-#                               % (html.escape(o["event"]), html.escape(o["name"] or "-"),
-#                                  html.escape(show_date(o["created_at"], True)),
-#                                  state))
-#                out.append("</table>")
-#            out.append("</div>")
-#        out.append("<div class='card'><h2>ساخت "
-#                   "کلید</h2><form method='post' action='/%s/api-key-new'><div class='f'><label>نام (برای "
-#                   "خودتان، مثلاً «ربات "
-#                   "فروش»)</label><input name='name' required maxlength='40'></div><div class='f'><label>فقط "
-#                   "از این آدرس‌ها (اختیاری، با ویرگول "
-#                   "جدا)</label><input name='allow_ips' maxlength='200' dir='ltr' placeholder='مثلاً 203.0.113.7'></div><div class='f'><label style='display:inline'><input type='checkbox' name='admin' value='1'> دسترسی "
-#                   "ادمین</label><div class='muted'>ربات با این کلید رسید تأیید یا رد می‌کند، کاربر مسدود "
-#                   "می‌کند، پلن می‌دهد و به تیکت جواب می‌دهد، و رسید و تیکت تازه و گزارش روزانه را خبر "
-#                   "می‌گیرد. فقط برای ربات خودتان.</div></div><button>ساختن "
-#                   "کلید</button></form><p class='muted'>اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی "
-#                   "که لو برود از جای دیگر کار نمی‌کند. برای کلید ادمین این کار را حتماً بکنید.</p></div>" % p)
-#        return "".join(out)
+#            out.append("<div class='plans'>%s</div>" % "".join(api_key_tile(p, r) for r in live))
+#        else:
+#            out.append("<p class='muted'>هنوز کلیدی نساخته‌اید؛ اولین کلید را بسازید.</p>")
+#        if gone:
+#            out.append("<details style='margin-top:14px'><summary class='muted'>کلیدهای باطل‌شده (%d)"
+#                       "</summary><div class='plans'>%s</div></details>"
+#                       % (len(gone), "".join(api_key_tile(p, r) for r in gone)))
+#        out.append("</div>")
+#        out.append(api_new_key_dialog(p))
+#        if live:
+#            out.append(api_bot_link_card(p))
+#            out.append(api_log_card())
+#        out.append(api_recipes_card())
+#        return "".join(out) + API_SCRIPT
 #
 #    def templates(self):
 #        """Two pages behind one path: the list, and one template's editor.
@@ -43324,7 +43786,6 @@ exit 0
 # ". رله‌ها ظرف یک دقیقه خودشان امتحان و اعمال می‌کنند": ". The relays try it and apply it themselves within a minute",
 # ". ستون هر رله می‌گوید آن DNS از خود رله جواب می‌دهد یا نه (هر ده دقیقه). دامنهٔ مسدود بر این مقدم است. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ در صفحهٔ هر قالب می‌شود تیکش را برداشت.": ". Each relay’s column says whether that DNS answers from the relay itself (every ten minutes). A blocked domain wins over this. Every new domain is for all templates; on each template’s page you can untick it.",
 # ". هر دو مال همین سرویس‌اند و یکسان جواب می‌دهند؛ اگر یکی در دسترس نبود، دستگاه سراغ دیگری می‌رود. DNS دیگری کنارشان نگذارید — سرویس گاهی کار می‌کند و گاهی نه.": ". Both belong to this service and answer the same; if one is unreachable, the device uses the other. Do not put another DNS next to them — the service would work sometimes and sometimes not.",
-# ". پورت ۸۴۴۵ را اگر فایروال سرور یا دیتاسنتر دارد باز کنید.": ". Open port 8445 if the server or data center has a firewall.",
 # ". یک بار، با یک کلیک، بدون رسید.": ". Once, with one click, no receipt.",
 # "50000 یا -50000": "50000 or -50000",
 # ": این نوع تونل این پروفایل را ندارد": ": this kind of tunnel does not have this preset",
@@ -43455,7 +43916,6 @@ exit 0
 # "آدرس تازه ساخته شد؛ تا یک دقیقه دیگر کار می‌کند و آدرس قبلی دیگر نه": "A new address has been made; it works within a minute and the old one no longer does",
 # "آدرس ربات": "Bot address",
 # "آدرس ربات باید مثل https://t.me/MyBot باشد": "The bot address must look like https://t.me/MyBot",
-# "آدرس ربات برای مشتری‌ها": "Bot address for customers",
 # "آدرس ربات برداشته شد": "Bot address removed",
 # "آدرس ربات ذخیره شد": "Bot address saved",
 # "آدرس سرور خارج معلوم نیست": "The exit server’s address is not known",
@@ -43643,7 +44103,6 @@ exit 0
 # "اِمانگ آس": "Among Us",
 # "اپیک گیمز": "Epic Games Store",
 # "اگر آدرس به دست کس دیگری افتاده. آدرس قبلی تا یک دقیقه بعد دیگر کار نمی‌کند.": "if the address got into someone else’s hands. The old address stops working within a minute.",
-# "اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی که لو برود از جای دیگر کار نمی‌کند. برای کلید ادمین این کار را حتماً بکنید.": "If the bot server has a fixed IP, write it: a leaked key will not work from anywhere else. Always do this for an admin key.",
 # "اگر این آی‌پی اینترنت خانه یا موبایل شما": "If this IP is your home or mobile internet",
 # "اگر این حساب به تلگرام وصل باشد، کد شش‌رقمی به تلگرامتان فرستاده شد؛": "If this account is linked to Telegram, a six-digit code was sent to your Telegram;",
 # "اگر جای دیگری وارد حسابتان باشید، با تغییر رمز از آنجا خارج می‌شوید.": "If you are signed in to your account anywhere else, changing the password signs you out there.",
@@ -44308,7 +44767,6 @@ exit 0
 # "راه": "Path",
 # "راه نیفتاد:": "did not come up:",
 # "راه گوگل روی IPv6": "Google’s path over IPv6",
-# "راهنمای کامل دستورها:": "Full guide to the commands:",
 # "راه‌اندازی": "Set up",
 # "راه‌اندازی ربات": "Set up the bot",
 # "راکت لیگ": "Rocket League",
@@ -44317,7 +44775,6 @@ exit 0
 # "ربات": "Bot",
 # "ربات @": "Bot @",
 # "ربات با این کلید به جای همهٔ مشتری‌ها کار می‌کند، پس مثل رمز پنل از آن نگهداری کنید.": "The bot acts for every customer with this key, so guard it like the panel password.",
-# "ربات با این کلید رسید تأیید یا رد می‌کند، کاربر مسدود می‌کند، پلن می‌دهد و به تیکت جواب می‌دهد، و رسید و تیکت تازه و گزارش روزانه را خبر می‌گیرد. فقط برای ربات خودتان.": "With this key the bot approves or rejects receipts, blocks users, gives plans and replies to tickets, and is told about new receipts, new tickets and the daily report. Only for your own bot.",
 # "ربات تازه را در تلگرام باز کنید و": "Open the new bot in Telegram and",
 # "ربات تلگرام": "Telegram bot",
 # "ربات تلگرام @": "Telegram bot @",
@@ -44659,7 +45116,6 @@ exit 0
 # "فعلاً پلنی برای فروش نیست. با پشتیبانی در تماس باشید.": "No plans are on sale right now. Please contact support.",
 # "فقط SVG یا PNG": "SVG or PNG only",
 # "فقط از آدرس": "Only from address",
-# "فقط از این آدرس‌ها (اختیاری، با ویرگول جدا)": "Only from these addresses (optional, separated by commas)",
 # "فقط از قالب‌های تیک‌خورده": "Only the ticked templates",
 # "فقط اولین خرید": "First purchase only",
 # "فقط این‌ها:": "Only these:",
@@ -44753,7 +45209,6 @@ exit 0
 # "مثل Google زیرشبکهٔ پرسنده (ECS) را به سرویس‌ها می‌گوید؛ بازی‌های Tencent مثل PUBG Mobile با آن باز نمی‌شوند.": "Like Google, tells services the asker's subnet (ECS); Tencent games such as PUBG Mobile do not open with it.",
 # "مثل Google زیرشبکهٔ پرسنده (ECS) را به سرویس‌ها می‌گوید؛ بازی‌های Tencent مثل PUBG Mobile با آن باز نمی‌شوند. تبلیغ و ردیاب را هم می‌بندد، و بعضی بازی‌ها و فروشگاه‌ها به همان دامنه‌ها نیاز دارند.": "Like Google, tells services the asker's subnet (ECS); Tencent games such as PUBG Mobile do not open with it. It also blocks ads and trackers, and some games and stores need those same domains.",
 # "مثل pck، که با نام یک سایت مجاز شروع می‌شود — فقط L3": "as pck, opening with the name of a site the route lets through - L3 only",
-# "مثلاً 203.0.113.7": "e.g. 203.0.113.7",
 # "مثلاً مخصوص ایرانسل": "e.g. for Irancell",
 # "مثلاً گیمینگ ماهانه": "e.g. Gaming monthly",
 # "مجموع مصرف": "Total usage",
@@ -45129,7 +45584,6 @@ exit 0
 # "پلن‌هایی این قالب را می‌فروشند؛ اول آن‌ها را حذف کنید یا قالبشان را عوض کنید": "Plans sell this template; delete them or change their template first",
 # "پلی‌استیشن": "PlayStation Network",
 # "پنل ادمین — سرور خارج": "Admin panel — exit server",
-# "پنل به این آدرس ربات خبر می‌دهد: تأیید یا رد رسید، جواب تیکت، ۸۰٪ و ۹۵٪ حجم، تمام شدن حجم، نزدیک شدن و تمام شدن دوره. هر خبر یک متن فارسی آماده دارد که ربات می‌تواند عیناً برای مشتری بفرستد.": "The panel tells the bot at this address about: a receipt approved or rejected, a ticket reply, 80% and 95% of the quota, the quota running out, the period ending soon and ending. Each message has a ready text the bot can send to the customer as it is.",
 # "پنل تا چند ثانیهٔ دیگر روی آدرس تازه بالا می‌آید. اگر باز نشد، به احتمال زیاد فایروال یا security group سرور پورت را نمی‌گذارد رد شود؛ از روی خود سرور با": "The panel comes up on the new address within a few seconds. If it does not open, most likely the server’s firewall or security group is not letting the port through; from the server itself with",
 # "پنل جواب درستی نداد (HTTP": "The panel did not answer properly (HTTP",
 # "پنل را همان‌طور ببینید که او می‌بیند": "See the panel as they see it",
@@ -45570,7 +46024,6 @@ exit 0
 # "رابط API ربات": "Bot API",
 # "کلیدهای دسترسی": "Keys",
 # "اطلاع‌رسانی به ربات (webhook)": "Telling the bot (webhook)",
-# "ساخت کلید": "New key",
 # "قالب‌های سرویس": "Templates",
 # "فایل پشتیبان": "Backup",
 # "تقویم": "Date",
@@ -45658,7 +46111,6 @@ exit 0
 # "با حذف یک گروه، دامنه‌های داخل آن هم پاک می‌شود.": "Deleting a group deletes the domains in it too.",
 # "قالب پیش‌فرض همیشه همهٔ دامنه‌های دلخواه را از رله عبور می‌دهد.": "The default template always routes all custom domains through the relay.",
 # "، از هر رله و از همان راهی که ترافیک مشتری می‌رود. اگر از سرور خارج نشود، آن سرویس آن سرور را قبول نمی‌کند و از دست ما کاری برنمی‌آید؛ اگر از سرور خارج بشود و از مسیر مشتری نه، مشکل از راه ایران تا خارج است. فقط پورت ۴۴۳ آزموده می‌شود؛ بازی‌هایی که از پورت‌های دیگر یا UDP استفاده می‌کنند در این تست نیستند.": ", from each relay and along the same path customer traffic takes. If it fails from the exit server, that service does not accept that server and there is nothing we can do; if it works from the exit server but not along the customer’s path, the problem is on the way from Iran to abroad. Only 443 is tested; games that play on other ports or UDP are not here.",
-# "نشانی باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.": "The address must be https (or http on this same server). When you save a new address, a signing secret is shown once so the bot can be sure a message comes from this panel. If the bot cannot be reached, a message is resent for about a day.",
 # "«آنلاین» یعنی در ۳ دقیقهٔ گذشته از مسیر رله ترافیک داشته است. فقط سرویس‌هایی که قالبش از رله می‌برد شمرده می‌شوند؛ کسی که فقط چیزهای دیگر را باز کرده این‌جا نمی‌آید.": "Online means traffic through a relay in the last 3 minutes. Only the services their template routes through the relay count; someone who has opened only other things does not show here.",
 # "این دامنه و همهٔ زیردامنه‌هایش برای مشتری‌های قالب‌های انتخاب‌شده از همین DNS پرسیده می‌شود و نه از DNS بالادستی. اگر جزو دامنه‌هایی باشد که سرویس از رله می‌برد، دیگر از رله نمی‌رود و جواب همین DNS به مشتری داده می‌شود. چند DNS را با فاصله بنویسید؛ پورت غیر ۵۳ با #، مثل": "This domain and all its subdomains are asked of this DNS for customers of the chosen templates, not of the upstream DNS. If it is one of the domains the service routes through the relay, it no longer goes through the relay and the customer gets this DNS’s answer. Write several DNS servers separated by spaces; a port other than 53 with #, like",
 # "این‌ها برای مشتری‌های قالب‌های انتخاب‌شده بالا نمی‌آیند: DNS جواب «چنین اسمی نیست» می‌دهد، با همهٔ زیردامنه‌ها. دامنه‌ای که خود سرویس از رله می‌برد هم بسته می‌شود. تا یک دقیقه بعد روی رله‌ها اعمال می‌شود؛ دستگاهی که جواب قبلی را نگه داشته ممکن است چند دقیقه دیرتر ببیند. فقط روی DNS خودمان اثر دارد: اگر کسی DNS دیگری بگذارد یا مستقیم با آی‌پی وصل شود، از این مسدودی عبور می‌کند. هر دامنهٔ تازه برای همهٔ قالب‌هاست؛ در صفحهٔ هر قالب می‌شود تیکش را برداشت.": "These do not load for customers of the templates picked above: the DNS answers “no such name”, with all subdomains. A domain the service routes through the relay is closed too. It is applied on the relays within a minute; a device holding the old answer may see it a few minutes later. It only stops our DNS: someone who sets another DNS or connects straight by IP gets past it. Every new domain is for all templates; on each template’s page you can untick it.",
@@ -45671,7 +46123,6 @@ exit 0
 # "هنوز تیکتی ثبت نشده است. مشتری‌ها از پنل خودشان یا از ربات تیکت می‌فرستند.": "No tickets yet. Customers send tickets from their own panel or from the bot.",
 # "فعلاً غیرفعال است. برای بررسی مشکل یک مشتری، از او بخواهید در پنل خودش گزینهٔ «گزارش DNS برای پشتیبانی» را روشن کند و سرویس را دوباره باز کند؛ نتیجه همین‌جا نمایش داده می‌شود. برای تماشای زنده:": "is off. If a customer has a problem, ask them to turn on “DNS report for support” in their own panel and open that same service again; it then shows here. Watching live, right now:",
 # "دامنه‌های دلخواه را دسته‌بندی کنید، مثلاً «سایت‌های دانشگاه». هر گروه در صفحهٔ قالب‌ها یک ردیف جدا با آیکون خودش است و یک تیک دارد. آیکون: SVG تا ۱۶ کیلوبایت یا PNG تا ۶۴ کیلوبایت و ۵۱۲×۵۱۲.": "Put your own domains in groups, “university sites” say. Each group is a row of its own on the templates page, with its own icon and one tick. Icon: an SVG up to 16 KB, or a PNG up to 64 KB and 512×512.",
-# "ربات فروش (از خودتان یا شخص دیگر) از همین دروازه به پنل وصل می‌شود: ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن پلن‌ها و فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما می‌مانند.": "A sales bot (your own or someone else’s) connects to the panel through this door: signing customers up by Telegram ID, seeing their account, registering an IP, seeing the plans and sending receipts. Receipts wait for your approval on the receipts page as always.",
 # "روشن: اگر پلن کسی تمام شده باشد یا آی‌پی‌اش ثبت نشده یا عوض شده باشد، با باز کردن هر سایتی پنل مشتری برایش نمایش داده می‌شود. خاموش: اینترنتش از راه رله فقط کار نمی‌کند و صفحه‌ای خودش باز نمی‌شود؛ اگر خودش آدرس پنل مشتری را باز کند، هنوز وارد می‌شود. برای همهٔ سرورها، تا یک دقیقه دیگر.": "On: someone whose plan ended, whose IP is not registered or has changed, gets the customer panel whatever site they open. Off: their internet simply does not work through the relay and no page opens by itself; if they open the customer panel's address themselves, they still get in. For every server, within a minute.",
 # "با کلیک روی نام هر سرور، نمودارها و مشتری‌های آن را می‌بینید. مصرف مشتری‌های ثبت‌شده: روی رله از شمارندهٔ خود رله (همانی که حجم مشتری از آن کم می‌شود)، و روی سرور خارج از روی اینکه رله‌ها هر اتصال را از کدام سرور فرستاده‌اند. روز به وقت تهران.": "Click a server’s name to see its charts and customers. Registered customers’ usage: on a relay from the relay’s own counter (the one the customer’s quota comes off), and on the exit server from which server the relays sent each connection through. Days in Tehran time.",
 # "زیردامنه‌ها به‌طور خودکار شامل می‌شوند. دامنه‌های بدون گروه در سرویس «دامنه‌های دلخواه» جمع می‌شوند و هر گروه در قالب‌ها یک ردیف جداست، پس در هر قالب می‌شود تیکشان را برداشت. دامنه‌ای را که هست دوباره با گروه دیگری اضافه کنید تا به آن گروه برود. به‌علاوهٔ": "Subdomains are included automatically. Domains in no group are gathered in the “your own domains” service, and each group is a row of its own in the templates, so in any template they can be unticked. Add a domain that is already here again with another group to move it there. On top of the",
@@ -45857,7 +46308,79 @@ exit 0
 # "چه چیزی می‌دهد": "What it gives",
 # "کپی از": "Copy from",
 # "۱ تا ۵": "1 to 5",
-# "＋ پلن تازه": "＋ New plan"
+# "＋ پلن تازه": "＋ New plan",
+# "(۱۵ تای آخر)": "(last 15)",
+# "). نشانی webhook باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.": "). The webhook address must be https (or http on this same server). When you save a new address a signing secret is shown once, so the bot can be sure the message comes from this panel. If the bot is unreachable, the message is retried for about a day.",
+# ". اگر رله یا سرور خارج در همین ساعت‌ها به سقف CPU یا پهنای باند می‌رسد، وقت اضافه‌کردن سرور است.": ". If the relay or the exit server reaches its CPU or bandwidth limit at these hours, it is time to add a server.",
+# ". اگر سرور یا دیتاسنتر فایروال دارد، پورت": ". If the server or the data centre has a firewall, open port",
+# ": true} آمد، کلید و آدرس درست است.": ": true} comes back, the key and the address are right.",
+# "آمار امروز": "Today's numbers",
+# "امتحان": "Try",
+# "امتحان کلید": "Test the key",
+# "اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی که لو برود از جای دیگر کار نمی‌کند.": "If the bot server's IP address is fixed, write it: a key that leaks then does not work from anywhere else.",
+# "اگر جواب {": "If the answer is {",
+# "این حساب حجم نامحدود دارد یا هنوز پلنی ندارد. میانگین مصرف ۷ روز اخیر:": "This account has an unlimited quota or no plan yet. Average use over the last 7 days:",
+# "با آیدی تلگرام: پلن، حجم مانده، تاریخ پایان، آی‌پی‌ها.": "By Telegram id: plan, quota left, end date, IP addresses.",
+# "با این سرعت حجم تا": "At this pace the quota runs out in",
+# "با این سرعت حجم تا پایان دوره کافی است (حدود": "At this pace the quota is enough until the end of the period (about",
+# "با این کلید ربات رسید تأیید یا رد می‌کند، کاربر مسدود می‌کند، پلن می‌دهد، به تیکت جواب می‌دهد و گزارش ترافیک و وضعیت سرورها را می‌خواند. فقط برای ربات خودتان، و حتماً با آدرس ثابت.": "With this key the bot approves or rejects receipts, blocks users, gives plans, answers tickets, and reads the traffic report and the server status. For your own bot only, and always with a fixed address.",
+# "برای یادآور تمدید: چه کسی تا ۳ روز دیگر تمام می‌شود.": "For a renewal reminder: who ends within 3 days.",
+# "تازه": "New",
+# "حجم تمام شده است.": "The quota is used up.",
+# "حجم و پیش‌بینی": "Quota and forecast",
+# "حساب یک مشتری": "One customer's account",
+# "خبرهای فرستاده‌شده به ربات‌ها": "Messages sent to the bots",
+# "در روز.": "per day.",
+# "دیگر تمام می‌شود، پیش از پایان دوره (": "days, before the period ends (",
+# "را باز کنید.": "to open it.",
+# "رابط API": "API",
+# "راهنمای کامل:": "Full guide:",
+# "ربات برای مشتری‌ها": "Bot for customers",
+# "ربات فروش یا مانیتور (از خودتان یا شخص دیگر) از همین دروازه به پنل وصل می‌شود: مشتری، پلن، رسید، تیکت، مصرف و وضعیت سرورها. رسیدها مثل همیشه منتظر تأیید شما می‌مانند.": "A sales or monitoring bot (yours or somebody else's) connects to the panel through this door: customers, plans, receipts, tickets, usage and the state of the servers. Receipts still wait for your approval as always.",
+# "رسیدهای تأییدنشده، قدیمی‌ترین اول، هر کدام با متن آمادهٔ جزئیات.": "Receipts not yet decided, oldest first, each with a ready-made text of its details.",
+# "رسیدهای منتظر": "Receipts waiting",
+# "روز دیگر می‌ماند).": "days will be left).",
+# "روز دیگر). شاید زود به تمدید یا پلن بزرگ‌تر نیاز داشته باشد.": "days). It may soon need a renewal or a bigger plan.",
+# "ساعت‌های شبانه‌روز (۷ روز اخیر، به وقت تهران)": "Hours of the day (last 7 days, Tehran time)",
+# "ساعت‌های شلوغ و مصرف سرویس‌ها": "Busy hours and what the services are used for",
+# "سرعت الان، هفته و ماه، روزها و ساعت‌ها، و چند روز دیگر حجمش تمام می‌شود.": "Speed now, the week and the month, the days and the hours, and in how many days the quota runs out.",
+# "سرویس‌ها (۳۰ روز اخیر)": "Services (last 30 days)",
+# "شلوغ‌ترین ساعت:": "Busiest hour:",
+# "فقط از این آدرس‌ها (اختیاری، با ویرگول)": "Only from these addresses (optional, comma-separated)",
+# "قیمت، حجم و مدت هر پلن، برای نمایش در ربات.": "Price, quota and duration of each plan, to show in the bot.",
+# "مشتری‌های نزدیک به پایان": "Customers about to end",
+# "مصرف یک مشتری": "One customer's usage",
+# "مصرفی در هفتهٔ اخیر نبوده؛ پیش‌بینی ممکن نیست.": "No use in the last week; a forecast is not possible.",
+# "میانگین مصرف ۷ روز اخیر:": "Average use over the last 7 days:",
+# "هر ربات یک کلید دارد؛ کلیدی که لو برود را باطل کنید و رباتی که با آن کار می‌کرد فوراً قطع می‌شود.": "Each bot has one key; revoke a key that leaks and the bot that used it is cut off at once.",
+# "وضعیت سرورها": "State of the servers",
+# "پلن‌های در حال فروش": "Plans on sale",
+# "چند دستور پرکاربرد؛": "A few commonly used commands;",
+# "چه کارهایی می‌شود کرد": "What can be done",
+# "کاربران، درآمد، رسید و تیکت منتظر، دوره‌های نزدیک به پایان.": "Users, income, receipts and tickets waiting, periods about to end.",
+# "کدام سرور وصل است، چقدر پر است، تونل رله چه حالی دارد و چه هشداری باز است. برای ربات مانیتور.": "Which server is connected, how full it is, how the relay's tunnel is doing and which alert is open. For a monitoring bot.",
+# "کل ترافیک و تغییرش نسبت به دورهٔ قبل، هر روز، شلوغ‌ترین ساعت، پرمصرف‌ها و سرویس‌ها. days از ۱ تا ۶۰. برای کلید نماینده فقط مشتری‌های خودش.": "The total traffic and how it changed against the period before, each day, the busiest hour, the heaviest users and the services. days from 1 to 60. For a reseller's key, only their own customers.",
+# "کلید ادمین": "Admin key",
+# "کلید ادمین (مالک)": "Admin key (owner)",
+# "کلید تازه": "New key",
+# "کلید ربات": "Bot key",
+# "کلید شماست. همهٔ دستورها در راهنمای کامل است.": "is your key. All commands are in the full guide.",
+# "کلید فعال": "active keys",
+# "کلیدهای باطل‌شده (": "Revoked keys (",
+# "گزارش ترافیک": "Traffic report",
+# "＋ کلید تازه": "＋ New key",
+# "(دانلود": "(download",
+# "days باید یک عدد از ۱ تا ۶۰ باشد": "days must be a number from 1 to 60",
+# "امروز:": "Today:",
+# "ثانیه پیش": "seconds ago",
+# "روز اخیر:": "last days:",
+# "روز قبلش:": "days before that:",
+# "مشکل هست": "There is a problem",
+# "نسبت به": "Compared with",
+# "همه‌چیز سالم است": "Everything is healthy",
+# "وضعیت سرورها فقط برای کلید خود مالک است": "The server status is only for the owner's own key",
+# "پرمصرف‌ترین سرویس‌ها:": "Heaviest services:",
+# "پرمصرف‌ها:": "Heaviest users:"
 #}
 #__END_I18N_EN__
 

@@ -1208,6 +1208,51 @@ def doh_name_card(p):
     return "".join(out)
 
 
+def quota_forecast(user, week_bytes, today=None):
+    """Where a customer's allowance stands and where it is going: the share
+    used, the pace of the last seven days, and - at that pace - how many days
+    it lasts and whether that is before the period ends. Whether it runs out
+    first is what an operator needs to know before the customer writes."""
+    quota, used = user["quota_bytes"] or 0, user["used_bytes"] or 0
+    per_day = week_bytes / 7.0
+    out = {"quota": quota, "used": used, "per_day": per_day, "percent": None,
+           "days_left": None, "days_to_end": None, "runs_out_first": False}
+    if not quota:
+        return out
+    out["percent"] = min(100, int(100.0 * used / quota))
+    if used < quota and per_day > 0:
+        out["days_left"] = int((quota - used) / per_day)
+    expires = parse_ts(user["expires_at"])
+    if expires:
+        left = (expires - (today or datetime.now(timezone.utc))).total_seconds() / 86400.0
+        out["days_to_end"] = max(0, int(left))
+        out["runs_out_first"] = (out["days_left"] is not None and left > 0
+                                 and out["days_left"] < left)
+    return out
+
+
+def forecast_card(user, week_bytes):
+    """The usage page's top: the allowance as a bar, the pace, and the verdict."""
+    f = quota_forecast(user, week_bytes)
+    if not f["quota"]:
+        return ("<div class='card'><h2>حجم</h2><p class='muted'>این حساب حجم نامحدود دارد یا هنوز "
+                "پلنی ندارد. میانگین مصرف ۷ روز اخیر: <b dir='ltr'>%s</b> در روز.</p></div>"
+                % human(f["per_day"]))
+    if f["days_left"] is None:
+        verdict = ("<span class='bad'>حجم تمام شده است.</span>" if f["used"] >= f["quota"] else
+                   "<span class='muted'>مصرفی در هفتهٔ اخیر نبوده؛ پیش‌بینی ممکن نیست.</span>")
+    elif f["runs_out_first"]:
+        verdict = ("<span class='warn'>با این سرعت حجم تا <b>%d روز</b> دیگر تمام می‌شود، پیش از "
+                   "پایان دوره (%d روز دیگر). شاید زود به تمدید یا پلن بزرگ‌تر نیاز داشته باشد."
+                   "</span>" % (f["days_left"], f["days_to_end"]))
+    else:
+        verdict = ("<span class='ok'>با این سرعت حجم تا پایان دوره کافی است (حدود %d روز دیگر "
+                   "می‌ماند).</span>" % f["days_left"])
+    return ("<div class='card'><h2>حجم و پیش‌بینی</h2>%s<p>%s</p><p class='muted'>میانگین مصرف "
+            "۷ روز اخیر: <b dir='ltr'>%s</b> در روز.</p></div>"
+            % (bar(f["used"], f["quota"]), verdict, human(f["per_day"])))
+
+
 def user_usage(uid):
     """The same numbers the customer's page is drawn from, straight from the
     panel's tables - this runs beside it, on the same database."""
@@ -1283,6 +1328,81 @@ def total_usage(owner=None):
     return {"five": series("5m", now_t - timedelta(hours=24), "%Y-%m-%dT%H:%M"),
             "hours": series("1h", now_t - timedelta(days=7), "%Y-%m-%dT%H:00"),
             "days": series("1d", now_t - timedelta(days=60), "%Y-%m-%d")}
+
+
+# What the traffic that is not one of the catalogue's services is called.
+SERVICE_LABELS = {"_http": "دانلود کنسول و HTTP", "_dns": "DNS رمزگذاری‌شده", "_other": "سایر"}
+# Fewest customers whose services may be added up and shown: below it, a
+# service's total is one customer's use again, and that is theirs alone to see.
+SERVICE_MIN_CUSTOMERS = 5
+
+
+def busy_hours(owner=None):
+    """The last week's traffic by the hour of the day, Tehran's: 24 sums."""
+    join, first = owner_filter(owner, "g.user_id")
+    since = (datetime.now(TEHRAN) - timedelta(days=7)).strftime("%Y-%m-%dT%H:00")
+    hours = [0] * 24
+    for r in STORE.q("SELECT substr(g.bucket, 12, 2) h, SUM(g.up + g.down) b FROM usage g" + join
+                     + " WHERE g.grain = '1h' AND g.bucket >= ? GROUP BY h", first + (since,)):
+        if r["h"] and r["h"].isdigit() and int(r["h"]) < 24:
+            hours[int(r["h"])] = r["b"] or 0
+    return hours
+
+
+def top_services(owner=None, limit=8):
+    """What the last thirty days went to, most first: [(label, bytes)], and the
+    whole of it."""
+    join, first = owner_filter(owner, "s.user_id")
+    since = (datetime.now(TEHRAN) - timedelta(days=29)).strftime("%Y-%m-%d")
+    label = {svc["key"]: svc.get("label") or svc["key"] for svc in catalogue_now()}
+    label.update(SERVICE_LABELS)
+    rows = STORE.q("SELECT s.service, SUM(s.bytes) b FROM usage_service s" + join
+                   + " WHERE s.day >= ? GROUP BY s.service ORDER BY b DESC", first + (since,))
+    whole = sum(r["b"] or 0 for r in rows)
+    # Which services a customer used is theirs to see. Added up over many it is
+    # the operator's; over a few it is one customer's again.
+    customers = STORE.one("SELECT COUNT(DISTINCT s.user_id) n FROM usage_service s" + join
+                          + " WHERE s.day >= ?", first + (since,))["n"]
+    if customers < SERVICE_MIN_CUSTOMERS:
+        return [], whole
+    return [(label.get(r["service"], r["service"]), r["b"] or 0) for r in rows[:limit]], whole
+
+
+def traffic_insight_card(owner=None):
+    """Under the home page's charts: which hours of the day are busy, and what
+    the traffic is for - the two things that decide when to add a server and
+    which services to put in a plan."""
+    try:
+        hours = busy_hours(owner)
+        services, whole = top_services(owner)
+    except sqlite3.OperationalError:
+        return ""           # a panel that has not made the tables yet
+    if not any(hours) and not services:
+        return ""
+    top = max(hours) or 1
+    peak = hours.index(max(hours))
+    bars = "".join(
+        "<div class='hr%s' title='%02d:00 — %s'><i style='height:%d%%'></i><span>%s</span></div>"
+        % (" peak" if h == peak and hours[h] else "", h, html.escape(human(hours[h])),
+           max(2, int(100.0 * hours[h] / top)) if hours[h] else 0, "%02d" % h if h % 3 == 0 else "")
+        for h in range(24))
+    out = ["<div class='card'><h2>ساعت‌های شلوغ و مصرف سرویس‌ها</h2>"]
+    if any(hours):
+        out.append("<h3 class='chart-h'>ساعت‌های شبانه‌روز (۷ روز اخیر، به وقت تهران)</h3>"
+                   "<div class='hours' dir='ltr'>%s</div><p class='muted'>شلوغ‌ترین ساعت: <b>%02d تا "
+                   "%02d</b> — %s. اگر رله یا سرور خارج در همین ساعت‌ها به سقف CPU یا پهنای باند "
+                   "می‌رسد، وقت اضافه‌کردن سرور است.</p>"
+                   % (bars, peak, (peak + 1) % 24, human(hours[peak])))
+    if services:
+        out.append("<h3 class='chart-h'>سرویس‌ها (۳۰ روز اخیر)</h3><table>")
+        for name, n in services:
+            pct = round(100.0 * n / whole) if whole else 0
+            out.append("<tr><td>%s</td><td dir='ltr'>%s</td><td style='min-width:160px'>%d٪"
+                       "<div class='bar'><i style='width:%d%%'></i></div></td></tr>"
+                       % (html.escape(name), human(n), pct, pct))
+        out.append("</table>")
+    out.append("</div>")
+    return "".join(out)
 
 
 def change_note(now_b, before_b, word):
@@ -4744,12 +4864,35 @@ dialog.pd .bar2{display:flex;gap:8px;justify-content:flex-end;position:sticky;bo
 .tpl .chip{padding:3px 10px;border-radius:999px;font-size:12px;background:var(--row);color:var(--dim)}
 .tpl .chip.more{background:transparent;border:1px dashed var(--line2)}
 .tpl .foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
-a.btn{display:inline-block;padding:7px 16px;border-radius:12px;background:var(--accent);color:var(--card);font-weight:600}
+/* position and overflow: its hover sheen (a.btn::after, above) is drawn outside the box otherwise,
+   and widened the whole page */
+a.btn{position:relative;overflow:hidden;display:inline-block;padding:7px 16px;border-radius:12px;
+ background:var(--accent);color:var(--card);font-weight:600}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
 .seg button{border:0;border-radius:0;background:transparent;color:var(--dim);box-shadow:none;margin:0}
 .seg button.on{background:var(--accent);color:var(--card)}
 .savebar{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;
  margin-top:16px;padding:12px 0;background:var(--card);border-top:1px solid var(--line);z-index:5}
+/* ---- busy hours ---- */
+.hours{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;align-items:end;height:120px;margin:12px 0 6px}
+.hours .hr{position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center}
+.hours .hr i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:var(--line2);min-height:0;
+ transition:background .2s}
+.hours .hr.peak i{background:linear-gradient(180deg,var(--accent),var(--accent2))}
+.hours .hr:hover i{background:var(--accent)}
+.hours .hr span{position:absolute;bottom:-18px;font-size:10px;color:var(--muted)}
+.hours{margin-bottom:26px}
+/* ---- the API page ---- */
+.codebox{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:10px 14px;
+ border:1px solid var(--line);border-radius:14px;background:var(--row)}
+.codebox>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.codebox small{color:var(--muted);font-size:11px}
+.codebox code{overflow-wrap:anywhere;font-size:12.5px}
+.recipe{border-top:1px solid var(--line);padding:10px 0}.recipe:first-of-type{border-top:0}
+.recipe summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}
+.recipe .verb{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--row);color:var(--accent)}
+.plan .hook{margin-top:4px}.plan .hook summary{cursor:pointer;color:var(--dim);font-size:13px}
+.plan .hook form{margin:8px 0}.plan .hook input[name=url]{flex:1;min-width:0}
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
  white-space:nowrap;background:var(--row);color:var(--dim)}
 .pill.ok{background:var(--good-bg);color:var(--accent)}
@@ -6451,6 +6594,190 @@ def bot_api_url():
     except (OSError, ValueError):
         pass
     return "https://%s:%d/api/v1/" % (panel_host(), port)
+
+
+# What the API page does with a click: copy a command, open and close the new-key
+# dialog. Nothing else on the page needs it.
+API_SCRIPT = """<script>
+(function () {
+  document.addEventListener('click', function (e) {
+    var copy = e.target.closest('[data-copy]');
+    if (copy) {
+      var text = copy.dataset.copy, done = function () {
+        var was = copy.textContent;
+        copy.textContent = '✓';
+        setTimeout(function () { copy.textContent = was; }, 1200);
+      };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
+      return;
+    }
+    var open = e.target.closest('[data-dlg]');
+    if (open) return document.getElementById(open.dataset.dlg).showModal();
+    var close = e.target.closest('[data-close]');
+    if (close) return close.closest('dialog').close();
+    if (e.target.tagName === 'DIALOG') e.target.close();
+  });
+})();
+</script>"""
+
+# The commands the API page shows, each with what it is for and whose key may run
+# it. {api} is the panel's own address. The ones marked new are this release's.
+API_RECIPES = (
+    ("امتحان کلید", "کلید ربات", "GET", "", "اگر جواب {\"ok\": true} آمد، کلید و آدرس درست است.", False),
+    ("پلن‌های در حال فروش", "کلید ربات", "GET", "plans", "قیمت، حجم و مدت هر پلن، برای نمایش در ربات.", False),
+    ("حساب یک مشتری", "کلید ربات", "GET", "users/123456789",
+     "با آیدی تلگرام: پلن، حجم مانده، تاریخ پایان، آی‌پی‌ها.", False),
+    ("مصرف یک مشتری", "کلید ربات", "GET", "users/123456789/usage",
+     "سرعت الان، هفته و ماه، روزها و ساعت‌ها، و چند روز دیگر حجمش تمام می‌شود.", False),
+    ("آمار امروز", "کلید ادمین", "GET", "admin/stats",
+     "کاربران، درآمد، رسید و تیکت منتظر، دوره‌های نزدیک به پایان.", False),
+    ("گزارش ترافیک", "کلید ادمین", "GET", "admin/traffic?days=7",
+     "کل ترافیک و تغییرش نسبت به دورهٔ قبل، هر روز، شلوغ‌ترین ساعت، پرمصرف‌ها و سرویس‌ها. "
+     "days از ۱ تا ۶۰. برای کلید نماینده فقط مشتری‌های خودش.", True),
+    ("وضعیت سرورها", "کلید ادمین (مالک)", "GET", "admin/status",
+     "کدام سرور وصل است، چقدر پر است، تونل رله چه حالی دارد و چه هشداری باز است. برای ربات "
+     "مانیتور.", True),
+    ("رسیدهای منتظر", "کلید ادمین", "GET", "admin/receipts?status=pending",
+     "رسیدهای تأییدنشده، قدیمی‌ترین اول، هر کدام با متن آمادهٔ جزئیات.", False),
+    ("مشتری‌های نزدیک به پایان", "کلید ادمین", "GET", "admin/expiring?days=3",
+     "برای یادآور تمدید: چه کسی تا ۳ روز دیگر تمام می‌شود.", False),
+)
+
+
+def api_hero_card(p, live):
+    """The top of the API page: where it is, how to try it, and where to read more."""
+    url = bot_api_url()
+    test = 'curl -s -H "Authorization: Bearer dd_..." %s' % url
+    return (
+        "<div class='card'><div class='pagehead'><div><h2>رابط API</h2>"
+        "<span class='muted'>ربات فروش یا مانیتور (از خودتان یا شخص دیگر) از همین دروازه به پنل "
+        "وصل می‌شود: مشتری، پلن، رسید، تیکت، مصرف و وضعیت سرورها. رسیدها مثل همیشه منتظر تأیید "
+        "شما می‌مانند.</span></div><span class='pill %s'>%d کلید فعال</span></div>"
+        "<div class='codebox'><div><small>آدرس</small><code dir='ltr'>%s</code></div>"
+        "<button type='button' class='ghost' data-copy='%s'>کپی</button></div>"
+        "<div class='codebox'><div><small>امتحان</small><code dir='ltr'>%s</code></div>"
+        "<button type='button' class='ghost' data-copy='%s'>کپی</button></div>"
+        "<p class='muted'>راهنمای کامل: <a href='https://github.com/AlsoAryan/Master-dns/blob/main/"
+        "docs/bot-api.md' target='_blank' rel='noopener'>docs/bot-api.md</a>. اگر سرور یا "
+        "دیتاسنتر فایروال دارد، پورت <b>۸۴۴۵</b> را باز کنید.</p></div>"
+        % ("ok" if live else "warn", live, html.escape(url), html.escape(url, quote=True),
+           html.escape(test), html.escape(test, quote=True)))
+
+
+def api_key_tile(p, r):
+    """One key as a card: whose it is, when it last worked, where it may be used
+    from, and - for a live one - its webhook and the button that ends it."""
+    live = not r["revoked_at"]
+    admin_key = r["scope"] == "admin"
+    ask = html.escape(json.dumps(
+        "کلید «%s» باطل شود؟ رباتی که با آن کار می‌کند فوراً قطع می‌شود." % r["name"],
+        ensure_ascii=False), quote=True)
+    used = ago(r["last_used_at"]) if r["last_used_at"] else "هرگز"
+    hook = ""
+    if live:
+        sent = ("<form method='post' action='/%s/api-webhook-test' style='display:inline'>"
+                "<input type='hidden' name='id' value='%d'><button class='ghost'>ارسال آزمایشی"
+                "</button></form> <form method='post' action='/%s/api-webhook-save' "
+                "style='display:inline'><input type='hidden' name='id' value='%d'>"
+                "<input type='hidden' name='url' value=''><button class='del'>حذف</button></form>"
+                % (p, r["id"], p, r["id"])) if r["webhook_url"] else ""
+        hook = ("<details class='hook'%s><summary>اطلاع‌رسانی به ربات (webhook)</summary>"
+                "<form method='post' action='/%s/api-webhook-save' class='row'>"
+                "<input type='hidden' name='id' value='%d'><input name='url' value='%s' dir='ltr' "
+                "placeholder='https://bot.example.com/master-dns'><button>ذخیره</button></form>"
+                "<div>%s</div></details>"
+                % (" open" if r["webhook_url"] else "", p, r["id"],
+                   html.escape(r["webhook_url"] or "", quote=True), sent))
+    return (
+        "<article class='plan%s'><div class='phead'><strong class='ptitle'>%s</strong>%s%s</div>"
+        "<ul class='facts'><li><span>ساخته شده</span><b>%s</b></li>"
+        "<li><span>آخرین استفاده</span><b>%s</b></li>"
+        "<li><span>فقط از آدرس</span><b dir='ltr'>%s</b></li></ul>%s%s</article>"
+        % ("" if live else " off", html.escape(r["name"]),
+           "<span class='pill warn'>ادمین</span>" if admin_key else "<span class='pill'>مشتری</span>",
+           "" if live else "<span class='pill bad'>باطل شده</span>",
+           html.escape(show_date(r["created_at"], True)), html.escape(used),
+           html.escape(r["allow_ips"] or "همه"), hook,
+           ("<form method='post' action='/%s/api-key-revoke' onsubmit='return confirm(%s)'>"
+            "<input type='hidden' name='id' value='%d'><button class='del'>باطل کردن</button></form>"
+            % (p, ask, r["id"])) if live else ""))
+
+
+def api_new_key_dialog(p):
+    return (
+        "<dialog class='pd' id='keynew'><form method='post' action='/%s/api-key-new'>"
+        "<strong class='ptitle'>کلید تازه</strong>"
+        "<fieldset><legend>کلید</legend><div class='pf'>"
+        "<label>نام (برای خودتان، مثلاً «ربات فروش»)<input name='name' required maxlength='40'></label>"
+        "<label>فقط از این آدرس‌ها (اختیاری، با ویرگول)<input name='allow_ips' maxlength='200' "
+        "dir='ltr' placeholder='203.0.113.7'></label></div>"
+        "<p class='muted'>اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی که لو برود از جای دیگر "
+        "کار نمی‌کند.</p></fieldset>"
+        "<fieldset><legend>دسترسی</legend><label class='check'><input type='checkbox' name='admin' "
+        "value='1'> دسترسی ادمین</label><p class='muted'>با این کلید ربات رسید تأیید یا رد می‌کند، "
+        "کاربر مسدود می‌کند، پلن می‌دهد، به تیکت جواب می‌دهد و گزارش ترافیک و وضعیت سرورها را "
+        "می‌خواند. فقط برای ربات خودتان، و حتماً با آدرس ثابت.</p></fieldset>"
+        "<div class='bar2'><button>ساختن کلید</button><button type='button' class='ghost' "
+        "data-close='1'>بستن</button></div></form></dialog>" % p)
+
+
+def api_bot_link_card(p):
+    bot = STORE.one("SELECT value FROM settings WHERE key = 'bot_link'")
+    return (
+        "<div class='card'><h2>ربات برای مشتری‌ها</h2><form method='post' action='/%s/bot-link-save' "
+        "class='row'><label style='margin:0'>آدرس ربات</label><input name='link' value='%s' dir='ltr' "
+        "size='30' placeholder='https://t.me/MyBot'><button class='ghost'>ذخیره</button></form>"
+        "<p class='muted'>با این آدرس، دکمهٔ «اتصال به تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند "
+        "و کد اتصال را خودش می‌فرستد (<code>/start link_...</code>). نشانی webhook باید https باشد "
+        "(یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک رمز امضا یک بار نشان داده می‌شود تا ربات "
+        "مطمئن شود خبر از طرف این پنل است. اگر ربات در دسترس نباشد، خبر تا حدود یک روز دوباره "
+        "فرستاده می‌شود.</p></div>"
+        % (p, html.escape(bot["value"] if bot and bot["value"] else "", quote=True)))
+
+
+def api_log_card():
+    """The last messages the panel sent to bots, and whether each arrived."""
+    recent = STORE.q("SELECT o.*, k.name FROM webhook_outbox o"
+                     " LEFT JOIN api_tokens k ON k.id = o.token_id ORDER BY o.id DESC LIMIT 15")
+    if not recent:
+        return ""
+    rows = []
+    for o in recent:
+        if o["delivered_at"]:
+            state = "<span class='ok'>رسید</span>"
+        elif o["attempts"] >= WEBHOOK_MAX_TRIES:
+            state = "<span class='bad'>نرسید</span> <span class='muted'>%s</span>" \
+                % html.escape(o["last_error"] or "")
+        elif o["attempts"]:
+            state = ("<span class='warn'>تلاش دوباره (%d)</span> <span class='muted'>%s</span>"
+                     % (o["attempts"], html.escape(o["last_error"] or "")))
+        else:
+            state = "<span class='muted'>در صف</span>"
+        rows.append("<tr><td><code>%s</code></td><td>%s</td><td class='muted'>%s</td><td>%s</td></tr>"
+                    % (html.escape(o["event"]), html.escape(o["name"] or "-"),
+                       html.escape(show_date(o["created_at"], True)), state))
+    return ("<div class='card'><details><summary><b>خبرهای فرستاده‌شده به ربات‌ها</b> "
+            "<span class='muted'>(۱۵ تای آخر)</span></summary><table><tr><th>خبر</th><th>ربات</th>"
+            "<th>زمان</th><th>وضعیت</th></tr>%s</table></details></div>" % "".join(rows))
+
+
+def api_recipes_card():
+    """What a key can do, as commands to copy: each one a line, and what comes
+    back in words."""
+    api = bot_api_url()
+    items = []
+    for title, who, method, path, what, new in API_RECIPES:
+        cmd = "curl -s -H \"Authorization: Bearer $KEY\" %s%s" % (api, path)
+        items.append(
+            "<details class='recipe'><summary><span class='verb'>%s</span><b>%s</b>%s"
+            "<span class='muted'>%s</span></summary><p class='muted'>%s</p><div class='codebox'>"
+            "<div><code dir='ltr'>%s</code></div><button type='button' class='ghost' "
+            "data-copy='%s'>کپی</button></div></details>"
+            % (method, html.escape(title), "<span class='pill ok'>تازه</span>" if new else "",
+               html.escape(who), html.escape(what), html.escape(cmd), html.escape(cmd, quote=True)))
+    return ("<div class='card'><h2>چه کارهایی می‌شود کرد</h2><p class='muted'>چند دستور پرکاربرد؛ "
+            "<code>$KEY</code> کلید شماست. همهٔ دستورها در راهنمای کامل است.</p>%s</div>"
+            % "".join(items))
 
 
 def api_key_card(name, key):
@@ -8895,7 +9222,8 @@ class Admin(http.server.BaseHTTPRequestHandler):
             # Their own customers' usage, drawn as the owner's home page draws
             # everybody's.
             return (seller_card(CFG["ADMIN_PATH"], s) + "".join(out)
-                    + total_usage_card(CFG["ADMIN_PATH"], s["id"], "مصرف مشتری‌های من"))
+                    + total_usage_card(CFG["ADMIN_PATH"], s["id"], "مصرف مشتری‌های من")
+                    + traffic_insight_card(s["id"]))
         if me() is not None and not may("nodes"):
             return "".join(out)
         out.append(sellers_summary_card(CFG["ADMIN_PATH"]))
@@ -8909,6 +9237,7 @@ class Admin(http.server.BaseHTTPRequestHandler):
             out.append(total_usage_card(CFG["ADMIN_PATH"], "own", "مصرف مشتری‌های خودم"))
         else:
             out.append(total_usage_card(CFG["ADMIN_PATH"]))
+        out.append(traffic_insight_card())
         out.append(doh_card())
 
         # Only the servers the panel has now: one taken off before this
@@ -9002,6 +9331,7 @@ class Admin(http.server.BaseHTTPRequestHandler):
             out.append("<div class='stat'><div class='n' dir='ltr'>%s</div>"
                        "<div class='l'>%s</div></div>" % (n, l))
         out.append("</div></div>")
+        out.append(forecast_card(user, week[0] + week[1]))
         out.append("<div class='card'><h2>روند روزانه</h2>%s%s</div>" % (legend(), days_svg))
         out.append("<div class='card'><h2>سرعت در ۲۴ ساعت گذشته</h2>%s%s</div>"
                    % (legend(), speed_chart(view["five"])))
@@ -9501,108 +9831,28 @@ class Admin(http.server.BaseHTTPRequestHandler):
     def api_keys(self):
         p = CFG["ADMIN_PATH"]
         rows = STORE.q("SELECT * FROM api_tokens ORDER BY revoked_at IS NOT NULL, id DESC")
-        out = ["<div class='card'><h2>رابط API ربات</h2><p>ربات فروش (از خودتان یا شخص دیگر) از همین "
-               "دروازه به پنل وصل می‌شود: ثبت‌نام مشتری با آیدی تلگرام، دیدن حساب، ثبت آی‌پی، دیدن "
-               "پلن‌ها و فرستادن رسید. رسیدها مثل همیشه در صفحهٔ رسیدها منتظر تأیید شما "
-               "می‌مانند.</p><p>آدرس: <code>%s</code></p><p class='muted'>راهنمای کامل "
-               "دستورها: <a href='https://github.com/AlsoAryan/Master-dns/blob/main/docs/bot-api.md' target='_blank' rel='noopener'>docs/bot-api.md</a>. پورت "
-               "۸۴۴۵ را اگر فایروال سرور یا دیتاسنتر دارد باز کنید.</p></div>"
-               % html.escape(bot_api_url())]
-        out.append("<div class='card'><h2>کلیدهای دسترسی</h2>")
-        if not rows:
-            out.append("<p class='muted'>هنوز کلیدی نساخته‌اید؛ اولین کلید را بسازید.</p>")
-        else:
-            out.append("<table><tr><th>نام</th><th>دسترسی</th><th>ساخته شده</th>"
-                       "<th>آخرین استفاده</th><th>فقط از آدرس</th><th>وضعیت</th>"
-                       "<th></th></tr>")
-            for r in rows:
-                live = not r["revoked_at"]
-                ask = html.escape(json.dumps(
-                    "کلید «%s» باطل شود؟ رباتی که با آن کار می‌کند فوراً قطع می‌شود."
-                    % r["name"], ensure_ascii=False), quote=True)
-                out.append(
-                    "<tr%s><td>%s</td><td>%s</td><td class='muted'>%s</td>"
-                    "<td class='muted'>%s</td><td><code>%s</code></td><td class='%s'>%s</td>"
-                    "<td class='acts'>%s</td></tr>"
-                    % ("" if live else " class='off'", html.escape(r["name"]),
-                       "<span class='warn'>ادمین</span>" if r["scope"] == "admin"
-                       else "مشتری",
-                       html.escape(show_date(r["created_at"], True)),
-                       html.escape(show_date(r["last_used_at"] or "هرگز", True)),
-                       html.escape(r["allow_ips"] or "همه"),
-                       "ok" if live else "bad", "فعال" if live else "باطل شده",
-                       ("<form method='post' action='/%s/api-key-revoke' onsubmit='return confirm(%s)'><input type='hidden' name='id' value='%d'><button class='del'>باطل "
-                        "کردن</button></form>"
-                        % (p, ask, r["id"])) if live else ""))
-            out.append("</table>")
-        out.append("</div>")
         live = [r for r in rows if not r["revoked_at"]]
+        gone = [r for r in rows if r["revoked_at"]]
+        out = [api_hero_card(p, len(live)),
+               "<div class='card'><div class='pagehead'><div><h2>کلیدهای دسترسی</h2>"
+               "<span class='muted'>هر ربات یک کلید دارد؛ کلیدی که لو برود را باطل کنید و "
+               "رباتی که با آن کار می‌کرد فوراً قطع می‌شود.</span></div>"
+               "<button type='button' data-dlg='keynew'>＋ کلید تازه</button></div>"]
         if live:
-            out.append("<div class='card'><h2>اطلاع‌رسانی به ربات (webhook)</h2><p>پنل به این آدرس ربات خبر "
-                       "می‌دهد: تأیید یا رد رسید، جواب تیکت، ۸۰٪ و ۹۵٪ حجم، تمام شدن حجم، نزدیک شدن و تمام شدن "
-                       "دوره. هر خبر یک متن فارسی آماده دارد که ربات می‌تواند عیناً برای مشتری "
-                       "بفرستد.</p><table><tr><th>کلید</th><th>آدرس ربات</th><th></th></tr>")
-            for r in live:
-                out.append(
-                    "<tr><td>%s</td><td><form id='w%d' method='post' action='/%s/api-webhook-save'><input type='hidden' name='id' value='%d'></form><input form='w%d' name='url' value='%s' dir='ltr' size='34' placeholder='https://bot.example.com/master-dns'></td><td class='acts'><button form='w%d'>ذخیره</button>%s</td></tr>"
-                    % (html.escape(r["name"]), r["id"], p, r["id"], r["id"],
-                       html.escape(r["webhook_url"] or "", quote=True), r["id"],
-                       ("<form method='post' action='/%s/api-webhook-test'>"
-                        "<input type='hidden' name='id' value='%d'>"
-                        "<button class='ghost'>ارسال آزمایشی</button></form>"
-                        "<form method='post' action='/%s/api-webhook-save'>"
-                        "<input type='hidden' name='id' value='%d'>"
-                        "<input type='hidden' name='url' value=''>"
-                        "<button class='del'>حذف</button></form>"
-                        % (p, r["id"], p, r["id"])) if r["webhook_url"] else ""))
-            bot = STORE.one("SELECT value FROM settings WHERE key = 'bot_link'")
-            out.append("</table><form method='post' action='/%s/bot-link-save' class='row' style='margin-top:12px'><label style='margin:0'>آدرس "
-                       "ربات برای "
-                       "مشتری‌ها</label><input name='link' value='%s' dir='ltr' size='30' placeholder='https://t.me/MyBot'><button class='ghost'>ذخیره</button></form><p class='muted'>با "
-                       "این آدرس، دکمهٔ «اتصال به تلگرام» در پنل مشتری ربات را مستقیم باز می‌کند و کد اتصال را "
-                       "خودش می‌فرستد (<code>/start link_...</code>).</p>"
-                       % (p, html.escape(bot["value"] if bot and bot["value"] else "",
-                                         quote=True)))
-            out.append("<p class='muted'>نشانی باید https باشد (یا http روی همین سرور). با ذخیرهٔ آدرس تازه، یک "
-                       "رمز امضا یک بار نشان داده می‌شود تا ربات مطمئن شود خبر از طرف این پنل است. اگر ربات در "
-                       "دسترس نباشد، خبر تا حدود یک روز دوباره فرستاده می‌شود.</p>")
-            recent = STORE.q("SELECT o.*, k.name FROM webhook_outbox o"
-                             " LEFT JOIN api_tokens k ON k.id = o.token_id"
-                             " ORDER BY o.id DESC LIMIT 15")
-            if recent:
-                out.append("<table><tr><th>خبر</th><th>ربات</th><th>زمان</th>"
-                           "<th>وضعیت</th></tr>")
-                for o in recent:
-                    if o["delivered_at"]:
-                        state = "<span class='ok'>رسید</span>"
-                    elif o["attempts"] >= WEBHOOK_MAX_TRIES:
-                        state = "<span class='bad'>نرسید</span> <span class='muted'>%s</span>" \
-                            % html.escape(o["last_error"] or "")
-                    elif o["attempts"]:
-                        state = ("<span class='warn'>تلاش دوباره (%d)</span> "
-                                 "<span class='muted'>%s</span>"
-                                 % (o["attempts"], html.escape(o["last_error"] or "")))
-                    else:
-                        state = "<span class='muted'>در صف</span>"
-                    out.append("<tr><td><code>%s</code></td><td>%s</td>"
-                               "<td class='muted'>%s</td><td>%s</td></tr>"
-                               % (html.escape(o["event"]), html.escape(o["name"] or "-"),
-                                  html.escape(show_date(o["created_at"], True)),
-                                  state))
-                out.append("</table>")
-            out.append("</div>")
-        out.append("<div class='card'><h2>ساخت "
-                   "کلید</h2><form method='post' action='/%s/api-key-new'><div class='f'><label>نام (برای "
-                   "خودتان، مثلاً «ربات "
-                   "فروش»)</label><input name='name' required maxlength='40'></div><div class='f'><label>فقط "
-                   "از این آدرس‌ها (اختیاری، با ویرگول "
-                   "جدا)</label><input name='allow_ips' maxlength='200' dir='ltr' placeholder='مثلاً 203.0.113.7'></div><div class='f'><label style='display:inline'><input type='checkbox' name='admin' value='1'> دسترسی "
-                   "ادمین</label><div class='muted'>ربات با این کلید رسید تأیید یا رد می‌کند، کاربر مسدود "
-                   "می‌کند، پلن می‌دهد و به تیکت جواب می‌دهد، و رسید و تیکت تازه و گزارش روزانه را خبر "
-                   "می‌گیرد. فقط برای ربات خودتان.</div></div><button>ساختن "
-                   "کلید</button></form><p class='muted'>اگر آی‌پی سرور ربات ثابت است، آن را بنویسید: کلیدی "
-                   "که لو برود از جای دیگر کار نمی‌کند. برای کلید ادمین این کار را حتماً بکنید.</p></div>" % p)
-        return "".join(out)
+            out.append("<div class='plans'>%s</div>" % "".join(api_key_tile(p, r) for r in live))
+        else:
+            out.append("<p class='muted'>هنوز کلیدی نساخته‌اید؛ اولین کلید را بسازید.</p>")
+        if gone:
+            out.append("<details style='margin-top:14px'><summary class='muted'>کلیدهای باطل‌شده (%d)"
+                       "</summary><div class='plans'>%s</div></details>"
+                       % (len(gone), "".join(api_key_tile(p, r) for r in gone)))
+        out.append("</div>")
+        out.append(api_new_key_dialog(p))
+        if live:
+            out.append(api_bot_link_card(p))
+            out.append(api_log_card())
+        out.append(api_recipes_card())
+        return "".join(out) + API_SCRIPT
 
     def templates(self):
         """Two pages behind one path: the list, and one template's editor.

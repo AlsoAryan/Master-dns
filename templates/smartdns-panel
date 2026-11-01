@@ -413,6 +413,9 @@ CREATE TABLE IF NOT EXISTS wallet_moves (
 );
 CREATE INDEX IF NOT EXISTS wallet_moves_user ON wallet_moves(user_id, id);
 
+-- A report over every customer reads a stretch of buckets, not one customer's.
+CREATE INDEX IF NOT EXISTS usage_by_bucket ON usage(grain, bucket);
+
 CREATE TABLE IF NOT EXISTS usage_service (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     day     TEXT NOT NULL,
@@ -3648,6 +3651,10 @@ PORT_SERVICES = {":80": "_http", ":4070": "spotify", ":853": "_dns",
                  ":1119": "blizzard"}
 
 
+# What the traffic that is not one of the catalogue's services is called.
+SERVICE_LABELS = {"_http": "دانلود کنسول و HTTP", "_dns": "DNS رمزگذاری‌شده", "_other": "سایر"}
+
+
 def service_of(name, index):
     """The catalogue service a connection belongs to, by the longest name of
     ours that the host it asked for ends with."""
@@ -3902,6 +3909,191 @@ def prune_usage(store):
     store.run("DELETE FROM doh_users WHERE day < ?", (cutoff,))
 
 
+# ------------------------------------------------------- traffic and status
+TRAFFIC_TOP = 10                # customers and services listed in a traffic report
+# What the services were is the customer's own to see. Added up over many it is
+# the operator's to know; over a few it is one customer's again - three
+# customers' PlayStation is three people's. Below this many, it is not given.
+SERVICE_MIN_CUSTOMERS = 5
+TRAFFIC_DAYS = (1, 60)          # the shortest and longest window it can be asked for
+
+
+def traffic_report(store, seller=None, days=7):
+    """The whole service's traffic as an operator weighs it - or one seller's
+    customers' - over the last `days` days (Tehran's days, today included):
+    what went through, set against the same stretch before; each day; the hour
+    of the day it is busiest; who used the most; and what they used it for.
+
+    Read from the tables the charts are drawn from, which are for looking at,
+    not for billing: nothing here changes what anybody has used.
+    """
+    low, high = TRAFFIC_DAYS
+    days = max(low, min(high, int(days)))
+    now_t = datetime.now(timezone.utc)
+
+    def day_of(back):
+        return usage_buckets(now_t - timedelta(days=back))["1d"]
+    since, before_since = day_of(days - 1), day_of(2 * days - 1)
+    # Every query reads its customers through u, so a seller's are theirs by one
+    # condition - the same as for the receipts and the accounts.
+    mine = " AND u.owner_admin = ?" if seller else ""
+    extra = (seller,) if seller else ()
+
+    def span(first, last):
+        row = store.one("SELECT COALESCE(SUM(g.up), 0) up, COALESCE(SUM(g.down), 0) down"
+                        " FROM usage g JOIN users u ON u.id = g.user_id"
+                        " WHERE g.grain = '1d' AND g.bucket >= ? AND g.bucket <= ?" + mine,
+                        (first, last) + extra)
+        return {"up": row["up"], "down": row["down"]}
+    total, previous = span(since, day_of(0)), span(before_since, day_of(days))
+    today = span(day_of(0), day_of(0))
+    now_sum, before_sum = total["up"] + total["down"], previous["up"] + previous["down"]
+
+    daily = {r["bucket"]: (r["up"], r["down"]) for r in store.q(
+        "SELECT g.bucket, SUM(g.up) up, SUM(g.down) down FROM usage g"
+        " JOIN users u ON u.id = g.user_id WHERE g.grain = '1d' AND g.bucket >= ?"
+        + mine + " GROUP BY g.bucket", (since,) + extra)}
+    series = []
+    for back in range(days - 1, -1, -1):
+        day = day_of(back)
+        up, down = daily.get(day, (0, 0))
+        series.append({"day": day, "up": up, "down": down})
+
+    # Hours are kept for a week, so a longer window still says "this week".
+    hours = [0] * 24
+    for r in store.q("SELECT substr(g.bucket, 12, 2) h, SUM(g.up + g.down) b FROM usage g"
+                     " JOIN users u ON u.id = g.user_id WHERE g.grain = '1h' AND g.bucket >= ?"
+                     + mine + " GROUP BY h", (usage_buckets(now_t - timedelta(days=min(days, 7)
+                                                                              ))["1h"],) + extra):
+        if r["h"] and r["h"].isdigit() and int(r["h"]) < 24:
+            hours[int(r["h"])] = r["b"] or 0
+    busiest = max(range(24), key=lambda h: hours[h])
+    peak = {"hour": busiest, "bytes": hours[busiest]} if hours[busiest] else None
+
+    top = []
+    for r in store.q("SELECT u.*, SUM(g.up) up, SUM(g.down) down FROM usage g"
+                     " JOIN users u ON u.id = g.user_id WHERE g.grain = '1d' AND g.bucket >= ?"
+                     + mine + " GROUP BY u.id ORDER BY SUM(g.up) + SUM(g.down) DESC LIMIT ?",
+                     (since,) + extra + (TRAFFIC_TOP,)):
+        used = r["up"] + r["down"]
+        top.append({"id": r["id"], "label": who_label(r), "up": r["up"], "down": r["down"],
+                    "bytes": used,
+                    "share_percent": round(100.0 * used / now_sum, 1) if now_sum else 0,
+                    "quota_percent": round(100.0 * (r["used_bytes"] or 0) / r["quota_bytes"], 1)
+                    if r["quota_bytes"] else None})
+
+    # Which service the traffic went to is kept thirty days, not sixty.
+    keep = min(days, SERVICE_KEEP_DAYS)
+    labels = {svc["key"]: svc.get("label") or svc["key"] for svc in CATALOGUE}
+    labels.update(SERVICE_LABELS)
+    rows = store.q("SELECT s.service, SUM(s.bytes) b FROM usage_service s"
+                   " JOIN users u ON u.id = s.user_id WHERE s.day >= ?" + mine
+                   + " GROUP BY s.service ORDER BY b DESC LIMIT ?",
+                   (day_of(keep - 1),) + extra + (TRAFFIC_TOP,))
+    scope = store.one("SELECT COALESCE(SUM(s.bytes), 0) b, COUNT(DISTINCT s.user_id) n"
+                      " FROM usage_service s JOIN users u ON u.id = s.user_id WHERE s.day >= ?"
+                      + mine, (day_of(keep - 1),) + extra)
+    whole, enough = scope["b"], scope["n"] >= SERVICE_MIN_CUSTOMERS
+    services = [{"key": r["service"], "label": labels.get(r["service"], r["service"]),
+                 "bytes": r["b"], "share_percent": round(100.0 * r["b"] / whole, 1) if whole else 0}
+                for r in rows] if enough else []
+    report = {"days": days, "total": total, "previous": previous, "today": today,
+              "change_percent": round(100.0 * (now_sum - before_sum) / before_sum, 1)
+              if before_sum else None,
+              "daily": series, "by_hour": hours, "peak": peak, "top_users": top,
+              "services": services, "services_days": keep,
+              "services_hidden": bool(scope["n"]) and not enough}
+    report["text"] = traffic_report_text(report)
+    return report
+
+
+def traffic_report_text(r):
+    """The report in a few Persian lines, to send to the operator as it is."""
+    now_sum = r["total"]["up"] + r["total"]["down"]
+    lines = ["ترافیک %d روز اخیر: %s (دانلود %s، آپلود %s)"
+             % (r["days"], human_fa(now_sum), human_fa(r["total"]["down"]),
+                human_fa(r["total"]["up"]))]
+    if r["change_percent"] is not None:
+        lines.append("نسبت به %d روز قبلش: %s%d٪"
+                     % (r["days"], "+" if r["change_percent"] >= 0 else "−",
+                        abs(round(r["change_percent"]))))
+    lines.append("امروز: %s" % human_fa(r["today"]["up"] + r["today"]["down"]))
+    if r["peak"]:
+        lines.append("شلوغ‌ترین ساعت: %02d تا %02d، %s"
+                     % (r["peak"]["hour"], (r["peak"]["hour"] + 1) % 24, human_fa(r["peak"]["bytes"])))
+    if r["top_users"]:
+        lines.append("پرمصرف‌ها:")
+        lines += ["%d. %s — %s (%s٪)" % (n, u["label"], human_fa(u["bytes"]), u["share_percent"])
+                  for n, u in enumerate(r["top_users"][:5], 1)]
+    if r["services"]:
+        lines.append("پرمصرف‌ترین سرویس‌ها:")
+        lines += ["%d. %s — %s (%s٪)" % (n, s["label"], human_fa(s["bytes"]), s["share_percent"])
+                  for n, s in enumerate(r["services"][:5], 1)]
+    return "\n".join(lines)
+
+
+def status_report(store, relays, nodes, exit_ip):
+    """Whether the service is up, server by server, as the panel last heard
+    from each - the operator's question at three in the morning. A server
+    that has said nothing for two minutes is not online, whatever it last said.
+    """
+    stamp = datetime.now(timezone.utc)
+
+    def one(kind, ip, host):
+        m = store.one("SELECT * FROM metrics WHERE host = ? ORDER BY at DESC LIMIT 1", (host,))
+        seen = parse_ts(m["at"]) if m else None
+        age = int((stamp - seen).total_seconds()) if seen else None
+
+        def pct(a, b):
+            return round(100.0 * (a or 0) / b, 1) if b else None
+        row = {"kind": kind, "ip": ip, "name": store.setting("server_name:" + ip) or "",
+               "online": age is not None and age < 120, "seen_seconds_ago": age}
+        if m:
+            row.update(cpu_percent=round(m["cpu"] or 0, 1),
+                       memory_percent=pct(m["mem_used"], m["mem_total"]),
+                       disk_percent=pct(m["disk_used"], m["disk_total"]),
+                       rx_bps=m["rx_bps"], tx_bps=m["tx_bps"],
+                       uptime_days=(m["uptime"] or 0) // 86400)
+        if kind == "relay":
+            try:
+                tunnel = json.loads(store.setting("relay_tunnel_state:" + ip) or "null")
+            except ValueError:
+                tunnel = None
+            if isinstance(tunnel, dict):
+                row["tunnel"] = {"on": bool(tunnel.get("on")), "running": bool(tunnel.get("running")),
+                                 "error": str(tunnel.get("error") or "")[:200]}
+        return row
+    servers = [one("exit", exit_ip, "exit")] if exit_ip else []
+    servers += [one("node", ip, ip) for ip in sorted(nodes)]
+    servers += [one("relay", ip, ip) for ip in sorted(relays)]
+    known = {s["ip"] for s in servers}
+    problems = []
+    for r in store.q("SELECT key FROM settings WHERE key LIKE 'alert_state:%' AND value = 'down'"):
+        key = r["key"][len("alert_state:"):]
+        # Not one about a server taken off the panel: nothing would close it.
+        if all(ip in known for ip in re.findall(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", key)):
+            last = store.one("SELECT text, at FROM alerts WHERE key = ? ORDER BY id DESC LIMIT 1",
+                             (key,))
+            if last:
+                problems.append({"key": key, "text": last["text"], "since": last["at"]})
+    report = {"healthy": all(s["online"] for s in servers) and not problems,
+              "servers": servers, "problems": problems}
+    report["text"] = status_report_text(report)
+    return report
+
+
+def status_report_text(r):
+    lines = ["همه‌چیز سالم است" if r["healthy"] else "مشکل هست"]
+    for s in r["servers"]:
+        word = {"exit": "سرور خارج", "node": "نود", "relay": "رله"}[s["kind"]]
+        lines.append("%s %s%s: %s" % (word, s["ip"], " (%s)" % s["name"] if s["name"] else "",
+                                       "وصل" if s["online"] else "قطع"
+                                       + (" — %d ثانیه پیش" % s["seen_seconds_ago"]
+                                          if s["seen_seconds_ago"] is not None else "")))
+    lines += ["⚠️ " + p["text"] for p in r["problems"]]
+    return "\n".join(lines)
+
+
 def usage_view(store, user, catalogue, with_services=True):
     """Everything a usage page draws, in one dict: the customer's page and the
     admin's user page both build from this."""
@@ -3961,8 +4153,7 @@ def usage_view(store, user, catalogue, with_services=True):
     }
     if with_services:
         label = {svc["key"]: svc.get("label") or svc["key"] for svc in catalogue}
-        label.update({"_http": "دانلود کنسول و HTTP", "_dns": "DNS رمزگذاری‌شده",
-                      "_other": "سایر"})
+        label.update(SERVICE_LABELS)
         cutoff = usage_buckets(now_t - timedelta(days=SERVICE_KEEP_DAYS))["1d"]
         out["services"] = [
             {"key": r["service"], "label": label.get(r["service"], r["service"]),
@@ -7016,6 +7207,25 @@ class AdminAPI:
         s = admin_stats(self.store, getattr(self, "_seller", None))
         return 200, dict({"ok": True, "text": daily_report_text(s)}, **s)
 
+    def api_admin_traffic(self, body):
+        """Traffic over the last `days` days (1 to 60, default 7): the total and
+        how it moved, each day, the busiest hour, the heaviest customers and the
+        services they used. A reseller's key sees its own customers'."""
+        try:
+            days = int((self.query.get("days") or ["7"])[0])
+        except ValueError:
+            return 400, refused("bad_days", "days باید یک عدد از ۱ تا ۶۰ باشد")
+        if not TRAFFIC_DAYS[0] <= days <= TRAFFIC_DAYS[1]:
+            return 400, refused("bad_days", "days باید یک عدد از ۱ تا ۶۰ باشد")
+        return 200, dict(traffic_report(self.store, getattr(self, "_seller", None), days), ok=True)
+
+    def api_admin_status_report(self, body):
+        """Is the service up? Every server, as last heard from, and what is wrong.
+        The servers are the owner's: a reseller's key is told so."""
+        if getattr(self, "_seller", None):
+            return 403, refused("owner_only", "وضعیت سرورها فقط برای کلید خود مالک است")
+        return 200, dict(status_report(self.store, self.relays, self.nodes, exit_self()), ok=True)
+
     def api_admin_receipts(self, body):
         which = (self.query.get("status") or ["pending"])[0]
         extra, more = self.mine()
@@ -7429,6 +7639,8 @@ class BotAPI(AdminAPI, http.server.BaseHTTPRequestHandler):
                            r"(\d{1,12})/image$"), "ticket_image"),
         # The operator's own, for a key with admin rights only.
         ("GET", re.compile(r"/api/v1/admin/stats$"), "admin_stats"),
+        ("GET", re.compile(r"/api/v1/admin/traffic$"), "admin_traffic"),
+        ("GET", re.compile(r"/api/v1/admin/status$"), "admin_status_report"),
         ("GET", re.compile(r"/api/v1/admin/receipts$"), "admin_receipts"),
         ("GET", re.compile(r"/api/v1/admin/receipts/(\d{1,12})/image$"),
          "admin_receipt_image"),
