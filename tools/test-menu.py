@@ -154,7 +154,7 @@ check("the installer installs the menu itself", "payload SMARTDNS_MENU > /usr/lo
 
 print("every command in the README is in the menu")
 EXAMPLES = {"example.com", "api.example.com", "spotify", "5.188.44.19", "ali", "<ip>|--all", "test",
-            "gemini.google.com", "500", "9443", "[new]", "panel.example.com", "sudo", "bash"}
+            "gemini.google.com", "500", "9443", "[new]", "panel.example.com", "sudo", "bash", "NAME"}
 # The published README, and only that: the pair is how the published tree is
 # told from a working copy, whose README is something else. README_DIR points
 # at another tree's pair, to check one before it is published.
@@ -163,7 +163,9 @@ readme = os.path.join(docs, "README.md")
 if not (os.path.exists(readme) and os.path.exists(os.path.join(docs, "README.fa.md"))):
     print("  --   not the published tree - skipped")
 else:
-    text = open(readme, encoding="utf-8").read()
+    # The README, and the pages it sends a reader to for the commands.
+    text = "\n".join(open(os.path.join(docs, name), encoding="utf-8").read()
+                     for name in ("README.md", "docs/commands.md", "docs/troubleshooting.md"))
     blocks = re.findall(r"```sh\n(.*?)```", text, re.S)
     wanted = set()
     for block in blocks:

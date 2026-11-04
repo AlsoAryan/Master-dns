@@ -63,7 +63,7 @@ check("Epic itself is the store and its downloads, not the game backend",
 byp = next(s for s in cat if s["key"] == "bypass")
 groups = {g["key"]: g for g in byp["groups"]}
 check("the bypass category has a group per thing kept out of the hijack",
-      set(groups) == {"ea", "demonware", "playstation", "epic", "azure", "voice", "steam"},
+      set(groups) == {"ea", "demonware", "rockstar", "playstation", "epic", "azure", "voice", "steam"},
       str(set(groups)))
 check("every one of them is opt-in",
       all(g.get("opt_in") is True for g in byp["groups"]))
@@ -292,8 +292,8 @@ print("EA's game servers are locked: bypassed for every template, never a choice
 # could be ticked, a tick that arrives anyway is not kept, and a tick already
 # in the database from before is ignored.
 check("the group is marked locked in the catalogue", groups["ea"].get("locked") is True)
-check("and Call of Duty's are the only other ones",
-      [g["key"] for g in byp["groups"] if g.get("locked")] == ["ea", "demonware"])
+check("and Call of Duty's and Rockstar's are the only other ones",
+      [g["key"] for g in byp["groups"] if g.get("locked")] == ["ea", "demonware", "rockstar"])
 store.run("INSERT INTO template_services (template_id, service_key, group_key)"
           " VALUES (?, 'bypass', 'ea')", (tid,))
 check("a tick already in the database does not route them",

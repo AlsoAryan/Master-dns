@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.1"
+VERSION="0.1.2"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -3225,18 +3225,41 @@ exit 0
 ##      rex-gvs.prod.demonware.net
 ##
 ## 2. The service is reachable from Iran anyway, and routing it costs something.
-##    ps5.np.playstation.net is the console's STUN server as well as a PSN API
-##    host, and it answers fine from an Iranian address - routing it sent NAT
-##    detection to our own single-homed coturn instead of Sony's pair, which
-##    cannot classify the NAT properly. Only gst.prod.dl.playstation.net actually
-##    needs the exit (it does not complete TLS from Iran at all); the rest of
-##    prod.dl and the playstation.com API stay routed with it.
+##    The console's STUN server is us.np.stun.playstation.net - not a name under
+##    np.playstation.net, so that line alone never caught it, and it went to the
+##    relay with the rest of playstation.net. A PS5's Binding request carries the
+##    old XOR-ONLY attribute (0x0021, from an early draft of the STUN revision) as
+##    well as USERNAME and MESSAGE-INTEGRITY; coturn answers every such request
+##    with 420 Unknown Attribute, so the relay cannot answer in Sony's place, and
+##    the connection test ended in "NAT type: Failed" while the games themselves
+##    worked. Resolved directly, the same console got NAT Type 2 at once. (An
+##    older note here took ps5.np.playstation.net for the STUN server; it is a PSN
+##    API host, and is not the name that matters.) Only gst.prod.dl.playstation.net
+##    actually needs the exit (it does not complete TLS from Iran at all); the
+##    rest of prod.dl and the playstation.com API stay routed with it.
 ##
-##      np.playstation.net      ps5.np - STUN + PSN API
+##      np.playstation.net      ps5.np - the PSN API
 ##      np.dl.playstation.net   envelope2, uef, gs-sec.ww
+##      stun.playstation.net    us.np.stun - the console's NAT test
 ##
 ##    The same reasoning was tried for Epic's backend and reverted - see below -
 ##    so verify per-name rather than assuming the rule generalises.
+##
+##    Rockstar is the opposite case, and the same lesson as Epic and EA: the
+##    sign-in has to come from the address the game is later played from. GTA
+##    Online stopped right after auth-prod.ros.rockstargames.com with 0x50060190
+##    ("cannot connect to Rockstar's game services") on a PS5 in Iran, because that
+##    name went out through the exit - Rockstar saw the exit's address - while the
+##    console played from an Iranian one, and the sign-in was refused. The relay's
+##    own path is fine, and every Rockstar host answers an Iranian address as it
+##    answers the exit. Three zones go direct; rockstargames.com itself (the site,
+##    Social Club, updates) stays routed:
+##
+##      ros.rockstargames.com                  auth-prod and the rest of the sign-in
+##      cloud.rockstargames.com                the cloud save and game-state services
+##      prod-locator-cloud.rockstargames.com   where the game is told to go next
+##
+##    (reported from a PS5 on Irancell, 0.10.7, exit abroad)
 ##
 ##    Epic's game backend is the other case, and the important one. Fortnite gets
 ##    into a match when ol.epicgames.com and friends resolve directly, and does
@@ -3275,6 +3298,10 @@ exit 0
 #server=/demonware.net/#
 #server=/np.playstation.net/#
 #server=/np.dl.playstation.net/#
+#server=/stun.playstation.net/#
+#server=/ros.rockstargames.com/#
+#server=/cloud.rockstargames.com/#
+#server=/prod-locator-cloud.rockstargames.com/#
 #server=/ol.epicgames.com/#
 #server=/ogs.live.on.epicgames.com/#
 #server=/edea.live.use1a.on.epicgames.com/#
@@ -35461,12 +35488,20 @@ exit 0
 #It reads this relay's DNS answers off the wire as they leave - the very answer
 #the device got, nothing asked again - and keeps nothing: what it prints is all
 #there is. Ctrl-C stops it.
+#
+#It also notices a game that is sent to the relay for a name and then knocks on a
+#port the relay does not carry - the relay takes 80 and 443 and nothing else of a
+#customer's. Nothing answers, the game waits, and the operator sees a loading screen
+#that never ends. The name asked for just before is the likely cause, and is listed at
+#the end with the command that makes it direct. It is a guess from timing, so it is
+#a place to start, not a verdict.
 #"""
 #import collections
 #import ipaddress
 #import json
 #import re
 #import os
+#import select
 #import signal
 #import socket
 #import struct
@@ -35518,12 +35553,41 @@ exit 0
 #]
 #
 #
-#def attach_filter(sock):
+## The second program: IPv4, TCP, not a fragment, SYN set and ACK clear - a
+## connection being asked for, not one already going - to any port but 80 and 443.
+## What the relay carries never reaches this process, and neither does the rest of
+## a download; what is left is the connections nothing on the relay will take.
+#BPF_SYN = [
+#    (0x28, 0, 0, 0xFFFFF000),   # ldh proto         the packet's ethertype
+#    (0x15, 0, 12, ETH_P_IP),    # jeq #0x0800       IPv4, or drop
+#    (0x30, 0, 0, 9),            # ldb [9]           protocol
+#    (0x15, 0, 10, 6),           # jeq #6            TCP, or drop
+#    (0x28, 0, 0, 6),            # ldh [6]           flags + fragment offset
+#    (0x45, 8, 0, 0x1FFF),       # jset #0x1fff      a later fragment: drop
+#    (0xB1, 0, 0, 0),            # ldxb 4*([0]&0xf)  header length
+#    (0x50, 0, 0, 13),           # ldb [x+13]        TCP flags
+#    (0x54, 0, 0, 0x12),         # and #0x12         SYN and ACK
+#    (0x15, 0, 4, 0x02),         # jeq #0x02         SYN alone, or drop
+#    (0x48, 0, 0, 2),            # ldh [x+2]         destination port
+#    (0x15, 2, 0, 80),           # jeq #80           drop
+#    (0x15, 1, 0, 443),          # jeq #443          drop
+#    (0x06, 0, 0, 0x40000),      # ret               accept
+#    (0x06, 0, 0, 0),            # ret #0            drop
+#]
+## Ports a relay does answer on for a customer, beside 80 and 443: ssh, DNS over
+## TCP, DNS over TLS, and STUN/TURN. A connection to one of them is not stranded.
+#STRAND_IGNORE = {22, 53, 853, 3478, 5349}
+## After a SYN to the relay, the names it is blamed on are the ones sent to the relay
+## just before it: this many of the latest, none older than this many seconds.
+#STRAND_CREDIT, STRAND_WINDOW = 3, 60
+#
+#
+#def attach_filter(sock, program=BPF):
 #    import ctypes
-#    prog = b"".join(struct.pack("HBBI", *ins) for ins in BPF)
+#    prog = b"".join(struct.pack("HBBI", *ins) for ins in program)
 #    buf = ctypes.create_string_buffer(prog, len(prog))
 #    sock.setsockopt(socket.SOL_SOCKET, SO_ATTACH_FILTER,
-#                    struct.pack("HP", len(BPF), ctypes.addressof(buf)))
+#                    struct.pack("HP", len(program), ctypes.addressof(buf)))
 #
 #
 ## ------------------------------------------------------------------ packets
@@ -35537,6 +35601,18 @@ exit 0
 #    sport, dport, ulen = struct.unpack("!HHH", pkt[ihl:ihl + 6])
 #    return (socket.inet_ntoa(pkt[12:16]), socket.inet_ntoa(pkt[16:20]),
 #            sport, dport, pkt[ihl + 8:ihl + max(ulen, 8)])
+#
+#
+#def parse_ip_tcp(pkt):
+#    """(src, dst, sport, dport, flags) of an IPv4 TCP packet, else None."""
+#    if len(pkt) < 40 or pkt[0] >> 4 != 4 or pkt[9] != 6:
+#        return None
+#    ihl = (pkt[0] & 0x0F) * 4
+#    if ihl < 20 or len(pkt) < ihl + 14:
+#        return None
+#    sport, dport = struct.unpack("!HH", pkt[ihl:ihl + 4])
+#    return (socket.inet_ntoa(pkt[12:16]), socket.inet_ntoa(pkt[16:20]),
+#            sport, dport, pkt[ihl + 13])
 #
 #
 #def read_name(msg, off):
@@ -35599,8 +35675,14 @@ exit 0
 #    """
 #
 #    def __init__(self, relay_ips, who, targets=None, out=None, clock=time.time,
-#                 as_json=False):
+#                 as_json=False, listening=()):
 #        self.as_json = as_json
+#        self.listening = set(listening)
+#        # Per customer, the names just sent to the relay, and per (customer, port) how
+#        # often each was the one asked before a connection nothing took.
+#        self.recent = collections.defaultdict(lambda: collections.deque(maxlen=16))
+#        self.strays = {}
+#        self.said = {}
 #        self.local = set(relay_ips)
 #        self.who = who
 #        self.targets = targets
@@ -35611,6 +35693,8 @@ exit 0
 #        self.counts = collections.Counter()
 #
 #    def feed(self, pkt):
+#        if len(pkt) > 9 and pkt[9] == 6:
+#            return self.feed_syn(pkt)
 #        p = parse_ip_udp(pkt)
 #        if not p:
 #            return
@@ -35634,6 +35718,47 @@ exit 0
 #        elif is_answer and not asking:
 #            self.pending.pop((client, port, qid), None)
 #            self.report(client, name, self.verdict(rcode, addrs))
+#
+#    def feed_syn(self, pkt):
+#        """A customer asking the relay for a connection on a port it does not
+#        carry. Said once for each guess, and again only if the guess changes."""
+#        p = parse_ip_tcp(pkt)
+#        if not p or self.as_json:
+#            return
+#        src, dst, _, dport, flags = p
+#        if dst not in self.local or src in self.local or flags & 0x12 != 0x02:
+#            return
+#        if dport in STRAND_IGNORE or dport in self.listening or dport in (80, 443):
+#            return
+#        if self.targets is not None and src not in self.targets:
+#            return
+#        now = self.clock()
+#        names = [n for t, n in reversed(self.recent[src]) if now - t <= STRAND_WINDOW]
+#        names = list(dict.fromkeys(names))[:STRAND_CREDIT]
+#        if not names:
+#            return          # not after a name the relay was given: not ours to explain
+#        board = self.strays.setdefault((src, dport), collections.Counter())
+#        board.update(names)
+#        top = max(board.values())
+#        likely = sorted(n for n, c in board.items() if c == top)
+#        if self.said.get((src, dport)) == likely:
+#            return
+#        self.said[(src, dport)] = likely
+#        stamp = time.strftime("%H:%M:%S", time.localtime(now))
+#        who = "" if self.targets and len(self.targets) == 1 else \
+#            "%-14s " % self.who.get(src, src)[:14]
+#        self.out("%s  %sport %d on the relay: nothing takes it - probably %s"
+#                 % (stamp, who, dport, ", ".join(likely)))
+#
+#    def stranded(self):
+#        """{name: {port: how many customers' connections}} for the likely causes."""
+#        found = {}
+#        for (client, port), board in self.strays.items():
+#            top = max(board.values())
+#            for name, count in board.items():
+#                if count == top:
+#                    found.setdefault(name, {}).setdefault(port, set()).add(client)
+#        return {n: {p: len(c) for p, c in ports.items()} for n, ports in found.items()}
 #
 #    def verdict(self, rcode, addrs):
 #        if rcode == 3:
@@ -35672,6 +35797,8 @@ exit 0
 #        self.report(client or "u" + key, name, verdict, via=kind.upper())
 #
 #    def report(self, client, name, verdict, via=""):
+#        if verdict == "via relay":
+#            self.recent[client].append((self.clock(), name))
 #        if self.as_json:
 #            # Every answer, not only the changes: the one keeping the report
 #            # counts them, and a name asked again is news to it.
@@ -35697,12 +35824,22 @@ exit 0
 #        names are 443, and one that answers an Iranian address with 403 has to
 #        go through the relay instead; the game then stops at "Checking for
 #        update". Any such name that went direct is listed, for `smartdns add`."""
+#        lines = []
+#        stuck = self.stranded()
+#        if stuck:
+#            lines += ["", "Games that were sent to the relay for a name, then tried a port it does not "
+#                          "carry (it carries 80 and 443):",
+#                      "these names cannot go through the relay. The names are a guess from timing - "
+#                      "try one at a time:"]
+#            for name in sorted(stuck):
+#                ports = ", ".join("%d" % p for p in sorted(stuck[name]))
+#                lines.append("  smartdns bypass %-44s # port %s" % (name, ports))
 #        web = sorted({name for (_, name, _), kind in self.shown.items()
 #                      if kind == "direct" and name.endswith(".demonware.net")
 #                      and not DEMONWARE_DIRECT.search(name)})
 #        if not web:
-#            return []
-#        return (["", "Call of Duty: these Demonware names went direct. The lobby and STUN names "
+#            return lines
+#        return (lines + ["", "Call of Duty: these Demonware names went direct. The lobby and STUN names "
 #                 "have to; a web name",
 #                 "that answers an Iranian address with 403 has to go through the relay. If the "
 #                 "game stops at",
@@ -35735,6 +35872,17 @@ exit 0
 #    except OSError:
 #        pass
 #    return None
+#
+#
+#def listening_ports():
+#    """The TCP ports something on this machine is listening on."""
+#    r = run("ss", "-ltnH")
+#    found = set()
+#    for line in (r.stdout if r and r.returncode == 0 else "").splitlines():
+#        parts = line.split()
+#        if len(parts) >= 4 and parts[3].rsplit(":", 1)[-1].isdigit():
+#            found.add(int(parts[3].rsplit(":", 1)[-1]))
+#    return found
 #
 #
 #def local_addresses():
@@ -35836,10 +35984,14 @@ exit 0
 #                  "sudo smartdns-acl list" % argv[0], file=sys.stderr)
 #            return 1
 #
+#    syn = None
 #    try:
 #        sock = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM,
 #                             socket.htons(ETH_P_ALL))
 #        attach_filter(sock)
+#        if not as_json:
+#            syn = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM, socket.htons(ETH_P_ALL))
+#            attach_filter(syn, BPF_SYN)
 #    except (OSError, AttributeError) as e:
 #        print("cannot watch the network here: %s" % e, file=sys.stderr)
 #        return 1
@@ -35864,17 +36016,23 @@ exit 0
 #        raise KeyboardInterrupt
 #    signal.signal(signal.SIGTERM, stop)
 #
-#    w = Watcher(local_addresses(), who, targets, as_json=as_json)
+#    w = Watcher(local_addresses(), who, targets, as_json=as_json,
+#                listening=listening_ports() if syn else ())
 #    # The encrypted questions: not for --json, whose DoH and DoT part the
 #    # DoH server keeps for the report itself.
 #    feed = None if as_json else EncryptedFeed()
-#    sock.settimeout(0.5)
+#    sock.setblocking(False)
+#    if syn:
+#        syn.setblocking(False)
 #    try:
 #        while True:
-#            try:
-#                w.feed(sock.recv(65535))
-#            except socket.timeout:
-#                pass
+#            ready, _, _ = select.select([s for s in (sock, syn) if s], [], [], 0.5)
+#            for s in ready:
+#                try:
+#                    for _ in range(256):        # whatever is waiting, then back to the clock
+#                        w.feed(s.recv(65535))
+#                except BlockingIOError:
+#                    pass
 #            w.tick()
 #            if feed:
 #                for event in feed.read():
@@ -41709,13 +41867,26 @@ exit 0
 #          ]
 #        },
 #        {
+#          "key": "rockstar",
+#          "label": "Rockstar (ورود GTA Online)",
+#          "domains": [
+#            "cloud.rockstargames.com",
+#            "prod-locator-cloud.rockstargames.com",
+#            "ros.rockstargames.com"
+#          ],
+#          "opt_in": true,
+#          "locked": true,
+#          "note": "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود"
+#        },
+#        {
 #          "key": "playstation",
 #          "label": "PlayStation — STUN و API",
 #          "opt_in": true,
-#          "note": "روشن کردنش تشخیص NAT کنسول را خراب می‌کند",
+#          "note": "روشن کردنش تشخیص NAT کنسول را خراب می‌کند — سرور STUN کنسول (us.np.stun.playstation.net) مستقیم می‌ماند چون رله جای سونی جواب نمی‌دهد و PS5 «NAT type: Failed» می‌گیرد",
 #          "domains": [
+#            "np.dl.playstation.net",
 #            "np.playstation.net",
-#            "np.dl.playstation.net"
+#            "stun.playstation.net"
 #          ]
 #        },
 #        {
@@ -42929,7 +43100,7 @@ exit 0
 #        "coop/gaijin",
 #        "steam/main"
 #      ],
-#      "note": "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید"
+#      "note": "اگر لود می‌شود و می‌ایستد، وقت لود sudo smartdns-watch را روی رله اجرا کنید: نام‌هایی که بازی را به پورتی می‌برند که رله ندارد (مثلاً ۲۰۴۳۳ یا ۸۰۹۰) در پایان با دستور smartdns bypass فهرست می‌شوند. اگر ورود رد می‌شود و چنین نامی نیست، ببینید کدام نام Gaijin مستقیم رفته: ورود از آدرس خروجی و بازی از آدرس ایران دیده می‌شود"
 #    },
 #    {
 #      "key": "warthundermobile",
@@ -42939,7 +43110,7 @@ exit 0
 #      "needs": [
 #        "coop/gaijin"
 #      ],
-#      "note": "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید"
+#      "note": "اگر لود می‌شود و می‌ایستد، وقت لود sudo smartdns-watch را روی رله اجرا کنید: نام‌هایی که بازی را به پورتی می‌برند که رله ندارد (مثلاً ۲۰۴۳۳ یا ۸۰۹۰) در پایان با دستور smartdns bypass فهرست می‌شوند. اگر ورود رد می‌شود و چنین نامی نیست، ببینید کدام نام Gaijin مستقیم رفته: ورود از آدرس خروجی و بازی از آدرس ایران دیده می‌شود"
 #    },
 #    {
 #      "key": "enlisted",
@@ -44900,7 +45071,6 @@ exit 0
 # "روشن کردنش matchmaking فورتنایت را می‌شکند": "turning it on breaks Fortnite matchmaking",
 # "روشن کردنش این اتصال‌ها را قطع می‌کند — SNI در مسیر مخدوش می‌شود": "turning it on cuts these connections — SNI gets garbled on the way",
 # "روشن کردنش بازی‌های EA را از سرور جدا می‌کند — این‌ها روی ۴۴۳ نیستند": "turning it on cuts EA games off from their servers — these are not on 443",
-# "روشن کردنش تشخیص NAT کنسول را خراب می‌کند": "turning it on breaks the console’s NAT detection",
 # "روشن کردنش صدا را قطع می‌کند — این‌ها روی UDP کار می‌کنند و رله فقط ۸۰ و ۴۴۳ را می‌برد. اسم discord.media همان چیزی است که کلاینت با آن فاصلهٔ هر منطقهٔ صوتی را می‌سنجد؛ رد کردنش باعث می‌شود همیشه منطقهٔ اشتباه انتخاب شود": "turning it on cuts voice — these work over UDP and the relay only carries 80 and 443. discord.media is the name the client measures each voice region’s distance with; routing it makes it always pick the wrong region",
 # "روشن کردنش ورود استیم را کند می‌کند — کلاینت روی پورت‌های ۲۷۰۱۸ تا ۲۷۰۲۴ به این اسم وصل می‌شود و رله فقط ۸۰ و ۴۴۳ را می‌برد، پس منتظر می‌ماند و بعد به لیست آی‌پی‌ها برمی‌گردد. فروشگاه و انجمن استیم همچنان از سرور رد می‌شوند": "turning it on slows down Steam sign-in — the client connects to this name on ports 27018 to 27024 and the relay only carries 80 and 443, so it waits and then falls back to the IP list. The Steam store and community still go through the server",
 # "روشن کردنش چت و دوستان لیگ و والورانت را قطع می‌کند — این‌ها روی ۵۲۲۲ و ۵۲۲۳ و ۲۰۹۹ هستند و رله فقط ۸۰ و ۴۴۳ را می‌برد. اگر روزی این پورت‌ها روی رله باز شوند، این گروه می‌تواند روشن شود": "turning it on cuts League and Valorant chat and friends — these are on 5222, 5223 and 2099 and the relay only carries 80 and 443. If those ports are ever opened on the relay, this group can be turned on",
@@ -46171,7 +46341,6 @@ exit 0
 # "گزارش رویدادها": "Event log",
 # "هنوز آماری دریافت نشده": "No stats yet",
 # "Call of Duty — بررسی به‌روزرسانی": "Call of Duty — update check",
-# "اگر باز نمی‌شود، با smartdns-watch ببینید کدام نام Gaijin از رله رفته و روی ۴۴۳ نیست (مثلاً ۲۰۴۳۳ یا ۸۰۹۰)، و آن نام را با smartdns bypass مستقیم کنید": "If it will not open, use smartdns-watch to see which Gaijin name went through the relay and is not on 443 (for example 20443 or 8090), then make that name direct with smartdns bypass",
 # "این چهار نامِ Demonware روی ۴۴۳ هستند ولی به آی‌پی ایران ۴۰۳ می‌دهند؛ بدون آن‌ها کالاف روی «Checking for update» می‌ماند. لابی و STUN همچنان مستقیم می‌مانند": "These four Demonware names are on 443 but answer an Iranian address with 403; without them Call of Duty stays on \"Checking for update\". The lobby and STUN stay direct",
 # "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد": "Off by default: on most operators direct works better. \"Server is busy\" with the code restrict-area means the login (proximabeta.com on 8085/8086) saw an Iranian address; the relay carries only 80 and 443, so DNS cannot change that",
 # "ids باید فهرست عدد باشد": "ids must be a list of numbers",
@@ -46380,7 +46549,11 @@ exit 0
 # "همه‌چیز سالم است": "Everything is healthy",
 # "وضعیت سرورها فقط برای کلید خود مالک است": "The server status is only for the owner's own key",
 # "پرمصرف‌ترین سرویس‌ها:": "Heaviest services:",
-# "پرمصرف‌ها:": "Heaviest users:"
+# "پرمصرف‌ها:": "Heaviest users:",
+# "اگر لود می‌شود و می‌ایستد، وقت لود sudo smartdns-watch را روی رله اجرا کنید: نام‌هایی که بازی را به پورتی می‌برند که رله ندارد (مثلاً ۲۰۴۳۳ یا ۸۰۹۰) در پایان با دستور smartdns bypass فهرست می‌شوند. اگر ورود رد می‌شود و چنین نامی نیست، ببینید کدام نام Gaijin مستقیم رفته: ورود از آدرس خروجی و بازی از آدرس ایران دیده می‌شود": "If it loads and stops, run sudo smartdns-watch on the relay while it loads: names that send the game to a port the relay does not carry (for example 20443 or 8090) are listed at the end with the smartdns bypass command. If the login is refused and there is no such name, look at which Gaijin names went direct: the login is seen from the exit's address and the game from Iran's",
+# "Rockstar (ورود GTA Online)": "Rockstar (GTA Online login)",
+# "روشن کردنش تشخیص NAT کنسول را خراب می‌کند — سرور STUN کنسول (us.np.stun.playstation.net) مستقیم می‌ماند چون رله جای سونی جواب نمی‌دهد و PS5 «NAT type: Failed» می‌گیرد": "Turning it on breaks the console's NAT test: the console's STUN server (us.np.stun.playstation.net) stays direct because the relay does not answer in Sony's place, and the PS5 would report \"NAT type: Failed\"",
+# "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود": "Turning it on makes GTA Online's login fail with error 0x50060190: Rockstar sees the exit server's address at login while the console plays from an Iranian one. rockstargames.com itself (the site, Social Club and updates) still goes through the server"
 #}
 #__END_I18N_EN__
 

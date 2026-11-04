@@ -62,6 +62,10 @@ admin.SERVICES_FILE = os.path.join(ROOT, "domains", "services.json")
 admin.CATALOGUE[:] = admin.load_catalogue()
 panel.CATALOGUE[:] = admin.CATALOGUE
 admin.bot_api_url = lambda: "https://panel.example.com:8445/api/v1/"
+# The panel's own typeface, Vazirmatn, which an install puts in /usr/local/share. Without it
+# the page quietly falls back to whatever this machine has, and every Persian word is
+# photographed in a font nobody uses.
+admin.FONT_FILE = os.path.join(ROOT, "common", "fonts", "Vazirmatn[wght].woff2")
 
 
 class Fine:
@@ -272,6 +276,11 @@ def shoot(wanted):
             page.goto("http://127.0.0.1:%d/%s/%s" % (PORT, SECRET, path))
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(1300)             # the cards' arrival animations
+            loaded = page.evaluate("document.fonts.ready.then(() => [...document.fonts].some("
+                                   "f => f.family === 'Vazirmatn' && f.status === 'loaded'))")
+            if not loaded:
+                # The photo would be in a fallback typeface: not worth taking.
+                sys.exit("%s: the panel's own font (Vazirmatn) did not load" % name)
             wide = page.evaluate("document.documentElement.scrollWidth")
             if wide > width + 2:
                 # A page wider than the window is a layout bug, not a photo to take.

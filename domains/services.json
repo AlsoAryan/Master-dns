@@ -2097,13 +2097,26 @@
           ]
         },
         {
+          "key": "rockstar",
+          "label": "Rockstar (ورود GTA Online)",
+          "domains": [
+            "cloud.rockstargames.com",
+            "prod-locator-cloud.rockstargames.com",
+            "ros.rockstargames.com"
+          ],
+          "opt_in": true,
+          "locked": true,
+          "note": "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود"
+        },
+        {
           "key": "playstation",
           "label": "PlayStation — STUN و API",
           "opt_in": true,
-          "note": "روشن کردنش تشخیص NAT کنسول را خراب می‌کند",
+          "note": "روشن کردنش تشخیص NAT کنسول را خراب می‌کند — سرور STUN کنسول (us.np.stun.playstation.net) مستقیم می‌ماند چون رله جای سونی جواب نمی‌دهد و PS5 «NAT type: Failed» می‌گیرد",
           "domains": [
+            "np.dl.playstation.net",
             "np.playstation.net",
-            "np.dl.playstation.net"
+            "stun.playstation.net"
           ]
         },
         {

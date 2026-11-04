@@ -2,8 +2,8 @@
 
 <img src="docs/banner.svg" alt="Master DNS" width="100%">
 
-**Smart DNS for Iran you can run — and sell — in an afternoon.**
-One script. Two servers. One control panel.
+**Smart DNS for Iran that you can run, and sell, in an afternoon.**
+One script, two servers, one control panel.
 
 *[فارسی](README.fa.md)*
 
@@ -11,91 +11,32 @@ One script. Two servers. One control panel.
 
 ---
 
-## The idea in 30 seconds
+## What it is
 
-People in Iran point their phone, PC or console at **your Iran server** as their DNS.
-Blocked sites are answered with that server's address; the connection then travels,
-untouched, to **your server abroad**, which reaches the service. Everything else
-loads the normal way.
+People in Iran set **your Iran server** as the DNS of their phone, PC or console. For blocked
+sites it answers with its own address, and the connection goes on, untouched, to **your server
+abroad**, which reaches the service. Everything else loads the normal way. Nothing is decrypted
+on the way: the Iran server reads only which site is asked for.
 
-<p align="center"><img src="docs/architecture.svg" alt="Customer → Iran server → secure tunnel → abroad server → service" width="100%"></p>
+<p align="center"><img src="docs/architecture.svg" alt="Customer, Iran server, secure tunnel, abroad server, service" width="100%"></p>
 
-Nothing is decrypted on the way: the Iran server only reads which site is being asked
-for and passes the connection on. And it is a whole service, not just a proxy — customers,
-quotas, speed limits, a customer page, a control panel, selling, a Telegram bot and an API.
+It is a whole service, not just a proxy: customers with quotas and speed limits, plans and
+receipts, a customer page, a Telegram bot and an API, all run from one panel.
 
-## Who it is for
+<p align="center"><img src="docs/screenshots/home.png" alt="The dashboard" width="49%"> <img src="docs/screenshots/nodes.png" alt="The server map" width="49%"></p>
 
-- **You run a Smart DNS service** and want customers, quotas, prices and receipts handled for you,
-  with a Telegram bot that sells while you sleep.
-- **You sell to gamers**: PlayStation, Xbox, Steam, Call of Duty, THE FINALS, Valorant... each
-  service is a ticked box in a template; a new game is one tick, not a new config.
-- **You resell**: give a reseller their own plans, templates and bot, and keep the panel in charge.
-- **You just want your own connection to work** (family, friends, a console): the *One server only*
-  mode needs a single machine abroad.
-
-## A customer's day
-
-1. They pick a plan in their panel (or in the bot), pay, and send the receipt.
-2. You press *approve*. Their address is allowed, their quota and speed are set, their template
-   decides which services go out through you. Nothing else to configure.
-3. They set their console's DNS to your Iran server and play. When the quota is at 80% and 95% they are told;
-   when it ends they renew with one tap.
-
-## Why this one
+<details>
+<summary><b>More of the panel</b> (the real thing, with invented customers)</summary>
 
 | | |
 |---|---|
-| **Sales built in** | Plans, receipts, discount codes, a wallet, a free trial, extra devices, invitation links, resellers. |
-| **Nothing is decrypted** | The Iran server reads the name being asked for and passes the connection on, untouched. |
-| **Fails soft** | If the tunnel, an upstream or an exit is down, traffic falls back instead of cutting customers off. |
-| **One panel, many servers** | Several Iran servers and several exits, each with a name, health bars and a live line between them. |
-| **Plain to run** | One script, plain-language questions, one panel for everything; encrypted backups and one-button upgrades. |
-| **Fixes at the network's level** | Names a network chokes can leave from the Iran server itself, to addresses checked from Iran, every few minutes. |
+| <img src="docs/screenshots/plans.png" alt="Plans"><br><sub>Plans, edited in a dialog</sub> | <img src="docs/screenshots/templates.png" alt="Templates"><br><sub>Templates: what each routes</sub> |
+| <img src="docs/screenshots/settings.png" alt="Settings"><br><sub>Tunnel, and names carried from Iran</sub> | <img src="docs/screenshots/user-usage.png" alt="Usage"><br><sub>A customer's usage and forecast</sub> |
+| <img src="docs/screenshots/api.png" alt="API"><br><sub>API keys and webhooks</sub> | <img src="docs/screenshots/home-dark.png" alt="Dark theme"><br><sub>The dark theme</sub> |
 
-## A look inside
+`python3 tools/make-screenshots.py` takes them again after the interface changes.
 
-Every picture below is the real panel (this repository's own code and stylesheet), photographed with invented customers and documentation-range addresses. `python3 tools/make-screenshots.py` takes them again.
-
-<p align="center"><img src="docs/screenshots/home.png" alt="The dashboard" width="49%"> <img src="docs/screenshots/home-dark.png" alt="The dashboard, dark theme" width="49%"></p>
-<p align="center"><sub><b>Dashboard</b>, in light and dark: who is online, what is flowing, the day's traffic and the busy hours.</sub></p>
-
-| | |
-|---|---|
-| <img src="docs/screenshots/plans.png" alt="Plans"><br><sub><b>Plans</b> as cards; a dialog edits one.</sub> | <img src="docs/screenshots/templates.png" alt="Templates"><br><sub><b>Templates</b>: what each routes, copied in one step.</sub> |
-| <img src="docs/screenshots/nodes.png" alt="Servers"><br><sub><b>Servers</b>: named cards, health bars, a live line between each relay and its exit.</sub> | <img src="docs/screenshots/settings.png" alt="Settings"><br><sub><b>Settings</b>: change the tunnel on both servers; names carried from Iran.</sub> |
-| <img src="docs/screenshots/user-usage.png" alt="A customer's usage"><br><sub><b>A customer's usage</b>: quota forecast, speed, daily and hourly charts.</sub> | <img src="docs/screenshots/api.png" alt="API"><br><sub><b>API</b>: keys as cards, webhooks, commands to copy.</sub> |
-| <img src="docs/screenshots/users.png" alt="Customers"><br><sub><b>Customers</b>: search, sort, act from a menu.</sub> | <img src="docs/screenshots/receipts.png" alt="Receipts"><br><sub><b>Receipts</b>: approve what a customer paid.</sub> |
-| <img src="docs/screenshots/template-editor.png" alt="Template editor"><br><sub><b>Template editor</b>: on/off filter, live count, a save bar that stays in view.</sub> | |
-
-## What's new in 0.1.1
-
-| | |
-|---|---|
-| 📡 **Two new API reports** | `GET /admin/traffic` answers *how much, when, who and for what*: the total set against the stretch before it, each day, the busiest hour of the day (Tehran time), the heaviest customers and services - for a reseller's key, only their own customers. `GET /admin/status` answers *is it up*: every server as last heard from, its load, its tunnel and the alerts still open - for a monitoring bot. |
-| 📈 **Usage, a step further** | The home page shows which **hours of the day** are busy and **what the traffic is for**; a customer's usage page shows a **quota forecast** (at this pace, does it last until the period ends?); reports across all customers read an index instead of scanning every row. |
-| 🔒 **Services are shown only in aggregate** | Which services one customer used stays theirs: the totals appear only when at least five customers are in them. |
-| 🧰 **The API page, rebuilt** | Keys as cards with last use and webhook, a dialog for a new key, the address and a test command to copy, and recipes for the commands people use most. |
-| 🖼️ **Screenshots of the panel** | The README has a gallery of the real panel, and a script that photographs it again after the interface changes. |
-| 🐞 **Fixed** | The *Edit* button on a template card let its hover sheen escape its box, which made the page scroll sideways. |
-
-### Earlier, in 0.1.0
-
-| | |
-|---|---|
-| 🛰️ **Names that leave from the Iran server** | *Settings → "Names that go out of the Iran relay itself"*. Some operators (Irancell, for Akamai) choke part of a CDN's addresses, and PlayStation or Call of Duty logins fail with errors like DETRICK or PUGET-LAKES. A name on this list is carried by the relay itself, to addresses that answered a real TLS handshake from Iran a minute ago, re-checked every ninety seconds; when none is healthy the name goes through the exit as before. One tap adds the four PlayStation / Call of Duty names. |
-| 🎮 **THE FINALS login fixed** | `embark.net` and `es-dis.net` are in its group, so the console's login (TFLA0020) no longer goes around the relay. |
-| 🧾 **Plans, redone from scratch** | Every plan is a card - price, days, quota, speed, devices, template, customers - and a clean dialog edits it, grouped as *what it is / what it gives / what it costs*. |
-| 🧩 **Templates, redone from scratch** | Cards with a meter of how much of the catalogue each routes and the services it carries; **copy a template** in one step; an editor with an on/off filter, a live count and a save bar that stays in view. |
-
-### Earlier, in 0.0.9
-
-| | |
-|---|---|
-| 🔀 **Change the tunnel from the panel** | *Settings → "How the Iran server connects to the exit server"*: pick another connection style and both servers switch within a minute. |
-| 🗺️ **A map of your servers** | The *Nodes* page shows every server as a card with its own **name**, health bars and a live line to the server it goes through. |
-| 🧰 **A friendlier installer** | Plain words, one suggested answer for every question, a secure tunnel in one keypress. |
-| 🛡️ **Safer panel** | A content-security policy, a check that refuses requests coming from other websites, stricter browser headers. |
+</details>
 
 ## Quick start
 
@@ -104,140 +45,61 @@ curl -fsSLO https://raw.githubusercontent.com/AlsoAryan/Master-dns/main/master-d
 sudo bash master-dns.sh
 ```
 
-1. **On the server abroad**: run it and choose *Abroad server*. When it finishes it shows
-   the control-panel link, your username and password, and a **connection code**.
-2. **On the server in Iran**: run it, choose *Iran server*, and paste the connection code.
-3. Give your customers the Iran server's IP address as their DNS. Manage everything from
-   the control panel.
+1. **On the server abroad**, choose *Abroad server*. It ends by printing the control-panel link, your
+   username and password, and a **connection code**.
+2. **On the server in Iran**, choose *Iran server* and paste the connection code.
+3. Give your customers the Iran server's IP address as their DNS. Manage everything from the panel.
 
-It downloads first instead of piping, on purpose: the configs live inside the script and it
-asks questions. It refuses to run if the file is cut short.
+It downloads first, not piped, on purpose: it asks questions, and it refuses to run if the file is cut short.
+
+**Ports.** The control panel is on **9443** by default; if a firewall is in the way, open it. If you choose another
+port, it must not be one already in use: 22 (ssh), 53 (DNS), 80 and 443 (the proxy), 8443 (the sync API the
+Iran servers connect to), 8445 (the bot API), 8446 (the abroad server's own route to Google over IPv6), and on an
+Iran server 3478 (STUN). The installer refuses those and says why.
 
 | You choose | Where | What it does |
 |---|---|---|
-| **Abroad server** (`exit`) | a server abroad | the panel, the database, the way out. Install it first; it prints a connection code |
-| **Iran server** (`relay`) | a server in Iran | answers DNS, serves the customer page. Paste the code when asked |
-| **One server only** (`single`) | one server abroad | all of the above on one machine, `ROLE=single`. Good for trying it out |
-| **Extra abroad server** (`node`) | another server abroad | one more way out, added from the panel's *Nodes* page |
+| **Abroad server** | a server abroad | The panel, the database, the way out. Install it first. |
+| **Iran server** | a server in Iran | Answers DNS and serves the customer page. |
+| **One server only** | one server abroad | All of it on one machine; for trying it out. |
+| **Extra abroad server** | another server abroad | One more way out, added from the *Nodes* page. |
 
-The installer numbers and times each step and ends with a summary. `sudo bash master-dns.sh --check` first looks at the machine (system, systemd, memory, disk,
-address, ports 53, 80 and 443) and changes nothing; an install ends with a timeline of where
-the time went. It is safe
-to re-run, backs up what it replaces, and `sudo bash master-dns.sh --uninstall`
-puts the machine back, asking before it removes the database or packages.
-`sudo smartdns-menu` lists every command afterwards.
+## What it does
 
-Open in the firewall: **tcp** 22, 53, 80, 443, 853, 1119, 4070, 8443 and the
-admin port (9443 by default, and never 8446, which the exit keeps for its own
-route to Google over IPv6); **udp** 53, 3478.
+- **Run it.** About 800 blocked domains and 150 games and platforms, kept in templates you tick.
+  Several Iran servers and exits on one panel, each named, with health and a live map. Change the
+  tunnel between them from the panel. Encrypted backups, alerts, one-button upgrades.
+- **Sell it.** Plans, receipts, discount codes, a free trial, a wallet, invitation links, extra
+  devices, and resellers with their own plans and bot. Customers get a panel in Persian or English.
+- **Watch it.** Per-customer traffic by the hour and day, quota forecasts, busy hours of the day,
+  and two API reports for your own bot: traffic, and whether every server is up.
+- **Keep games working.** Names a network chokes are carried from Iran itself; names a game needs
+  direct are kept direct. See [when a game will not start](docs/troubleshooting.md).
 
-## What is in it
+## Latest: 0.1.2
 
-- **Routing**: about 800 blocked domains, 150 games and platforms, AAAA
-  filtering, STUN/TURN so console NAT checks pass, and names an operator chokes
-  carried from Iran itself.
-- **Customers**: an allowlist on their address with kernel byte counters,
-  monthly or one-off quotas with warnings at 80% and 95%, per-customer speed
-  caps, service templates down to single domains, copied in one step.
-- **Selling**: plans shown as cards, receipts, discount codes, a free trial, a wallet,
-  invitation links, extra devices, and resellers with their own plans and bot.
-- **Panels**: a dashboard-style operator panel and a customer panel in Persian or
-  English, light and dark, with a blue, pink, green, red, purple or orange accent. The admin panel opens a
-  jump-to-page palette on Ctrl/Cmd+K or `/`; the customer panel is a wide dashboard on a
-  computer and a single column on a phone. The public
-  forms are guarded against bots and floods: a hidden trap field, a signed
-  timer and a per-address limit, none of which a person notices.
-- **Encrypted DNS**: DoH and DoT per server, an address per customer, an iPhone
-  profile, a Windows 11 command. WireGuard for where DNS alone is not enough.
-- **Scale**: more exits and single servers on one panel, a standby that takes
-  over, monitoring alerts, encrypted backups, one-button upgrades.
-- **Telegram bot** for customers and operators, set up from the admin panel.
+- **PS5 NAT test** no longer says "Failed": the console's STUN server goes direct.
+- **GTA Online** gets past login (error 0x50060190): Rockstar's sign-in names go direct.
+- **`smartdns-watch`** now lists the names that sent a game to a port the relay does not carry, each with its `smartdns bypass` command: the way to find what a game like War Thunder Mobile needs.
+- **Screenshots** are taken in the panel's own typeface, and the README is shorter.
 
-## API
+Earlier: 0.1.1 added the traffic and status API reports, busy-hours and quota-forecast views and
+the rebuilt API page; 0.1.0 added names carried from the Iran server, and plans and templates as cards.
 
-Two read-only reports for the operator's own bot, from an admin key:
+## More
+
+- [docs/troubleshooting.md](docs/troubleshooting.md): a game loads and stops, or its login fails. What each reported case was, and what is already done.
+- [docs/commands.md](docs/commands.md): every command on the servers, and the kernel settings the install makes.
+- [docs/bot-api.md](docs/bot-api.md): the API for a sales or monitoring bot (Persian).
 
 ```sh
 curl -s -H "Authorization: Bearer $KEY" "https://PANEL/api/v1/admin/traffic?days=7"   # how much, when, who, for what
 curl -s -H "Authorization: Bearer $KEY" https://PANEL/api/v1/admin/status                # is every server up?
 ```
 
-Both carry a ready-to-send `text` in Persian as well as the numbers. Which services were
-used is only given once at least five customers are in the total.
-
-A sales bot of your own can plug into the panel: [docs/bot-api.md](docs/bot-api.md)
-(Persian). To move one customer's days or traffic by hand, from an admin key:
-
-```sh
-curl -X POST https://PANEL/api/v1/admin/users/42/adjust \
-  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"days": 7, "gb": -2}'
-```
-
-`days` and `gb` (or `bytes`) take a plus or a minus, together or alone. An
-unlimited account is never made limited by it, and a quota is never taken to
-zero, because zero means unlimited.
-
-Two more for a sales bot: `POST /api/v1/admin/users/adjust` does the same for many
-accounts at once (`{"all": "active", "days": 2}` after an outage; up to 500 per call,
-the ones that cannot take it are named), and `GET /api/v1/admin/expiring?days=3&usage=90`
-lists who is about to run out of days or traffic, soonest first, which is what a renewal
-reminder is made from. `GET /api/v1/admin/users` now pages (`limit`, `offset`) and narrows
-by `status`.
-
-## Commands
-
-On a server, `sudo smartdns-menu` lists everything; the ones used most:
-
-```sh
-smartdns status                  # what this machine is doing
-smartdns list                    # every domain being routed
-smartdns find spotify            # which ones match
-smartdns add example.com         # route one more
-smartdns del example.com         # stop routing it
-smartdns test example.com        # what this relay answers for it
-smartdns-rules show test         # the full lists for one template
-smartdns-rules check gemini.google.com
-smartdns-acl list                # everyone, with usage
-smartdns-acl usage 5.188.44.19   # one address
-smartdns-acl add 5.188.44.19 ali # register one by hand
-smartdns-acl del 5.188.44.19
-smartdns-acl reset <ip>|--all    # zero the counters
-smartdns-acl enforce status      # open, or only registered addresses?
-smartdns-acl enforce on          # close it
-smartdns-acl enforce off         # open it to everyone
-smartdns-acl save                # persist to disk now
-smartdns-shape list              # what is in force
-smartdns-shape off               # remove all shaping
-smartdns-cert panel.example.com  # get or renew a certificate for that name
-smartdns-access username ali     # change the owner's username
-smartdns-access port 9443        # move the panel, if a firewall is in the way
-smartdns-access path [new]       # change the secret path, or roll a fresh one
-smartdns-access password [new]   # set a new one; the old is not recoverable
-smartdns-access rotate           # new path and new password at once
-```
-
-## When a game will not start
-
-A name that is not on port 443 cannot go through the relay, which carries only 80 and
-443. Watch what the game asks for and take such names off the relay.
-
-Run `sudo smartdns-watch` for the customer to see which names went via the relay and which
-went direct, then make a name direct with `smartdns bypass` (the menu has both).
-
-`smartdns-watch` ends a Call of Duty session by listing any Demonware web names that went
-direct, for `smartdns add`. Call of Duty's update check needs four Demonware HTTPS names routed; they are in the
-`cod-https` group, which the game asks for. A template made before that group existed gets
-it once, at the panel's first start after the upgrade, if it routes any other Blizzard /
-Activision group; unticking it afterwards sticks. PUBG Mobile's "Server is busy" with the code
-`restrict-area` comes from its login (proximabeta.com on 8085/8086) seeing an Iranian
-address, which DNS alone cannot change. War Thunder talks on ports such as 20443 and
-8090; find the names with `smartdns-watch` and make them direct.
-
 ## Build and test
 
-`master-dns.sh` is generated. The logic is in `tools/installer-logic.sh`, the
-configs in `templates/`, `common/` and `domains/`.
+`master-dns.sh` is generated: the logic is in `tools/installer-logic.sh`, the configs in `templates/`, `common/` and `domains/`.
 
 ```sh
 python3 tools/build-installer.py   # rewrites master-dns.sh
@@ -245,20 +107,12 @@ bash -n master-dns.sh              # it stays valid bash
 for t in tools/test-*.py; do python3 "$t"; done
 ```
 
-## Kernel settings
-
-The install writes `/etc/sysctl.d/99-smartdns-tuning.conf` (and, on request, BBR). Besides large
-buffers for a long path, it caps unsent data per socket so a download cannot queue a game's login
-behind it, and raises the connection-tracking table, whose overflow drops packets without a word.
-
 ## Known limits
 
 - Only download is shaped, not upload.
-- A relay without a certificate has no customer panel; it will not serve a
-  password page over plain HTTP. Give it a domain.
+- A relay without a certificate has no customer panel; it will not serve a password page over plain HTTP. Give it a domain.
 - Sign-up alone gives no traffic; the account needs a plan.
-- Traffic costs double: a customer's gigabyte is about two on the relay and two
-  on the exit.
+- Traffic costs double: a customer's gigabyte is about two on the relay and two on the exit.
 
 ## Credits
 

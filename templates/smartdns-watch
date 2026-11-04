@@ -21,12 +21,20 @@ own block, which no routing gets past.
 It reads this relay's DNS answers off the wire as they leave - the very answer
 the device got, nothing asked again - and keeps nothing: what it prints is all
 there is. Ctrl-C stops it.
+
+It also notices a game that is sent to the relay for a name and then knocks on a
+port the relay does not carry - the relay takes 80 and 443 and nothing else of a
+customer's. Nothing answers, the game waits, and the operator sees a loading screen
+that never ends. The name asked for just before is the likely cause, and is listed at
+the end with the command that makes it direct. It is a guess from timing, so it is
+a place to start, not a verdict.
 """
 import collections
 import ipaddress
 import json
 import re
 import os
+import select
 import signal
 import socket
 import struct
@@ -78,12 +86,41 @@ BPF = [
 ]
 
 
-def attach_filter(sock):
+# The second program: IPv4, TCP, not a fragment, SYN set and ACK clear - a
+# connection being asked for, not one already going - to any port but 80 and 443.
+# What the relay carries never reaches this process, and neither does the rest of
+# a download; what is left is the connections nothing on the relay will take.
+BPF_SYN = [
+    (0x28, 0, 0, 0xFFFFF000),   # ldh proto         the packet's ethertype
+    (0x15, 0, 12, ETH_P_IP),    # jeq #0x0800       IPv4, or drop
+    (0x30, 0, 0, 9),            # ldb [9]           protocol
+    (0x15, 0, 10, 6),           # jeq #6            TCP, or drop
+    (0x28, 0, 0, 6),            # ldh [6]           flags + fragment offset
+    (0x45, 8, 0, 0x1FFF),       # jset #0x1fff      a later fragment: drop
+    (0xB1, 0, 0, 0),            # ldxb 4*([0]&0xf)  header length
+    (0x50, 0, 0, 13),           # ldb [x+13]        TCP flags
+    (0x54, 0, 0, 0x12),         # and #0x12         SYN and ACK
+    (0x15, 0, 4, 0x02),         # jeq #0x02         SYN alone, or drop
+    (0x48, 0, 0, 2),            # ldh [x+2]         destination port
+    (0x15, 2, 0, 80),           # jeq #80           drop
+    (0x15, 1, 0, 443),          # jeq #443          drop
+    (0x06, 0, 0, 0x40000),      # ret               accept
+    (0x06, 0, 0, 0),            # ret #0            drop
+]
+# Ports a relay does answer on for a customer, beside 80 and 443: ssh, DNS over
+# TCP, DNS over TLS, and STUN/TURN. A connection to one of them is not stranded.
+STRAND_IGNORE = {22, 53, 853, 3478, 5349}
+# After a SYN to the relay, the names it is blamed on are the ones sent to the relay
+# just before it: this many of the latest, none older than this many seconds.
+STRAND_CREDIT, STRAND_WINDOW = 3, 60
+
+
+def attach_filter(sock, program=BPF):
     import ctypes
-    prog = b"".join(struct.pack("HBBI", *ins) for ins in BPF)
+    prog = b"".join(struct.pack("HBBI", *ins) for ins in program)
     buf = ctypes.create_string_buffer(prog, len(prog))
     sock.setsockopt(socket.SOL_SOCKET, SO_ATTACH_FILTER,
-                    struct.pack("HP", len(BPF), ctypes.addressof(buf)))
+                    struct.pack("HP", len(program), ctypes.addressof(buf)))
 
 
 # ------------------------------------------------------------------ packets
@@ -97,6 +134,18 @@ def parse_ip_udp(pkt):
     sport, dport, ulen = struct.unpack("!HHH", pkt[ihl:ihl + 6])
     return (socket.inet_ntoa(pkt[12:16]), socket.inet_ntoa(pkt[16:20]),
             sport, dport, pkt[ihl + 8:ihl + max(ulen, 8)])
+
+
+def parse_ip_tcp(pkt):
+    """(src, dst, sport, dport, flags) of an IPv4 TCP packet, else None."""
+    if len(pkt) < 40 or pkt[0] >> 4 != 4 or pkt[9] != 6:
+        return None
+    ihl = (pkt[0] & 0x0F) * 4
+    if ihl < 20 or len(pkt) < ihl + 14:
+        return None
+    sport, dport = struct.unpack("!HH", pkt[ihl:ihl + 4])
+    return (socket.inet_ntoa(pkt[12:16]), socket.inet_ntoa(pkt[16:20]),
+            sport, dport, pkt[ihl + 13])
 
 
 def read_name(msg, off):
@@ -159,8 +208,14 @@ class Watcher:
     """
 
     def __init__(self, relay_ips, who, targets=None, out=None, clock=time.time,
-                 as_json=False):
+                 as_json=False, listening=()):
         self.as_json = as_json
+        self.listening = set(listening)
+        # Per customer, the names just sent to the relay, and per (customer, port) how
+        # often each was the one asked before a connection nothing took.
+        self.recent = collections.defaultdict(lambda: collections.deque(maxlen=16))
+        self.strays = {}
+        self.said = {}
         self.local = set(relay_ips)
         self.who = who
         self.targets = targets
@@ -171,6 +226,8 @@ class Watcher:
         self.counts = collections.Counter()
 
     def feed(self, pkt):
+        if len(pkt) > 9 and pkt[9] == 6:
+            return self.feed_syn(pkt)
         p = parse_ip_udp(pkt)
         if not p:
             return
@@ -194,6 +251,47 @@ class Watcher:
         elif is_answer and not asking:
             self.pending.pop((client, port, qid), None)
             self.report(client, name, self.verdict(rcode, addrs))
+
+    def feed_syn(self, pkt):
+        """A customer asking the relay for a connection on a port it does not
+        carry. Said once for each guess, and again only if the guess changes."""
+        p = parse_ip_tcp(pkt)
+        if not p or self.as_json:
+            return
+        src, dst, _, dport, flags = p
+        if dst not in self.local or src in self.local or flags & 0x12 != 0x02:
+            return
+        if dport in STRAND_IGNORE or dport in self.listening or dport in (80, 443):
+            return
+        if self.targets is not None and src not in self.targets:
+            return
+        now = self.clock()
+        names = [n for t, n in reversed(self.recent[src]) if now - t <= STRAND_WINDOW]
+        names = list(dict.fromkeys(names))[:STRAND_CREDIT]
+        if not names:
+            return          # not after a name the relay was given: not ours to explain
+        board = self.strays.setdefault((src, dport), collections.Counter())
+        board.update(names)
+        top = max(board.values())
+        likely = sorted(n for n, c in board.items() if c == top)
+        if self.said.get((src, dport)) == likely:
+            return
+        self.said[(src, dport)] = likely
+        stamp = time.strftime("%H:%M:%S", time.localtime(now))
+        who = "" if self.targets and len(self.targets) == 1 else \
+            "%-14s " % self.who.get(src, src)[:14]
+        self.out("%s  %sport %d on the relay: nothing takes it - probably %s"
+                 % (stamp, who, dport, ", ".join(likely)))
+
+    def stranded(self):
+        """{name: {port: how many customers' connections}} for the likely causes."""
+        found = {}
+        for (client, port), board in self.strays.items():
+            top = max(board.values())
+            for name, count in board.items():
+                if count == top:
+                    found.setdefault(name, {}).setdefault(port, set()).add(client)
+        return {n: {p: len(c) for p, c in ports.items()} for n, ports in found.items()}
 
     def verdict(self, rcode, addrs):
         if rcode == 3:
@@ -232,6 +330,8 @@ class Watcher:
         self.report(client or "u" + key, name, verdict, via=kind.upper())
 
     def report(self, client, name, verdict, via=""):
+        if verdict == "via relay":
+            self.recent[client].append((self.clock(), name))
         if self.as_json:
             # Every answer, not only the changes: the one keeping the report
             # counts them, and a name asked again is news to it.
@@ -257,12 +357,22 @@ class Watcher:
         names are 443, and one that answers an Iranian address with 403 has to
         go through the relay instead; the game then stops at "Checking for
         update". Any such name that went direct is listed, for `smartdns add`."""
+        lines = []
+        stuck = self.stranded()
+        if stuck:
+            lines += ["", "Games that were sent to the relay for a name, then tried a port it does not "
+                          "carry (it carries 80 and 443):",
+                      "these names cannot go through the relay. The names are a guess from timing - "
+                      "try one at a time:"]
+            for name in sorted(stuck):
+                ports = ", ".join("%d" % p for p in sorted(stuck[name]))
+                lines.append("  smartdns bypass %-44s # port %s" % (name, ports))
         web = sorted({name for (_, name, _), kind in self.shown.items()
                       if kind == "direct" and name.endswith(".demonware.net")
                       and not DEMONWARE_DIRECT.search(name)})
         if not web:
-            return []
-        return (["", "Call of Duty: these Demonware names went direct. The lobby and STUN names "
+            return lines
+        return (lines + ["", "Call of Duty: these Demonware names went direct. The lobby and STUN names "
                  "have to; a web name",
                  "that answers an Iranian address with 403 has to go through the relay. If the "
                  "game stops at",
@@ -295,6 +405,17 @@ def self_ip():
     except OSError:
         pass
     return None
+
+
+def listening_ports():
+    """The TCP ports something on this machine is listening on."""
+    r = run("ss", "-ltnH")
+    found = set()
+    for line in (r.stdout if r and r.returncode == 0 else "").splitlines():
+        parts = line.split()
+        if len(parts) >= 4 and parts[3].rsplit(":", 1)[-1].isdigit():
+            found.add(int(parts[3].rsplit(":", 1)[-1]))
+    return found
 
 
 def local_addresses():
@@ -396,10 +517,14 @@ def main(argv):
                   "sudo smartdns-acl list" % argv[0], file=sys.stderr)
             return 1
 
+    syn = None
     try:
         sock = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM,
                              socket.htons(ETH_P_ALL))
         attach_filter(sock)
+        if not as_json:
+            syn = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM, socket.htons(ETH_P_ALL))
+            attach_filter(syn, BPF_SYN)
     except (OSError, AttributeError) as e:
         print("cannot watch the network here: %s" % e, file=sys.stderr)
         return 1
@@ -424,17 +549,23 @@ def main(argv):
         raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, stop)
 
-    w = Watcher(local_addresses(), who, targets, as_json=as_json)
+    w = Watcher(local_addresses(), who, targets, as_json=as_json,
+                listening=listening_ports() if syn else ())
     # The encrypted questions: not for --json, whose DoH and DoT part the
     # DoH server keeps for the report itself.
     feed = None if as_json else EncryptedFeed()
-    sock.settimeout(0.5)
+    sock.setblocking(False)
+    if syn:
+        syn.setblocking(False)
     try:
         while True:
-            try:
-                w.feed(sock.recv(65535))
-            except socket.timeout:
-                pass
+            ready, _, _ = select.select([s for s in (sock, syn) if s], [], [], 0.5)
+            for s in ready:
+                try:
+                    for _ in range(256):        # whatever is waiting, then back to the clock
+                        w.feed(s.recv(65535))
+                except BlockingIOError:
+                    pass
             w.tick()
             if feed:
                 for event in feed.read():
