@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.2"
+VERSION="0.1.3"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -2066,6 +2066,14 @@ if is_relay; then
         # The upstream resolvers are in upstream.conf, below: the admin panel
         # changes them, and this file is rewritten on every upgrade.
         printf 'cache-size=10000\ndomain-needed\nbogus-priv\nno-hosts\n'
+        # Phones on mobile data. A name answered from this file carries a TTL of
+        # zero unless told otherwise, so a phone asked again for every connection,
+        # over a radio link that takes a tenth of a second or more each time; a
+        # minute is long enough to stop that and short enough that a change to
+        # the routing is felt at once. And no answer larger than 1232 bytes: a
+        # bigger one is split into fragments, which mobile networks and their
+        # NAT often drop, so the phone waits and asks again over TCP.
+        printf 'local-ttl=60\nedns-packet-max=1232\n'
         printf 'bind-interfaces\nlisten-address=127.0.0.1,%s\n\n' "$LISTEN_IP"
         printf '# domains answered with this relay, so the traffic leaves via the exit\n'
         payload DOMAINS | while read -r d; do

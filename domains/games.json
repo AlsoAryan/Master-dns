@@ -69,7 +69,8 @@
       "needs": [
         "playstation/online",
         "playstation/download"
-      ]
+      ],
+      "note": "تست NAT کنسول (us.np.stun.playstation.net) عمداً مستقیم می‌ماند؛ رله جای سونی به STUN جواب نمی‌دهد. اگر ورود روی ایرانسل می‌افتد، در تنظیمات «نام‌هایی که از خود رلهٔ ایران بروند» را ببینید"
     },
     {
       "key": "nintendo",
@@ -473,7 +474,8 @@
         "rockstar/main",
         "rockstar/download",
         "steam/main"
-      ]
+      ],
+      "note": "ورود Rockstar (ros، cloud و prod-locator-cloud) عمداً مستقیم می‌ماند: رله آدرس خروجی را به Rockstar نشان می‌داد و ورود با خطای 0x50060190 رد می‌شد. سایت، Social Club و آپدیت از رله می‌روند"
     },
     {
       "key": "rdr",
@@ -1479,6 +1481,30 @@
       "needs": [
         "othergames/moonton"
       ]
+    },
+    {
+      "key": "cs2",
+      "name": "کانتر استرایک ۲",
+      "en": "Counter-Strike 2",
+      "kind": "game",
+      "needs": [
+        "steam/main",
+        "steam/download"
+      ],
+      "note": "بازی روی سرورهای Valve و با اتصال مستقیم اجرا می‌شود؛ DNS فقط ورود، فروشگاه و دانلود را پوشش می‌دهد. گروه «Steam» همین‌هاست و گروه دور زده‌ی steamserver.net را روشن نکنید",
+      "names_row": false
+    },
+    {
+      "key": "dota2",
+      "name": "دوتا ۲",
+      "en": "Dota 2",
+      "kind": "game",
+      "needs": [
+        "steam/main",
+        "steam/download"
+      ],
+      "note": "بازی روی سرورهای Valve و با اتصال مستقیم اجرا می‌شود؛ DNS فقط ورود، فروشگاه و دانلود را پوشش می‌دهد. گروه «Steam» همین‌هاست و گروه دور زده‌ی steamserver.net را روشن نکنید",
+      "names_row": false
     }
   ]
 }

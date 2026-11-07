@@ -1316,10 +1316,12 @@
           "key": "main",
           "label": "همه",
           "domains": [
+            "chat.com",
             "chatgpt.com",
             "oaistatic.com",
             "oaiusercontent.com",
-            "openai.com"
+            "openai.com",
+            "sora.com"
           ]
         }
       ],
@@ -1334,7 +1336,9 @@
           "label": "همه",
           "domains": [
             "anthropic.com",
-            "claude.ai"
+            "claude.ai",
+            "claude.com",
+            "claudeusercontent.com"
           ]
         }
       ],
@@ -1362,6 +1366,9 @@
             "kaggle.com",
             "kaggle.net",
             "kaggleusercontent.com",
+            "llama.com",
+            "lmarena.ai",
+            "meta.ai",
             "midjourney.com",
             "mistral.ai",
             "ollama.com",
@@ -1373,6 +1380,37 @@
             "windsurf.com",
             "x.ai",
             "you.com"
+          ]
+        },
+        {
+          "key": "creative",
+          "label": "تصویر، ویدیو، صدا و موسیقی",
+          "join": true,
+          "domains": [
+            "civitai.com",
+            "elevenlabs.io",
+            "heygen.com",
+            "ideogram.ai",
+            "krea.ai",
+            "leonardo.ai",
+            "lumalabs.ai",
+            "pika.art",
+            "runwayml.com",
+            "stability.ai",
+            "suno.ai",
+            "suno.com",
+            "synthesia.io"
+          ]
+        },
+        {
+          "key": "builders",
+          "label": "ساخت برنامه و کد با هوش مصنوعی",
+          "join": true,
+          "domains": [
+            "bolt.new",
+            "githubcopilot.com",
+            "lovable.dev",
+            "v0.dev"
           ]
         }
       ],
@@ -1576,6 +1614,7 @@
             "ads.google.com",
             "adservice.google.com",
             "ai.google",
+            "ai.google.dev",
             "aistudio.google.com",
             "analytics.google.com",
             "apis.google.com",
@@ -1617,6 +1656,7 @@
             "issuetracker.google.com",
             "labs.google",
             "marketingplantform.google.com",
+            "notebooklm.google",
             "notebooklm.google.com",
             "optimize.google.com",
             "payments.google.com",
@@ -1724,11 +1764,13 @@
             "es.io",
             "firebase.com",
             "fly.io",
+            "godaddy.com",
             "heroku.com",
             "hetzner.com",
             "ibm.com",
             "java.com",
             "linode.com",
+            "namecheap.com",
             "netlify.app",
             "netlify.com",
             "oracle.com",
@@ -1742,6 +1784,7 @@
             "vercel.com",
             "virtualbox.org",
             "vmware.com",
+            "vultr.com",
             "zeit.co"
           ]
         }

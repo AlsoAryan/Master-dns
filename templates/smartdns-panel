@@ -2455,10 +2455,64 @@ def set_devices(db, uid, total, extra=None):
     return total
 
 
-def ip_change_limit(store):
-    """New addresses a customer may register a day, or None for no limit."""
+OPERATORS_FILE = "/var/lib/smart-dns/operators.json"
+# The operators whose customers are on mobile data, by the names smartdns-operators gives
+# them. On their networks one address is shared by many phones and changes whenever
+# the phone reconnects, moves between cells or leaves flight mode - not because the
+# customer is lending the service to anybody.
+MOBILE_OPERATORS = ("همراه اول", "ایرانسل", "رایتل", "شاتل موبایل")
+MOBILE_IP_FACTOR = 3        # a mobile customer may register this many times the usual number
+_OPERATORS = {"mtime": None, "lengths": [], "tables": {}}
+
+
+def operator_of(ip):
+    """The operator an address is on, from smartdns-operators' daily file: its name,
+    \"\" for none of them, or None when there is no list or no such address. The
+    longest block that holds it wins, as in the admin panel."""
+    try:
+        mtime = os.stat(OPERATORS_FILE).st_mtime
+    except OSError:
+        return None
+    if mtime != _OPERATORS["mtime"]:
+        try:
+            with open(OPERATORS_FILE, encoding="utf-8") as fh:
+                ops = list(json.load(fh)["operators"].values())
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            return None
+        tables = {}
+        for op in ops:
+            for prefix in op.get("prefixes") or ():
+                try:
+                    net = ipaddress.ip_network(prefix, strict=False)
+                except (TypeError, ValueError):
+                    continue
+                shift = net.max_prefixlen - net.prefixlen
+                tables.setdefault((net.version, net.prefixlen), {})[
+                    int(net.network_address) >> shift] = op.get("name") or ""
+        _OPERATORS.update(mtime=mtime, lengths=sorted(tables, key=lambda k: -k[1]), tables=tables)
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return None
+    for version, plen in _OPERATORS["lengths"]:
+        if version == addr.version:
+            hit = _OPERATORS["tables"][(version, plen)].get(int(addr) >> (addr.max_prefixlen - plen))
+            if hit is not None:
+                return hit
+    return ""
+
+
+def ip_change_limit(store, ip=None):
+    """New addresses a customer may register a day, or None for no limit. From a
+    mobile operator the limit is the admin's own number for mobile data, or three
+    times the usual one: a phone's address changes by itself, and a limit made
+    against lending would otherwise lock honest customers out."""
     raw = (store.setting("ip_changes_per_day") or "").strip()
-    return int(raw) if raw.isdigit() and int(raw) > 0 else None
+    base = int(raw) if raw.isdigit() and int(raw) > 0 else None
+    if base is None or ip is None or operator_of(ip) not in MOBILE_OPERATORS:
+        return base
+    mobile = (store.setting("ip_changes_mobile") or "").strip()
+    return int(mobile) if mobile.isdigit() and int(mobile) > 0 else base * MOBILE_IP_FACTOR
 
 
 def device_price(store):
@@ -2861,7 +2915,7 @@ def register_ip(store, user_id, ip, limited=False):
     user = store.one("SELECT * FROM users WHERE id = ?", (user_id,))
     existing = store.user_ips(user_id)
     new = not any(r["ip"] == ip for r in existing)
-    limit = ip_change_limit(store) if limited and new else None
+    limit = ip_change_limit(store, ip) if limited and new else None
     if limit:
         since = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(timespec="seconds")
         rows = store.q("SELECT at FROM ip_log WHERE user_id = ? AND at > ? ORDER BY at",

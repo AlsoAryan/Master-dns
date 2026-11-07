@@ -190,6 +190,17 @@ check("the new-template form can copy another", "name='from'" in page and "کپ�
 check("the edit button keeps its hover sheen inside its own box, or the page grows sideways",
       "a.btn{position:relative;overflow:hidden;" in admin.CSS)
 
+check("the users table's menus float out of its card only where the card is as wide as the table",
+      "@media (min-width:1700px){\n .card.wide{overflow:visible}" in admin.CSS
+      and "@media (min-width:1300px){\n .card.wide{overflow:visible}" not in admin.CSS)
+
+sync_src = open(os.path.join(HERE, "..", "templates", "smartdns-sync"), encoding="utf-8").read()
+check("on a phone the title and the theme controls wrap under each other, in the admin and for customers",
+      ".topbar{flex-wrap:wrap;row-gap:8px}.tools{max-width:100%;gap:6px;flex-wrap:wrap" in admin.CSS
+      and ".top{flex-wrap:wrap;justify-content:center;row-gap:8px}.tools{max-width:100%" in sync_src)
+check("the plan and template grids never ask for more than their container",
+      admin.CSS.count("minmax(min(100%,") >= 3 and "minmax(270px,1fr)" not in admin.CSS)
+
 print("copying a template")
 src_id = GAME
 store.run("INSERT OR IGNORE INTO template_domains_off (template_id, domain) VALUES (?, 'example.org')",

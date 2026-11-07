@@ -4636,7 +4636,10 @@ body.solo footer{margin-top:22px}
  .side nav a{padding:8px 12px;border-radius:14px}.side nav a.out{margin:0}
  .wrap{padding:14px 12px 40px}.topbar{padding-bottom:14px}.topbar h1{font-size:19px}
 }
-@media (max-width:700px){.card{border-radius:20px;padding:18px}.tools{padding:4px 8px}}
+@media (max-width:700px){.card{border-radius:20px;padding:18px}.tools{padding:4px 8px}
+ /* The title and the theme controls side by side are wider than a phone, and pushed the whole
+    page out to the side; the controls go under the title instead. */
+ .topbar{flex-wrap:wrap;row-gap:8px}.tools{max-width:100%;gap:6px;flex-wrap:wrap;justify-content:center}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 """
 
@@ -4763,7 +4766,10 @@ table.users td.acts .menu form.resetdays label{flex-basis:100%;margin:0;font-siz
 table.users td.acts .menu form.resetdays input{width:44px;padding:3px 6px}
 table.users td.acts .menu form.resetdays button{width:auto;flex:1}
 table.users td.acts .menu form.resetdays small{flex-basis:100%}
-@media (min-width:1300px){
+/* A menu floats out of the table's card only where the card is as wide as the table. Below
+   that the card scrolls sideways and the menu opens in its cell: floating out of a card
+   that is narrower than its table stretched the whole page. */
+@media (min-width:1700px){
  .card.wide{overflow:visible}
  table.users details{position:relative}
  table.users details>form,table.users details>.menu{position:absolute;z-index:30;
@@ -4784,7 +4790,7 @@ table.users details>.menu,table.users details>form{background:var(--card);opacit
 .topo svg.wires path{fill:none;stroke-width:2.5;stroke-linecap:round}
 .topo svg.wires path.carry{stroke:var(--accent)}
 .topo svg.wires path.idle{stroke:var(--line2);stroke-dasharray:6 7}
-.singles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.singles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
 .tnode{position:relative;border:1px solid var(--line);border-radius:20px;padding:14px 16px;min-height:150px;
  background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg)),var(--bg) 70%);
  display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .2s}
@@ -4819,7 +4825,7 @@ html{scroll-behavior:smooth}h3.sec{scroll-margin-top:16px}
 /* ---- plans ---- */
 .pagehead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 .pagehead h2{margin-bottom:4px}
-.plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-top:18px}
+.plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:16px;margin-top:18px}
 .plan{border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;
  background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 8%,var(--bg)),var(--bg) 65%);
  transition:border-color .2s,transform .2s}
@@ -4851,7 +4857,7 @@ label.srv{display:flex;align-items:center;justify-content:space-between;gap:12px
 dialog.pd .bar2{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:-24px;padding:12px 0 0;
  background:var(--card)}
 /* ---- templates ---- */
-.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:18px}
+.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px;margin-top:18px}
 .tpl{border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;
  background:linear-gradient(160deg,color-mix(in srgb,var(--accent2) 8%,var(--bg)),var(--bg) 65%);
  transition:border-color .2s,transform .2s}
@@ -5275,21 +5281,27 @@ def devices_card(p):
     may register a new address."""
     price = setting("device_price")
     limit = setting("ip_changes_per_day")
+    mobile = setting("ip_changes_mobile")
     return (
         "<div class='card'><h2>📱 دستگاه‌ها و آی‌پی‌های "
         "مشتری</h2><form method='post' action='/%s/devices-settings'><div class='row'><div class='f'><label>قیمت "
         "هر دستگاه "
         "اضافه (تومان)</label><input name='price' value='%s' size='10' dir='ltr' placeholder='خالی = فروخته "
         "نمی‌شود'></div><div class='f'><label>حداکثر آی‌پی تازه در ۲۴ "
-        "ساعت</label><input name='limit' value='%s' size='6' dir='ltr' placeholder='خالی = بی‌نهایت'></div><button class='ghost'>ذخیره</button></div></form><p class='muted'>هر "
+        "ساعت</label><input name='limit' value='%s' size='6' dir='ltr' placeholder='خالی = بی‌نهایت'></div><div class='f'><label>"
+        "همان، روی اینترنت موبایل (همراه اول، ایرانسل، رایتل)</label><input name='limit_mobile' value='%s' size='6' "
+        "dir='ltr' placeholder='خالی = ۳ برابر'></div><button class='ghost'>ذخیره</button></div></form><p class='muted'>هر "
         "پلن تعداد دستگاه خودش را دارد (ستون «دستگاه»)، یعنی چند آی‌پی هم‌زمان می‌توانند وصل "
         "باشند. اگر آی‌پی تازه‌ای بیاید و جا نباشد، قدیمی‌ترین آی‌پی حذف می‌شود. مشتری روی پلن "
         "فعالش می‌تواند از پنل یا ربات دستگاه اضافه بخرد، با رسید یا از کیف پول. دستگاه اضافه تا "
         "وقتی همان پلن را تمدید کند می‌ماند و با خرید پلن دیگر از بین "
         "می‌رود. حداکثر %d دستگاه. تعداد دستگاه هر کاربر را در صفحهٔ کاربران (روی آی‌پی‌اش) دستی "
         "هم می‌توانید عوض کنید. سقف آی‌پی تازه فقط برای خود مشتری است؛ آی‌پی‌هایی که شما ثبت "
-        "می‌کنید شمرده نمی‌شوند.</p></div>"
-        % (p, html.escape(price, quote=True), html.escape(limit, quote=True), MAX_DEVICES))
+        "می‌کنید شمرده نمی‌شوند. روی اینترنت موبایل آی‌پی خودبه‌خود عوض می‌شود (با هر قطع و وصل، "
+        "تغییر دکل یا حالت پرواز) و یک آی‌پی بین چند گوشی مشترک است، پس سقف جداگانه‌ای دارد؛ "
+        "اگر خالی بگذارید سه برابر سقف بالاست.</p></div>"
+        % (p, html.escape(price, quote=True), html.escape(limit, quote=True),
+           html.escape(mobile, quote=True), MAX_DEVICES))
 
 
 def devices_cell(p, r):
@@ -8398,6 +8410,10 @@ def games_by_group():
     """
     out = {}
     for game in GAMES:
+        # A game whose names are the platform's own - Valve's are Steam's - is found by its name
+        # in the index and says so with names_row: false, or it would rename the store's row.
+        if game.get("names_row") is False:
+            continue
         # A game names the rows of its own publisher only. Apex needs Steam,
         # but Steam's row is Steam's own domains - the store, the community,
         # the login - and naming it after fifty-nine games that pass through
@@ -12306,13 +12322,18 @@ class Admin(http.server.BaseHTTPRequestHandler):
 
         if rest == "devices-settings":
             price, limit = one("price").strip(), one("limit").strip()
+            mobile = one("limit_mobile").strip()
             if price and (toman(price) is None):
                 return self.redirect("plans?m=!قیمت دستگاه را به تومان و با عدد بنویسید")
             if limit and not (limit.isdigit() and int(limit) > 0):
                 return self.redirect("plans?m=!حداکثر آی‌پی تازه عدد مثبت است؛ خالی یعنی "
                                      "بی‌نهایت")
             put_setting("device_price", toman(price) if price and toman(price) else "")
+            if mobile and not (mobile.isdigit() and int(mobile) > 0):
+                return self.redirect("plans?m=!سقف اینترنت موبایل عدد مثبت است؛ خالی یعنی سه برابر "
+                                     "سقف بالا")
             put_setting("ip_changes_per_day", int(limit) if limit else "")
+            put_setting("ip_changes_mobile", int(mobile) if mobile else "")
             return self.redirect("plans?m=ذخیره شد")
 
         if rest == "user-devices":

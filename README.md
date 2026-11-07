@@ -76,15 +76,13 @@ Iran server 3478 (STUN). The installer refuses those and says why.
 - **Keep games working.** Names a network chokes are carried from Iran itself; names a game needs
   direct are kept direct. See [when a game will not start](docs/troubleshooting.md).
 
-## Latest: 0.1.2
+## Latest: 0.1.3
 
-- **PS5 NAT test** no longer says "Failed": the console's STUN server goes direct.
-- **GTA Online** gets past login (error 0x50060190): Rockstar's sign-in names go direct.
-- **`smartdns-watch`** now lists the names that sent a game to a port the relay does not carry, each with its `smartdns bypass` command: the way to find what a game like War Thunder Mobile needs.
-- **Screenshots** are taken in the panel's own typeface, and the README is shorter.
+- **Mobile data.** Answers carry a one-minute TTL instead of zero and never exceed 1232 bytes, so a phone neither asks again for every connection nor loses fragmented replies. On Irancell, MCI (Hamrah-e Avval) and Rightel, where the address changes by itself, a customer may register three times as many new addresses a day (or a number you set).
+- **Phones.** The customer page and the admin panel no longer spill sideways on a narrow screen; the screenshot script now fails if any page is wider than a phone.
+- **Catalogue.** Claude's own domain (`claude.com`), more AI, two groups for image/video/voice AI and for AI app builders, a few hosting names, and Counter-Strike 2 and Dota 2 as games.
 
-Earlier: 0.1.1 added the traffic and status API reports, busy-hours and quota-forecast views and
-the rebuilt API page; 0.1.0 added names carried from the Iran server, and plans and templates as cards.
+Earlier: 0.1.2 fixed the PS5 NAT test and GTA Online login and added stranded-port detection to `smartdns-watch`; 0.1.1 added the traffic and status API reports; 0.1.0 added names carried from the Iran server.
 
 ## More
 

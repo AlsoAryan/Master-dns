@@ -10,6 +10,8 @@ and every address is one reserved for documentation (203.0.113.0/24,
     python3 tools/make-screenshots.py            # all pages
     python3 tools/make-screenshots.py home api   # only these
 
+Without names it also checks every page on a phone's width, and fails if one is wider.
+
 Needs Playwright with Chromium (pip install playwright && playwright install chromium)
 and, to keep the files small, Pillow. Run it again after the interface changes.
 """
@@ -234,9 +236,9 @@ def sign_in():
 
 
 # ----------------------------------------------------------------- the photos
-# name: (path, what to wait for, height in px, dark theme). The users table is the widest
-# thing in the panel, and is photographed in a wider window.
-WIDE = {"users": 1760}
+# name: (path, what to wait for, height in px, dark theme). A page that is wider than its
+# window is refused, so this also keeps the users table inside the panel's window.
+WIDE = {}
 user_id = users[2][0]
 PAGES = {
     "home": ("", None, 1500, False),
@@ -294,6 +296,34 @@ def shoot(wanted):
         browser.close()
 
 
+def phones():
+    """Every page on a phone's width: not one may be wider than the screen. A page that is makes
+    the browser widen the whole view and shove the content to one side, which on a phone is
+    what a customer sees first."""
+    from playwright.sync_api import sync_playwright
+    cookie = sign_in()
+    bad = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        ctx.add_cookies([{"name": "sdns", "value": cookie, "url": "http://127.0.0.1:%d" % PORT}])
+        page = ctx.new_page()
+        for name, (path, _, _, dark) in PAGES.items():
+            if dark:
+                continue
+            page.goto("http://127.0.0.1:%d/%s/%s" % (PORT, SECRET, path))
+            page.wait_for_timeout(400)
+            wide = page.evaluate("document.documentElement.scrollWidth")
+            print("phone %-16s %4d px %s" % (name, wide, "" if wide <= 390 else "TOO WIDE"))
+            if wide > 390:
+                bad.append(name)
+        browser.close()
+    if bad:
+        sys.exit("wider than a phone: %s" % ", ".join(bad))
+
+
 if __name__ == "__main__":
     shoot(set(sys.argv[1:]))
+    if "--no-phones" not in sys.argv and len(sys.argv) == 1:
+        phones()
     srv.shutdown()

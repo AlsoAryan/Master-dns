@@ -10,6 +10,7 @@ ads.google.com
 adservice.google.com
 ageofempires.com
 ai.google
+ai.google.dev
 airbnb.com
 aistudio.google.com
 aka.ms
@@ -88,6 +89,7 @@ bluemix.net
 blzstatic.com
 bnetcmsus-a.akamaihd.net
 bohemia.net
+bolt.new
 booking.com
 books.google.com
 boombeach.com
@@ -116,14 +118,18 @@ cdn.gog.com
 cdn.ubi.com
 cdprojektred.com
 centos.org
+chat.com
 chatgpt.com
 chocolatey.org
 cisco.com
+civitai.com
 clamav.net
 clashofclans.com
 clashroyale.com
 classroom.google.com
 claude.ai
+claude.com
+claudeusercontent.com
 clients.google.com
 clients2.google.com
 clients6.google.com
@@ -249,6 +255,7 @@ elastic.co
 elderscrollsonline.com
 electronicarts.com
 element14.com
+elevenlabs.io
 embark.games
 embark.net
 en25.com
@@ -324,6 +331,7 @@ ghcr.io
 github.com
 githubapp.com
 githubassets.com
+githubcopilot.com
 githubusercontent.com
 gitkraken.com
 gitlab-static.net
@@ -332,6 +340,7 @@ gitlab.io
 gitpod.io
 go.dev
 goanimate.com
+godaddy.com
 godbolt.org
 godoc.org
 gog.com
@@ -375,6 +384,7 @@ hellletloose.com
 helm.sh
 heroku.com
 hetzner.com
+heygen.com
 hf.co
 hirezstudios.com
 honkaiimpact3.com
@@ -389,6 +399,7 @@ hypergryph.com
 i.stack.imgur.com
 i18next.com
 ibm.com
+ideogram.ai
 ieee.org
 incredibuild.com
 infinityward.com
@@ -425,6 +436,7 @@ kineticgames.co.uk
 konami.com
 konami.net
 krafton.com
+krea.ai
 kubernetes.io
 kurogame.com
 kurogames.com
@@ -435,15 +447,20 @@ launchpad.net
 leagueoflegends.com
 learn.microsoft.com
 lenovo.com
+leonardo.ai
 level3.blizzard.com
 libraries.io
 lightstep.com
 linear.app
 linode.com
 livefyre.com
+llama.com
 llnw.blizzard.com
+lmarena.ai
 lolesports.com
 lostlight.game
+lovable.dev
+lumalabs.ai
 maas.io
 madfingergames.com
 mailgun.com
@@ -457,6 +474,7 @@ maven.org
 maxis.com
 mbed.com
 medium.com
+meta.ai
 metasploit.com
 microchip.com
 midjourney.com
@@ -479,6 +497,7 @@ muscache.com
 mybridge.co
 myfonts.net
 mysql.com
+namecheap.com
 nativescript.org
 needforspeed.com
 netflix.com
@@ -501,6 +520,7 @@ nintendo.com
 nintendo.net
 nirsoft.net
 nodejs.org
+notebooklm.google
 notebooklm.google.com
 notion.so
 npmjs.com
@@ -546,6 +566,7 @@ perfectworld.com
 perplexity.ai
 photodune.net
 php.net
+pika.art
 piles.overleaf.com
 pkg.go.dev
 play.google.com
@@ -625,6 +646,7 @@ rsg.sc
 ruby-doc.org
 rubygems.org
 runescape.com
+runwayml.com
 rust-lang.org
 rustafied.com
 salesforce.com
@@ -653,6 +675,7 @@ softonic.com
 sonarsource.com
 sonatype.org
 sonyentertainmentnetwork.com
+sora.com
 soulframe.com
 soundcloud.com
 sparkjava.com
@@ -668,6 +691,7 @@ squadbustersgame.com
 square-enix.com
 sstatic.net
 st.com
+stability.ai
 stackexchange.com
 stackoverflow.com
 starbreeze.com
@@ -689,6 +713,8 @@ stripe.com
 studiowildcard.com
 stumbleguys.com
 sun.com
+suno.ai
+suno.com
 supabase.com
 supercell.com
 supercell.net
@@ -700,6 +726,7 @@ swaggerhub.com
 swift.org
 swtor.com
 symfony.com
+synthesia.io
 tagmanager.google.com
 take2games.com
 team17.com
@@ -749,6 +776,7 @@ unsplash.com
 uplay.com
 upwork.com
 user-consent.prod.demonware.net
+v0.dev
 vagrantup.com
 valorant.com
 valorantesports.com
@@ -768,6 +796,7 @@ vscode.dev
 vuejs.org
 vuetifyjs.com
 vuforia.com
+vultr.com
 warframe.com
 wargaming.net
 warthunder.com

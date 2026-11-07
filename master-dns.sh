@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.2"
+VERSION="0.1.3"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -2066,6 +2066,14 @@ if is_relay; then
         # The upstream resolvers are in upstream.conf, below: the admin panel
         # changes them, and this file is rewritten on every upgrade.
         printf 'cache-size=10000\ndomain-needed\nbogus-priv\nno-hosts\n'
+        # Phones on mobile data. A name answered from this file carries a TTL of
+        # zero unless told otherwise, so a phone asked again for every connection,
+        # over a radio link that takes a tenth of a second or more each time; a
+        # minute is long enough to stop that and short enough that a change to
+        # the routing is felt at once. And no answer larger than 1232 bytes: a
+        # bigger one is split into fragments, which mobile networks and their
+        # NAT often drop, so the phone waits and asks again over TCP.
+        printf 'local-ttl=60\nedns-packet-max=1232\n'
         printf 'bind-interfaces\nlisten-address=127.0.0.1,%s\n\n' "$LISTEN_IP"
         printf '# domains answered with this relay, so the traffic leaves via the exit\n'
         payload DOMAINS | while read -r d; do
@@ -7361,10 +7369,64 @@ exit 0
 #    return total
 #
 #
-#def ip_change_limit(store):
-#    """New addresses a customer may register a day, or None for no limit."""
+#OPERATORS_FILE = "/var/lib/smart-dns/operators.json"
+## The operators whose customers are on mobile data, by the names smartdns-operators gives
+## them. On their networks one address is shared by many phones and changes whenever
+## the phone reconnects, moves between cells or leaves flight mode - not because the
+## customer is lending the service to anybody.
+#MOBILE_OPERATORS = ("همراه اول", "ایرانسل", "رایتل", "شاتل موبایل")
+#MOBILE_IP_FACTOR = 3        # a mobile customer may register this many times the usual number
+#_OPERATORS = {"mtime": None, "lengths": [], "tables": {}}
+#
+#
+#def operator_of(ip):
+#    """The operator an address is on, from smartdns-operators' daily file: its name,
+#    \"\" for none of them, or None when there is no list or no such address. The
+#    longest block that holds it wins, as in the admin panel."""
+#    try:
+#        mtime = os.stat(OPERATORS_FILE).st_mtime
+#    except OSError:
+#        return None
+#    if mtime != _OPERATORS["mtime"]:
+#        try:
+#            with open(OPERATORS_FILE, encoding="utf-8") as fh:
+#                ops = list(json.load(fh)["operators"].values())
+#        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+#            return None
+#        tables = {}
+#        for op in ops:
+#            for prefix in op.get("prefixes") or ():
+#                try:
+#                    net = ipaddress.ip_network(prefix, strict=False)
+#                except (TypeError, ValueError):
+#                    continue
+#                shift = net.max_prefixlen - net.prefixlen
+#                tables.setdefault((net.version, net.prefixlen), {})[
+#                    int(net.network_address) >> shift] = op.get("name") or ""
+#        _OPERATORS.update(mtime=mtime, lengths=sorted(tables, key=lambda k: -k[1]), tables=tables)
+#    try:
+#        addr = ipaddress.ip_address(ip)
+#    except ValueError:
+#        return None
+#    for version, plen in _OPERATORS["lengths"]:
+#        if version == addr.version:
+#            hit = _OPERATORS["tables"][(version, plen)].get(int(addr) >> (addr.max_prefixlen - plen))
+#            if hit is not None:
+#                return hit
+#    return ""
+#
+#
+#def ip_change_limit(store, ip=None):
+#    """New addresses a customer may register a day, or None for no limit. From a
+#    mobile operator the limit is the admin's own number for mobile data, or three
+#    times the usual one: a phone's address changes by itself, and a limit made
+#    against lending would otherwise lock honest customers out."""
 #    raw = (store.setting("ip_changes_per_day") or "").strip()
-#    return int(raw) if raw.isdigit() and int(raw) > 0 else None
+#    base = int(raw) if raw.isdigit() and int(raw) > 0 else None
+#    if base is None or ip is None or operator_of(ip) not in MOBILE_OPERATORS:
+#        return base
+#    mobile = (store.setting("ip_changes_mobile") or "").strip()
+#    return int(mobile) if mobile.isdigit() and int(mobile) > 0 else base * MOBILE_IP_FACTOR
 #
 #
 #def device_price(store):
@@ -7767,7 +7829,7 @@ exit 0
 #    user = store.one("SELECT * FROM users WHERE id = ?", (user_id,))
 #    existing = store.user_ips(user_id)
 #    new = not any(r["ip"] == ip for r in existing)
-#    limit = ip_change_limit(store) if limited and new else None
+#    limit = ip_change_limit(store, ip) if limited and new else None
 #    if limit:
 #        since = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(timespec="seconds")
 #        rows = store.q("SELECT at FROM ip_log WHERE user_id = ? AND at > ? ORDER BY at",
@@ -17613,6 +17675,9 @@ exit 0
 # .stage{padding:18px 12px 48px}.card,.card:has(>.row),.card:has(>.dns),.card:has(>.tiles),.card:has(>.usage){
 #  padding:26px 20px;border-radius:26px;margin-top:2vh;grid-template-columns:1fr}
 # .card:has(>.row)>h1{font-size:23px}.top{padding:10px 14px}
+# /* The brand and the theme controls side by side are about 420px; on a phone the second goes
+#    under the first instead of pushing the whole page wider than the screen. */
+# .top{flex-wrap:wrap;justify-content:center;row-gap:8px}.tools{max-width:100%;gap:6px;flex-wrap:wrap;justify-content:center}
 # .card:has(>.row) a.btn,.card:has(>.row) button,.card:has(>.dns) a.btn,.card:has(>.dns) button{width:100%}
 #}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -26247,7 +26312,10 @@ exit 0
 # .side nav a{padding:8px 12px;border-radius:14px}.side nav a.out{margin:0}
 # .wrap{padding:14px 12px 40px}.topbar{padding-bottom:14px}.topbar h1{font-size:19px}
 #}
-#@media (max-width:700px){.card{border-radius:20px;padding:18px}.tools{padding:4px 8px}}
+#@media (max-width:700px){.card{border-radius:20px;padding:18px}.tools{padding:4px 8px}
+# /* The title and the theme controls side by side are wider than a phone, and pushed the whole
+#    page out to the side; the controls go under the title instead. */
+# .topbar{flex-wrap:wrap;row-gap:8px}.tools{max-width:100%;gap:6px;flex-wrap:wrap;justify-content:center}}
 #@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 #"""
 #
@@ -26374,7 +26442,10 @@ exit 0
 #table.users td.acts .menu form.resetdays input{width:44px;padding:3px 6px}
 #table.users td.acts .menu form.resetdays button{width:auto;flex:1}
 #table.users td.acts .menu form.resetdays small{flex-basis:100%}
-#@media (min-width:1300px){
+#/* A menu floats out of the table's card only where the card is as wide as the table. Below
+#   that the card scrolls sideways and the menu opens in its cell: floating out of a card
+#   that is narrower than its table stretched the whole page. */
+#@media (min-width:1700px){
 # .card.wide{overflow:visible}
 # table.users details{position:relative}
 # table.users details>form,table.users details>.menu{position:absolute;z-index:30;
@@ -26395,7 +26466,7 @@ exit 0
 #.topo svg.wires path{fill:none;stroke-width:2.5;stroke-linecap:round}
 #.topo svg.wires path.carry{stroke:var(--accent)}
 #.topo svg.wires path.idle{stroke:var(--line2);stroke-dasharray:6 7}
-#.singles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+#.singles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
 #.tnode{position:relative;border:1px solid var(--line);border-radius:20px;padding:14px 16px;min-height:150px;
 # background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg)),var(--bg) 70%);
 # display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .2s}
@@ -26430,7 +26501,7 @@ exit 0
 #/* ---- plans ---- */
 #.pagehead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 #.pagehead h2{margin-bottom:4px}
-#.plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-top:18px}
+#.plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:16px;margin-top:18px}
 #.plan{border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;
 # background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 8%,var(--bg)),var(--bg) 65%);
 # transition:border-color .2s,transform .2s}
@@ -26462,7 +26533,7 @@ exit 0
 #dialog.pd .bar2{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:-24px;padding:12px 0 0;
 # background:var(--card)}
 #/* ---- templates ---- */
-#.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:18px}
+#.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px;margin-top:18px}
 #.tpl{border:1px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;
 # background:linear-gradient(160deg,color-mix(in srgb,var(--accent2) 8%,var(--bg)),var(--bg) 65%);
 # transition:border-color .2s,transform .2s}
@@ -26886,21 +26957,27 @@ exit 0
 #    may register a new address."""
 #    price = setting("device_price")
 #    limit = setting("ip_changes_per_day")
+#    mobile = setting("ip_changes_mobile")
 #    return (
 #        "<div class='card'><h2>📱 دستگاه‌ها و آی‌پی‌های "
 #        "مشتری</h2><form method='post' action='/%s/devices-settings'><div class='row'><div class='f'><label>قیمت "
 #        "هر دستگاه "
 #        "اضافه (تومان)</label><input name='price' value='%s' size='10' dir='ltr' placeholder='خالی = فروخته "
 #        "نمی‌شود'></div><div class='f'><label>حداکثر آی‌پی تازه در ۲۴ "
-#        "ساعت</label><input name='limit' value='%s' size='6' dir='ltr' placeholder='خالی = بی‌نهایت'></div><button class='ghost'>ذخیره</button></div></form><p class='muted'>هر "
+#        "ساعت</label><input name='limit' value='%s' size='6' dir='ltr' placeholder='خالی = بی‌نهایت'></div><div class='f'><label>"
+#        "همان، روی اینترنت موبایل (همراه اول، ایرانسل، رایتل)</label><input name='limit_mobile' value='%s' size='6' "
+#        "dir='ltr' placeholder='خالی = ۳ برابر'></div><button class='ghost'>ذخیره</button></div></form><p class='muted'>هر "
 #        "پلن تعداد دستگاه خودش را دارد (ستون «دستگاه»)، یعنی چند آی‌پی هم‌زمان می‌توانند وصل "
 #        "باشند. اگر آی‌پی تازه‌ای بیاید و جا نباشد، قدیمی‌ترین آی‌پی حذف می‌شود. مشتری روی پلن "
 #        "فعالش می‌تواند از پنل یا ربات دستگاه اضافه بخرد، با رسید یا از کیف پول. دستگاه اضافه تا "
 #        "وقتی همان پلن را تمدید کند می‌ماند و با خرید پلن دیگر از بین "
 #        "می‌رود. حداکثر %d دستگاه. تعداد دستگاه هر کاربر را در صفحهٔ کاربران (روی آی‌پی‌اش) دستی "
 #        "هم می‌توانید عوض کنید. سقف آی‌پی تازه فقط برای خود مشتری است؛ آی‌پی‌هایی که شما ثبت "
-#        "می‌کنید شمرده نمی‌شوند.</p></div>"
-#        % (p, html.escape(price, quote=True), html.escape(limit, quote=True), MAX_DEVICES))
+#        "می‌کنید شمرده نمی‌شوند. روی اینترنت موبایل آی‌پی خودبه‌خود عوض می‌شود (با هر قطع و وصل، "
+#        "تغییر دکل یا حالت پرواز) و یک آی‌پی بین چند گوشی مشترک است، پس سقف جداگانه‌ای دارد؛ "
+#        "اگر خالی بگذارید سه برابر سقف بالاست.</p></div>"
+#        % (p, html.escape(price, quote=True), html.escape(limit, quote=True),
+#           html.escape(mobile, quote=True), MAX_DEVICES))
 #
 #
 #def devices_cell(p, r):
@@ -30009,6 +30086,10 @@ exit 0
 #    """
 #    out = {}
 #    for game in GAMES:
+#        # A game whose names are the platform's own - Valve's are Steam's - is found by its name
+#        # in the index and says so with names_row: false, or it would rename the store's row.
+#        if game.get("names_row") is False:
+#            continue
 #        # A game names the rows of its own publisher only. Apex needs Steam,
 #        # but Steam's row is Steam's own domains - the store, the community,
 #        # the login - and naming it after fifty-nine games that pass through
@@ -33917,13 +33998,18 @@ exit 0
 #
 #        if rest == "devices-settings":
 #            price, limit = one("price").strip(), one("limit").strip()
+#            mobile = one("limit_mobile").strip()
 #            if price and (toman(price) is None):
 #                return self.redirect("plans?m=!قیمت دستگاه را به تومان و با عدد بنویسید")
 #            if limit and not (limit.isdigit() and int(limit) > 0):
 #                return self.redirect("plans?m=!حداکثر آی‌پی تازه عدد مثبت است؛ خالی یعنی "
 #                                     "بی‌نهایت")
 #            put_setting("device_price", toman(price) if price and toman(price) else "")
+#            if mobile and not (mobile.isdigit() and int(mobile) > 0):
+#                return self.redirect("plans?m=!سقف اینترنت موبایل عدد مثبت است؛ خالی یعنی سه برابر "
+#                                     "سقف بالا")
 #            put_setting("ip_changes_per_day", int(limit) if limit else "")
+#            put_setting("ip_changes_mobile", int(mobile) if mobile else "")
 #            return self.redirect("plans?m=ذخیره شد")
 #
 #        if rest == "user-devices":
@@ -38969,6 +39055,7 @@ exit 0
 #adservice.google.com
 #ageofempires.com
 #ai.google
+#ai.google.dev
 #airbnb.com
 #aistudio.google.com
 #aka.ms
@@ -39047,6 +39134,7 @@ exit 0
 #blzstatic.com
 #bnetcmsus-a.akamaihd.net
 #bohemia.net
+#bolt.new
 #booking.com
 #books.google.com
 #boombeach.com
@@ -39075,14 +39163,18 @@ exit 0
 #cdn.ubi.com
 #cdprojektred.com
 #centos.org
+#chat.com
 #chatgpt.com
 #chocolatey.org
 #cisco.com
+#civitai.com
 #clamav.net
 #clashofclans.com
 #clashroyale.com
 #classroom.google.com
 #claude.ai
+#claude.com
+#claudeusercontent.com
 #clients.google.com
 #clients2.google.com
 #clients6.google.com
@@ -39208,6 +39300,7 @@ exit 0
 #elderscrollsonline.com
 #electronicarts.com
 #element14.com
+#elevenlabs.io
 #embark.games
 #embark.net
 #en25.com
@@ -39283,6 +39376,7 @@ exit 0
 #github.com
 #githubapp.com
 #githubassets.com
+#githubcopilot.com
 #githubusercontent.com
 #gitkraken.com
 #gitlab-static.net
@@ -39291,6 +39385,7 @@ exit 0
 #gitpod.io
 #go.dev
 #goanimate.com
+#godaddy.com
 #godbolt.org
 #godoc.org
 #gog.com
@@ -39334,6 +39429,7 @@ exit 0
 #helm.sh
 #heroku.com
 #hetzner.com
+#heygen.com
 #hf.co
 #hirezstudios.com
 #honkaiimpact3.com
@@ -39348,6 +39444,7 @@ exit 0
 #i.stack.imgur.com
 #i18next.com
 #ibm.com
+#ideogram.ai
 #ieee.org
 #incredibuild.com
 #infinityward.com
@@ -39384,6 +39481,7 @@ exit 0
 #konami.com
 #konami.net
 #krafton.com
+#krea.ai
 #kubernetes.io
 #kurogame.com
 #kurogames.com
@@ -39394,15 +39492,20 @@ exit 0
 #leagueoflegends.com
 #learn.microsoft.com
 #lenovo.com
+#leonardo.ai
 #level3.blizzard.com
 #libraries.io
 #lightstep.com
 #linear.app
 #linode.com
 #livefyre.com
+#llama.com
 #llnw.blizzard.com
+#lmarena.ai
 #lolesports.com
 #lostlight.game
+#lovable.dev
+#lumalabs.ai
 #maas.io
 #madfingergames.com
 #mailgun.com
@@ -39416,6 +39519,7 @@ exit 0
 #maxis.com
 #mbed.com
 #medium.com
+#meta.ai
 #metasploit.com
 #microchip.com
 #midjourney.com
@@ -39438,6 +39542,7 @@ exit 0
 #mybridge.co
 #myfonts.net
 #mysql.com
+#namecheap.com
 #nativescript.org
 #needforspeed.com
 #netflix.com
@@ -39460,6 +39565,7 @@ exit 0
 #nintendo.net
 #nirsoft.net
 #nodejs.org
+#notebooklm.google
 #notebooklm.google.com
 #notion.so
 #npmjs.com
@@ -39505,6 +39611,7 @@ exit 0
 #perplexity.ai
 #photodune.net
 #php.net
+#pika.art
 #piles.overleaf.com
 #pkg.go.dev
 #play.google.com
@@ -39584,6 +39691,7 @@ exit 0
 #ruby-doc.org
 #rubygems.org
 #runescape.com
+#runwayml.com
 #rust-lang.org
 #rustafied.com
 #salesforce.com
@@ -39612,6 +39720,7 @@ exit 0
 #sonarsource.com
 #sonatype.org
 #sonyentertainmentnetwork.com
+#sora.com
 #soulframe.com
 #soundcloud.com
 #sparkjava.com
@@ -39627,6 +39736,7 @@ exit 0
 #square-enix.com
 #sstatic.net
 #st.com
+#stability.ai
 #stackexchange.com
 #stackoverflow.com
 #starbreeze.com
@@ -39648,6 +39758,8 @@ exit 0
 #studiowildcard.com
 #stumbleguys.com
 #sun.com
+#suno.ai
+#suno.com
 #supabase.com
 #supercell.com
 #supercell.net
@@ -39659,6 +39771,7 @@ exit 0
 #swift.org
 #swtor.com
 #symfony.com
+#synthesia.io
 #tagmanager.google.com
 #take2games.com
 #team17.com
@@ -39708,6 +39821,7 @@ exit 0
 #uplay.com
 #upwork.com
 #user-consent.prod.demonware.net
+#v0.dev
 #vagrantup.com
 #valorant.com
 #valorantesports.com
@@ -39727,6 +39841,7 @@ exit 0
 #vuejs.org
 #vuetifyjs.com
 #vuforia.com
+#vultr.com
 #warframe.com
 #wargaming.net
 #warthunder.com
@@ -41086,10 +41201,12 @@ exit 0
 #          "key": "main",
 #          "label": "همه",
 #          "domains": [
+#            "chat.com",
 #            "chatgpt.com",
 #            "oaistatic.com",
 #            "oaiusercontent.com",
-#            "openai.com"
+#            "openai.com",
+#            "sora.com"
 #          ]
 #        }
 #      ],
@@ -41104,7 +41221,9 @@ exit 0
 #          "label": "همه",
 #          "domains": [
 #            "anthropic.com",
-#            "claude.ai"
+#            "claude.ai",
+#            "claude.com",
+#            "claudeusercontent.com"
 #          ]
 #        }
 #      ],
@@ -41132,6 +41251,9 @@ exit 0
 #            "kaggle.com",
 #            "kaggle.net",
 #            "kaggleusercontent.com",
+#            "llama.com",
+#            "lmarena.ai",
+#            "meta.ai",
 #            "midjourney.com",
 #            "mistral.ai",
 #            "ollama.com",
@@ -41143,6 +41265,37 @@ exit 0
 #            "windsurf.com",
 #            "x.ai",
 #            "you.com"
+#          ]
+#        },
+#        {
+#          "key": "creative",
+#          "label": "تصویر، ویدیو، صدا و موسیقی",
+#          "join": true,
+#          "domains": [
+#            "civitai.com",
+#            "elevenlabs.io",
+#            "heygen.com",
+#            "ideogram.ai",
+#            "krea.ai",
+#            "leonardo.ai",
+#            "lumalabs.ai",
+#            "pika.art",
+#            "runwayml.com",
+#            "stability.ai",
+#            "suno.ai",
+#            "suno.com",
+#            "synthesia.io"
+#          ]
+#        },
+#        {
+#          "key": "builders",
+#          "label": "ساخت برنامه و کد با هوش مصنوعی",
+#          "join": true,
+#          "domains": [
+#            "bolt.new",
+#            "githubcopilot.com",
+#            "lovable.dev",
+#            "v0.dev"
 #          ]
 #        }
 #      ],
@@ -41346,6 +41499,7 @@ exit 0
 #            "ads.google.com",
 #            "adservice.google.com",
 #            "ai.google",
+#            "ai.google.dev",
 #            "aistudio.google.com",
 #            "analytics.google.com",
 #            "apis.google.com",
@@ -41387,6 +41541,7 @@ exit 0
 #            "issuetracker.google.com",
 #            "labs.google",
 #            "marketingplantform.google.com",
+#            "notebooklm.google",
 #            "notebooklm.google.com",
 #            "optimize.google.com",
 #            "payments.google.com",
@@ -41494,11 +41649,13 @@ exit 0
 #            "es.io",
 #            "firebase.com",
 #            "fly.io",
+#            "godaddy.com",
 #            "heroku.com",
 #            "hetzner.com",
 #            "ibm.com",
 #            "java.com",
 #            "linode.com",
+#            "namecheap.com",
 #            "netlify.app",
 #            "netlify.com",
 #            "oracle.com",
@@ -41512,6 +41669,7 @@ exit 0
 #            "vercel.com",
 #            "virtualbox.org",
 #            "vmware.com",
+#            "vultr.com",
 #            "zeit.co"
 #          ]
 #        }
@@ -42054,7 +42212,8 @@ exit 0
 #      "needs": [
 #        "playstation/online",
 #        "playstation/download"
-#      ]
+#      ],
+#      "note": "تست NAT کنسول (us.np.stun.playstation.net) عمداً مستقیم می‌ماند؛ رله جای سونی به STUN جواب نمی‌دهد. اگر ورود روی ایرانسل می‌افتد، در تنظیمات «نام‌هایی که از خود رلهٔ ایران بروند» را ببینید"
 #    },
 #    {
 #      "key": "nintendo",
@@ -42458,7 +42617,8 @@ exit 0
 #        "rockstar/main",
 #        "rockstar/download",
 #        "steam/main"
-#      ]
+#      ],
+#      "note": "ورود Rockstar (ros، cloud و prod-locator-cloud) عمداً مستقیم می‌ماند: رله آدرس خروجی را به Rockstar نشان می‌داد و ورود با خطای 0x50060190 رد می‌شد. سایت، Social Club و آپدیت از رله می‌روند"
 #    },
 #    {
 #      "key": "rdr",
@@ -43464,6 +43624,30 @@ exit 0
 #      "needs": [
 #        "othergames/moonton"
 #      ]
+#    },
+#    {
+#      "key": "cs2",
+#      "name": "کانتر استرایک ۲",
+#      "en": "Counter-Strike 2",
+#      "kind": "game",
+#      "needs": [
+#        "steam/main",
+#        "steam/download"
+#      ],
+#      "note": "بازی روی سرورهای Valve و با اتصال مستقیم اجرا می‌شود؛ DNS فقط ورود، فروشگاه و دانلود را پوشش می‌دهد. گروه «Steam» همین‌هاست و گروه دور زده‌ی steamserver.net را روشن نکنید",
+#      "names_row": false
+#    },
+#    {
+#      "key": "dota2",
+#      "name": "دوتا ۲",
+#      "en": "Dota 2",
+#      "kind": "game",
+#      "needs": [
+#        "steam/main",
+#        "steam/download"
+#      ],
+#      "note": "بازی روی سرورهای Valve و با اتصال مستقیم اجرا می‌شود؛ DNS فقط ورود، فروشگاه و دانلود را پوشش می‌دهد. گروه «Steam» همین‌هاست و گروه دور زده‌ی steamserver.net را روشن نکنید",
+#      "names_row": false
 #    }
 #  ]
 #}
@@ -44857,7 +45041,6 @@ exit 0
 # "دستگاه دارید.": "devices.",
 # "دستگاه دارید؛ هر دستگاه اضافه": "devices; each extra device is",
 # "دستگاه نمی‌شود": "devices is not possible",
-# "دستگاه. تعداد دستگاه هر کاربر را در صفحهٔ کاربران (روی آی‌پی‌اش) دستی هم می‌توانید عوض کنید. سقف آی‌پی تازه فقط برای خود مشتری است؛ آی‌پی‌هایی که شما ثبت می‌کنید شمرده نمی‌شوند.": "devices. You can also change a customer’s devices by hand on the users page (on their IP). The new-IP limit is only for the customer; IPs you register are not counted.",
 # "دستگاه:": "Devices:",
 # "دستگاه‌ها": "Devices",
 # "دست‌کم یک DNS لازم است": "At least one DNS server is needed",
@@ -46553,7 +46736,22 @@ exit 0
 # "اگر لود می‌شود و می‌ایستد، وقت لود sudo smartdns-watch را روی رله اجرا کنید: نام‌هایی که بازی را به پورتی می‌برند که رله ندارد (مثلاً ۲۰۴۳۳ یا ۸۰۹۰) در پایان با دستور smartdns bypass فهرست می‌شوند. اگر ورود رد می‌شود و چنین نامی نیست، ببینید کدام نام Gaijin مستقیم رفته: ورود از آدرس خروجی و بازی از آدرس ایران دیده می‌شود": "If it loads and stops, run sudo smartdns-watch on the relay while it loads: names that send the game to a port the relay does not carry (for example 20443 or 8090) are listed at the end with the smartdns bypass command. If the login is refused and there is no such name, look at which Gaijin names went direct: the login is seen from the exit's address and the game from Iran's",
 # "Rockstar (ورود GTA Online)": "Rockstar (GTA Online login)",
 # "روشن کردنش تشخیص NAT کنسول را خراب می‌کند — سرور STUN کنسول (us.np.stun.playstation.net) مستقیم می‌ماند چون رله جای سونی جواب نمی‌دهد و PS5 «NAT type: Failed» می‌گیرد": "Turning it on breaks the console's NAT test: the console's STUN server (us.np.stun.playstation.net) stays direct because the relay does not answer in Sony's place, and the PS5 would report \"NAT type: Failed\"",
-# "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود": "Turning it on makes GTA Online's login fail with error 0x50060190: Rockstar sees the exit server's address at login while the console plays from an Iranian one. rockstargames.com itself (the site, Social Club and updates) still goes through the server"
+# "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود": "Turning it on makes GTA Online's login fail with error 0x50060190: Rockstar sees the exit server's address at login while the console plays from an Iranian one. rockstargames.com itself (the site, Social Club and updates) still goes through the server",
+# "بازی روی سرورهای Valve و با اتصال مستقیم اجرا می‌شود؛ DNS فقط ورود، فروشگاه و دانلود را پوشش می‌دهد. گروه «Steam» همین‌هاست و گروه دور زده‌ی steamserver.net را روشن نکنید": "The game runs on Valve's servers over a direct connection; DNS covers only login, the store and downloads. The \"Steam\" group is exactly that, and do not turn on the bypassed steamserver.net group",
+# "دوتا ۲": "Dota 2",
+# "کانتر استرایک ۲": "Counter-Strike 2",
+# "تصویر، ویدیو، صدا و موسیقی": "Image, video, voice and music AI",
+# "ساخت برنامه و کد با هوش مصنوعی": "Building apps and code with AI",
+# "خالی = ۳ برابر": "empty = 3 times",
+# "دستگاه. تعداد دستگاه هر کاربر را در صفحهٔ کاربران (روی آی‌پی‌اش) دستی هم می‌توانید عوض کنید. سقف آی‌پی تازه فقط برای خود مشتری است؛ آی‌پی‌هایی که شما ثبت می‌کنید شمرده نمی‌شوند. روی اینترنت موبایل آی‌پی خودبه‌خود عوض می‌شود (با هر قطع و وصل، تغییر دکل یا حالت پرواز) و یک آی‌پی بین چند گوشی مشترک است، پس سقف جداگانه‌ای دارد؛ اگر خالی بگذارید سه برابر سقف بالاست.": "devices. You can also change each user's number of devices by hand on the users page (on their IP). The limit on new addresses is only for the customer themselves; addresses you register are not counted. On mobile data the address changes by itself (with every reconnect, change of cell tower or flight mode) and one address is shared between several phones, so it has a separate limit; if you leave it empty it is three times the limit above.",
+# "سقف اینترنت موبایل عدد مثبت است؛ خالی یعنی سه برابر سقف بالا": "The mobile data limit must be a positive number; empty means three times the limit above",
+# "همان، روی اینترنت موبایل (همراه اول، ایرانسل، رایتل)": "The same, on mobile data (MCI, Irancell, Rightel)",
+# "ایرانسل": "Irancell",
+# "رایتل": "Rightel",
+# "شاتل موبایل": "Shatel Mobile",
+# "همراه اول": "MCI (Hamrah-e Avval)",
+# "تست NAT کنسول (us.np.stun.playstation.net) عمداً مستقیم می‌ماند؛ رله جای سونی به STUN جواب نمی‌دهد. اگر ورود روی ایرانسل می‌افتد، در تنظیمات «نام‌هایی که از خود رلهٔ ایران بروند» را ببینید": "The console's NAT test (us.np.stun.playstation.net) stays direct on purpose; the relay does not answer STUN in Sony's place. If the login fails on Irancell, see \"Names that go out of the Iran relay itself\" in Settings",
+# "ورود Rockstar (ros، cloud و prod-locator-cloud) عمداً مستقیم می‌ماند: رله آدرس خروجی را به Rockstar نشان می‌داد و ورود با خطای 0x50060190 رد می‌شد. سایت، Social Club و آپدیت از رله می‌روند": "Rockstar's login (ros, cloud and prod-locator-cloud) stays direct on purpose: the relay showed Rockstar the exit's address and the login was refused with error 0x50060190. The site, Social Club and updates go through the relay"
 #}
 #__END_I18N_EN__
 

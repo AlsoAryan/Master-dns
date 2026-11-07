@@ -4102,6 +4102,9 @@ html[dir=ltr] .toast{transform:translate(-50%,24px)}
  .stage{padding:18px 12px 48px}.card,.card:has(>.row),.card:has(>.dns),.card:has(>.tiles),.card:has(>.usage){
   padding:26px 20px;border-radius:26px;margin-top:2vh;grid-template-columns:1fr}
  .card:has(>.row)>h1{font-size:23px}.top{padding:10px 14px}
+ /* The brand and the theme controls side by side are about 420px; on a phone the second goes
+    under the first instead of pushing the whole page wider than the screen. */
+ .top{flex-wrap:wrap;justify-content:center;row-gap:8px}.tools{max-width:100%;gap:6px;flex-wrap:wrap;justify-content:center}
  .card:has(>.row) a.btn,.card:has(>.row) button,.card:has(>.dns) a.btn,.card:has(>.dns) button{width:100%}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
