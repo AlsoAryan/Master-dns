@@ -65,7 +65,7 @@ check("the hop is on loopback only", "listen 127.0.0.1:8446;" in stream
       and not re.search(r"listen\s+8446", stream))
 check("and asks its resolver for AAAA records only", "resolver __RESOLVERS__ ipv4=off;" in stream)
 check("the public server still resolves over IPv4 only",
-      stream.index("resolver __RESOLVERS__ ipv6=off;") < stream.index("listen 443;"))
+      stream.index("resolver __RESOLVERS__ ipv6=off;") < stream.index("listen 443 so_keepalive=60s:20s:4;"))
 # The relay, and loopback - where the tunnel's end on this machine hands its
 # connections in. Nobody else.
 check("only the relays, and the tunnel's end on this machine, may use the public server",

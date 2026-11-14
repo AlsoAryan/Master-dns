@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.3"
+VERSION="0.1.4"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -2074,6 +2074,24 @@ if is_relay; then
         # bigger one is split into fragments, which mobile networks and their
         # NAT often drop, so the phone waits and asks again over TCP.
         printf 'local-ttl=60\nedns-packet-max=1232\n'
+        # 0.1.4, speed and loss on the way to the public resolvers. A relay in
+        # Iran reaches them over a long and lossy path, and a query dnsmasq sends
+        # to one resolver and loses costs the customer the whole timeout.
+        #   all-servers      ask every resolver at once, take the first answer:
+        #                    the fastest one sets the time, and one lost packet
+        #                    to one of them no longer stalls the name.
+        #   dns-forward-max  dnsmasq's default of 150 queries in flight is reached
+        #                    by a few busy consoles; the rest are dropped.
+        #   min-cache-ttl    a name some CDN gives 5 seconds is asked again every
+        #                    5 seconds over that path; a minute is what local-ttl
+        #                    already says for our own names.
+        printf 'all-servers\ndns-forward-max=1000\nmin-cache-ttl=60\n'
+        # An expired answer, given at once while the new one is fetched, beats no
+        # answer while the path is losing packets. Only in dnsmasq 2.89 and up;
+        # an older one refuses the option, so ask it first.
+        if dnsmasq --help 2>&1 | grep -q -- '--use-stale-cache'; then
+            printf 'use-stale-cache=3600\n'
+        fi
         printf 'bind-interfaces\nlisten-address=127.0.0.1,%s\n\n' "$LISTEN_IP"
         printf '# domains answered with this relay, so the traffic leaves via the exit\n'
         payload DOMAINS | while read -r d; do

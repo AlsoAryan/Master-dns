@@ -278,7 +278,7 @@ check("  or straight to the exit without one",
       and "server 203.0.113.2:443;" in doff
       and "backup;" not in doff)
 check("  and the plain 443 block is gone, so 443 is not listened on twice",
-      don.count("listen 443;") == 1 and doff.count("listen 443;") == 1)
+      don.count("listen 443 so_keepalive=60s:20s:4;") == 1 and doff.count("listen 443 so_keepalive=60s:20s:4;") == 1)
 check("853 ends TLS and says who connected",
       "listen 853 ssl;" in don and "proxy_protocol on;" in don
       and "proxy_pass 127.0.0.1:8054;" in don)
@@ -287,7 +287,7 @@ check("the DoH server speaks HTTP/2, on loopback only - the gate is the way in",
       and "proxy_pass http://127.0.0.1:8055;" in don)
 check("without a certificate there is no trace of DoH",
       "8453" not in on and "853" not in on and "https_target" not in on
-      and "\nhttp {" not in on and on.count("listen 443;") == 1)
+      and "\nhttp {" not in on and on.count("listen 443 so_keepalive=60s:20s:4;") == 1)
 for name, text in (("with DoH", don), ("with DoH, no tunnel", doff)):
     check("%s: no placeholder left, braces balanced" % name,
           "__" not in text.replace("__MODULE_PATH__", "") and text.count("{") == text.count("}"))
@@ -307,9 +307,9 @@ exitng = read("templates", "exit-nginx.conf")
 check("the relays are allowed into every block that listens outward",
       exitng.count("allow 127.0.0.1;") == 4 and exitng.count("include /etc/nginx/smartdns-relays.conf;") == 4)
 check("and Spotify's access point is where 4070 goes",
-      "listen 4070;" in exitng and "proxy_pass ap.spotify.com:4070;" in exitng)
+      "listen 4070 so_keepalive=60s:20s:4;" in exitng and "proxy_pass ap.spotify.com:4070;" in exitng)
 check("and Battle.net's 1119: the sign-in by its TLS name, Blizzard's names only",
-      "listen 1119;" in exitng and "proxy_pass $blizzard_upstream;" in exitng
+      "listen 1119 so_keepalive=60s:20s:4;" in exitng and "proxy_pass $blizzard_upstream;" in exitng
       and "\\.(battle\\.net|blizzard\\.com)$  $ssl_preread_server_name:1119;" in exitng
       and 'default  "";' in exitng)
 check("  the version check, which is plain HTTP, by its Host on a loopback server",

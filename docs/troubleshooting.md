@@ -27,6 +27,17 @@ what each one looked like, so you can tell whether yours is one of them.
 | PUBG Mobile: "Server is busy", `restrict-area` | The login (`proximabeta.com`, 8085 and 8086) sees an Iranian address. DNS alone cannot change that. | Nothing; a template group for it exists, off by default. |
 | War Thunder or War Thunder Mobile loads and stops | Gaijin's game names run on ports such as 20443 and 8090, which the relay does not carry. | Not known per name. Run `smartdns-watch` while it loads: since 0.1.2 it lists, at the end, the names that sent the game to a port the relay does not carry, each with its `smartdns bypass` command. If the login is refused and no such name shows, look at which Gaijin names went direct: the login is then seen from the exit's address and the game from Iran's. |
 
+## Checking the catalogue before a customer does
+
+```sh
+python3 tools/audit-catalogue.py
+```
+
+It reads the services, games and bypass rules offline and says which name would be routed that
+the table above says must go direct, which game needs a group that is gone, and which bypass
+dnsmasq would ignore. It cannot tell whether a name answers from Iran or on which port; that
+is what `smartdns-watch` is for.
+
 ## Taking a new case to us
 
 If your game is not in the table, the most useful thing to send is the output of

@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.3"
+VERSION="0.1.4"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -2074,6 +2074,24 @@ if is_relay; then
         # bigger one is split into fragments, which mobile networks and their
         # NAT often drop, so the phone waits and asks again over TCP.
         printf 'local-ttl=60\nedns-packet-max=1232\n'
+        # 0.1.4, speed and loss on the way to the public resolvers. A relay in
+        # Iran reaches them over a long and lossy path, and a query dnsmasq sends
+        # to one resolver and loses costs the customer the whole timeout.
+        #   all-servers      ask every resolver at once, take the first answer:
+        #                    the fastest one sets the time, and one lost packet
+        #                    to one of them no longer stalls the name.
+        #   dns-forward-max  dnsmasq's default of 150 queries in flight is reached
+        #                    by a few busy consoles; the rest are dropped.
+        #   min-cache-ttl    a name some CDN gives 5 seconds is asked again every
+        #                    5 seconds over that path; a minute is what local-ttl
+        #                    already says for our own names.
+        printf 'all-servers\ndns-forward-max=1000\nmin-cache-ttl=60\n'
+        # An expired answer, given at once while the new one is fetched, beats no
+        # answer while the path is losing packets. Only in dnsmasq 2.89 and up;
+        # an older one refuses the option, so ask it first.
+        if dnsmasq --help 2>&1 | grep -q -- '--use-stale-cache'; then
+            printf 'use-stale-cache=3600\n'
+        fi
         printf 'bind-interfaces\nlisten-address=127.0.0.1,%s\n\n' "$LISTEN_IP"
         printf '# domains answered with this relay, so the traffic leaves via the exit\n'
         payload DOMAINS | while read -r d; do
@@ -3172,6 +3190,25 @@ exit 0
 #net.netfilter.nf_conntrack_max = 131072
 #net.netfilter.nf_conntrack_tcp_timeout_established = 14400
 #net.netfilter.nf_conntrack_udp_timeout_stream = 60
+#
+## 0.1.4, loss. Three things that make a lossy path hurt less.
+##
+## A game's or a chat's connection sends little, and when a packet of it is lost
+## the stock timer doubles every try, so the second loss in a row costs seconds.
+## Linear timeouts for such thin streams retry at an even pace.
+#net.ipv4.tcp_thin_linear_timeouts = 1
+## Keepalives. A connection that goes quiet for a while is the one a mobile
+## operator's NAT forgets, and the first thing the phone then knows of it is a
+## reset. nginx asks for keepalives on both of its sides (see the nginx
+## configs); the stock first probe comes after two hours, long after the NAT
+## has gone, so the probes start after a minute and give up after four missed.
+#net.ipv4.tcp_keepalive_time = 60
+#net.ipv4.tcp_keepalive_intvl = 20
+#net.ipv4.tcp_keepalive_probes = 4
+## DNS and STUN arrive in bursts on a UDP socket whose queue is small by
+## default; what does not fit is dropped and counted as RcvbufErrors.
+#net.core.rmem_default = 1048576
+#net.core.wmem_default = 1048576
 #__END_SYSCTL__
 
 #__BEGIN_SYSCTL_BBR__
@@ -3628,7 +3665,7 @@ exit 0
 #    # Only the Iran relay may use this proxy. Prevents open-proxy abuse.
 #    server {
 #        resolver __RESOLVERS__ ipv6=off;
-#        listen 443;
+#        listen 443 so_keepalive=60s:20s:4;
 #        include /etc/nginx/smartdns-relays.conf;
 #        # The tunnel, when there is one: its end on this machine hands each
 #        # connection to nginx from loopback. Nothing else can arrive from here.
@@ -3636,6 +3673,7 @@ exit 0
 #        deny all;
 #        ssl_preread on;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        # $upstream, or on a single machine with DoH $https_target, which is
 #        # $upstream for every name but this machine's own.
 #        proxy_pass __HTTPS_TARGET__;
@@ -3652,12 +3690,13 @@ exit 0
 #    # reached on it - and ap.spotify.com is the name Spotify's own GSLB hands
 #    # out, so this follows them rather than pinning one region.
 #    server {
-#        listen 4070;
+#        listen 4070 so_keepalive=60s:20s:4;
 #        resolver __RESOLVERS__ ipv6=off;
 #        include /etc/nginx/smartdns-relays.conf;
 #        allow 127.0.0.1;
 #        deny all;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass ap.spotify.com:4070;
 #    }
@@ -3675,13 +3714,14 @@ exit 0
 #        default  "";
 #    }
 #    server {
-#        listen 1119;
+#        listen 1119 so_keepalive=60s:20s:4;
 #        resolver __RESOLVERS__ ipv6=off;
 #        include /etc/nginx/smartdns-relays.conf;
 #        allow 127.0.0.1;
 #        deny all;
 #        ssl_preread on;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass $blizzard_upstream;
 #    }
@@ -3775,9 +3815,10 @@ exit 0
 #        default       $egress_https;
 #    }
 #    server {
-#        listen 443;
+#        listen 443 so_keepalive=60s:20s:4;
 #        ssl_preread on;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass $https_target;
 #    }
@@ -3825,10 +3866,11 @@ exit 0
 #    # doh end
 #    # nodoh begin
 #    server {
-#        listen 443;
+#        listen 443 so_keepalive=60s:20s:4;
 #        # Only to read the name for the usage chart; nothing is decrypted.
 #        ssl_preread on;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass $egress_https;
 #    }
@@ -3840,26 +3882,29 @@ exit 0
 #    # redirect straight into a TLS failure. The exit decides what to do with
 #    # each Host now - proxying playstation traffic, redirecting the rest.
 #    server {
-#        listen 80;
+#        listen 80 so_keepalive=60s:20s:4;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass ${to_exit}_http;
 #    }
 #
 #    # Spotify on 4070 - see the exit's config for why this port exists at all.
 #    server {
-#        listen 4070;
+#        listen 4070 so_keepalive=60s:20s:4;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass ${to_exit}_spotify;
 #    }
 #
 #    # Battle.net on 1119 - see the exit's config for why.
 #    server {
-#        listen 1119;
+#        listen 1119 so_keepalive=60s:20s:4;
 #        # Only to read the name for the usage chart; nothing is decrypted.
 #        ssl_preread on;
 #        proxy_connect_timeout 10s;
+#        proxy_socket_keepalive on;
 #        proxy_timeout 10m;
 #        proxy_pass ${to_exit}_blizzard;
 #    }
@@ -4200,6 +4245,14 @@ exit 0
 #    # smartdns-doh instead.
 #    chain input {
 #        type filter hook input priority 0 ; policy accept ;
+#        # A customer on mobile data shares one public address with many others
+#        # (carrier NAT), so 40 queries a second for the address is not 40 for the
+#        # person. Dropping above that was packet loss no one could explain: a
+#        # name that never answers, then answers on the retry. An address that is
+#        # registered gets a limit twenty times higher, still a limit because a
+#        # source address can be forged.
+#        iifname != "lo" ip saddr @allowed udp dport 53 meter dnsflood_customers { ip saddr limit rate over 800/second burst 1600 packets } drop
+#        iifname != "lo" ip saddr @allowed udp dport 53 accept
 #        iifname != "lo" udp dport 53 meter dnsflood { ip saddr limit rate over 40/second burst 80 packets } drop
 #    }
 #}

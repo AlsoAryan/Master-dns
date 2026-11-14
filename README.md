@@ -76,7 +76,13 @@ Iran server 3478 (STUN). The installer refuses those and says why.
 - **Keep games working.** Names a network chokes are carried from Iran itself; names a game needs
   direct are kept direct. See [when a game will not start](docs/troubleshooting.md).
 
-## Latest: 0.1.3
+## Latest: 0.1.4
+
+- **DNS speed.** The resolver asks every public resolver at once and takes the first answer, allows 1000 queries in flight instead of 150, keeps any answer at least a minute, and, where dnsmasq is 2.89 or newer, serves an expired answer at once while it fetches a fresh one.
+- **Packet loss.** A registered customer's address may send 800 DNS queries a second instead of 40, so a mobile operator's shared address no longer loses names; nginx asks for TCP keepalives on both sides of every stream port, so a connection a mobile NAT would forget is kept or noticed; the kernel retries thin streams (games, chat) at an even pace and probes idle connections after a minute.
+- **Checking the catalogue.** `python3 tools/audit-catalogue.py` reads the services, games and bypass rules offline and reports bad names, games that need a missing group, and names that must never be routed (EA, Demonware, PlayStation STUN, Rockstar sign-in).
+
+## Before: 0.1.3
 
 - **Mobile data.** Answers carry a one-minute TTL instead of zero and never exceed 1232 bytes, so a phone neither asks again for every connection nor loses fragmented replies. On Irancell, MCI (Hamrah-e Avval) and Rightel, where the address changes by itself, a customer may register three times as many new addresses a day (or a number you set).
 - **Phones.** The customer page and the admin panel no longer spill sideways on a narrow screen; the screenshot script now fails if any page is wider than a phone.
