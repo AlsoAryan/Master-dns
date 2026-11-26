@@ -34,7 +34,8 @@ def read(p):
 
 inst = read("tools/installer-logic.sh")
 print("the resolver")
-check("version is 0.1.4", 'VERSION="0.1.4"' in inst)
+ver = re.search(r'^VERSION="(\d+)\.(\d+)\.(\d+)"', inst, re.M)
+check("version is 0.1.4 or later", ver is not None and tuple(map(int, ver.groups())) >= (0, 1, 4))
 check("it asks every resolver at once", "all-servers" in inst)
 check("it allows more than 150 queries in flight", re.search(r"dns-forward-max=(\d+)", inst) and
       int(re.search(r"dns-forward-max=(\d+)", inst).group(1)) >= 500)

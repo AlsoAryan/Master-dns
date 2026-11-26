@@ -38,7 +38,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # What this file is. Written to the machine once an install finishes, so the
 # next run can tell whether it is an upgrade, a re-run, or somebody about to
 # put an older version over a newer one by accident.
-VERSION="0.1.4"
+VERSION="0.1.5"
 
 # What this install did, so uninstall can undo exactly that and nothing more.
 # Without it, removal would be guesswork: whether dnsmasq was ours or already
@@ -3374,6 +3374,21 @@ exit 0
 #server=/discord.media/#
 #server=/vivox.com/#
 #server=/steamserver.net/#
+#
+## Microsoft's mail protocols are not on 443 either: IMAP 993, POP 995, SMTP 587.
+## office365.com and outlook.com are routed for Outlook on the web and the apps
+## (all HTTPS), so these four are the exception, from the msmail group. One name
+## is shared and cannot be split: outlook.office365.com serves the apps on 443
+## and IMAP on 993, so it stays routed; a template that has IMAP customers can
+## switch that one name off.
+##
+##   imap-mail.outlook.com   pop-mail.outlook.com
+##   smtp-mail.outlook.com   smtp.office365.com
+##
+#server=/imap-mail.outlook.com/#
+#server=/pop-mail.outlook.com/#
+#server=/smtp-mail.outlook.com/#
+#server=/smtp.office365.com/#
 #__END_BYPASS__
 
 #__BEGIN_NO_AAAA__
@@ -39096,6 +39111,8 @@ exit 0
 #__END_FONT_LICENSE__
 
 #__BEGIN_DOMAINS__
+#1drv.com
+#1drv.ms
 #2k.com
 #2kgames.com
 #3docean.net
@@ -39234,6 +39251,7 @@ exit 0
 #clientstream.launchdarkly.com
 #cljdoc.org
 #cloud.google.com
+#cloud.microsoft
 #cloudera.com
 #cloudflare.com
 #cloudfront.net
@@ -39247,6 +39265,7 @@ exit 0
 #codeium.com
 #codesandbox.io
 #codex.cs.yale.edu
+#codm.activision.com
 #codwarzone.com
 #coinbase.com
 #colab.research.google.com
@@ -39273,6 +39292,8 @@ exit 0
 #d1.xboxlive.com
 #d2.xboxlive.com
 #dartlang.org
+#dashscope-intl.aliyuncs.com
+#dashscope.aliyuncs.com
 #datacamp.com
 #datadoghq.com
 #dayz.com
@@ -39401,6 +39422,7 @@ exit 0
 #fodev.org
 #fortnite.com
 #forums.cpanel.net
+#forza.net
 #forzamotorsport.net
 #fragpunk.com
 #freecodecamp.org
@@ -39487,6 +39509,7 @@ exit 0
 #hirezstudios.com
 #honkaiimpact3.com
 #honkaistarrail.com
+#hotmail.com
 #hoyolab.com
 #hoyoverse.com
 #huggingface.co
@@ -39530,7 +39553,11 @@ exit 0
 #kaggleusercontent.com
 #khanacademy.org
 #kick.com
+#kimi.ai
+#kimi.com
 #kineticgames.co.uk
+#kling.ai
+#klingai.com
 #konami.com
 #konami.net
 #krafton.com
@@ -39551,17 +39578,24 @@ exit 0
 #lightstep.com
 #linear.app
 #linode.com
+#live.com
 #livefyre.com
 #llama.com
 #llnw.blizzard.com
 #lmarena.ai
+#login.live.com
 #lolesports.com
 #lostlight.game
 #lovable.dev
 #lumalabs.ai
+#lync.com
 #maas.io
 #madfingergames.com
 #mailgun.com
+#manus.ai
+#manus.im
+#manus.space
+#manuscdn.com
 #marketingplantform.google.com
 #marketplace.visualstudio.com
 #marvelrivals.com
@@ -39575,6 +39609,9 @@ exit 0
 #meta.ai
 #metasploit.com
 #microchip.com
+#microsoft365.com
+#microsoftonline-p.com
+#microsoftonline.com
 #midjourney.com
 #mihoyo.com
 #minecraft.net
@@ -39583,13 +39620,19 @@ exit 0
 #mistral.ai
 #mit.edu
 #mobilelegends.com
+#modelscope.cn
 #mojang.com
 #mongodb.com
 #mongodb.org
 #monsterhunter.com
+#moonshot.ai
+#moonshot.cn
 #moonton.com
 #mortalkombat.com
 #mp.microsoft.com
+#msauth.net
+#msauthimages.net
+#msftauth.net
 #multiversus.com
 #muscache.com
 #mybridge.co
@@ -39630,9 +39673,14 @@ exit 0
 #oaiusercontent.com
 #objectstore-cloud-prod-rex.egcp.demonware.net
 #objectstore-publishers-cod.prod.demonware.net
+#office.com
+#office.net
+#office365.com
 #offworldindustries.com
 #ollama.com
 #oncehuman.game
+#onedrive.com
+#onedrive.live.com
 #onstove.com
 #openai.com
 #openrouter.ai
@@ -39641,6 +39689,11 @@ exit 0
 #oracle.com
 #origin-a.akamaihd.net
 #origin.com
+#outlook.cloud.microsoft
+#outlook.com
+#outlook.live.com
+#outlook.office.com
+#outlook.office365.com
 #overleaf.com
 #overwatch2.com
 #packagesource.com
@@ -39673,6 +39726,7 @@ exit 0
 #playblackdesert.com
 #playdarktide.com
 #playdeltaforce.com
+#playfab.com
 #playfabapi.com
 #playlostark.com
 #playoverwatch.com
@@ -39703,6 +39757,8 @@ exit 0
 #qt.io
 #qualcomm.com
 #quay.io
+#qwen.ai
+#qwenlm.ai
 #radeon.com
 #railway.app
 #rainbow6.com
@@ -39760,8 +39816,12 @@ exit 0
 #serialport.io
 #serverfault.com
 #setup.rbxcdn.com
+#sfx.ms
+#sharepoint.com
 #sie.com
 #sims.com
+#skype.com
+#skypeassets.com
 #slack-edge.com
 #slack.com
 #sledgehammergames.com
@@ -39828,6 +39888,10 @@ exit 0
 #tagmanager.google.com
 #take2games.com
 #team17.com
+#teams.cloud.microsoft
+#teams.live.com
+#teams.microsoft.com
+#teams.office.com
 #teamtreehouse.com
 #teamviewer.com
 #telerik.com
@@ -39989,6 +40053,17 @@ exit 0
 #            "xboxgamestudios.com",
 #            "xboxlive.com",
 #            "xboxservices.com"
+#          ]
+#        },
+#        {
+#          "key": "extras",
+#          "label": "حساب مایکروسافت و PlayFab",
+#          "join": true,
+#          "note": "ورود به حساب مایکروسافت (login.live.com) و بک‌اند بازی‌های مایکروسافت (playfab.com، Forza). بدون این‌ها ورود به فروشگاه و برخی بازی‌ها ممکن است از مسیر مستقیم نرود",
+#          "domains": [
+#            "forza.net",
+#            "login.live.com",
+#            "playfab.com"
 #          ]
 #        },
 #        {
@@ -40186,6 +40261,15 @@ exit 0
 #            "objectstore-publishers-cod.prod.demonware.net",
 #            "rex-gvs.prod.demonware.net",
 #            "user-consent.prod.demonware.net"
+#          ]
+#        },
+#        {
+#          "key": "codm",
+#          "label": "Call of Duty: Mobile",
+#          "join": true,
+#          "note": "سرورهای کالاف موبایل (نسخهٔ جهانی) زیر codm.activision.com هستند که با گروه «همه» هم مسیر می‌شود؛ این گروه برای قالبی است که فقط کالاف موبایل را می‌خواهد. نسخهٔ گارنا روی garena.com است",
+#          "domains": [
+#            "codm.activision.com"
 #          ]
 #        },
 #        {
@@ -40397,6 +40481,25 @@ exit 0
 #            "igamecj.com",
 #            "intlgame.com",
 #            "pubgmobile.com"
+#          ]
+#        }
+#      ],
+#      "section": "bypass"
+#    },
+#    {
+#      "key": "freefire",
+#      "label": "Free Fire",
+#      "groups": [
+#        {
+#          "key": "main",
+#          "label": "همه",
+#          "opt_in": true,
+#          "note": "پیش‌فرض خاموش، مثل پابجی موبایل: تا وقتی روی اپراتوری لازم نشده مسیرش نکنید. فقط نام‌های ۴۴۳ آمده؛ سرور بازی و صدا روی UDP یا پورت‌های دیگر است و از رله رد نمی‌شود. نام‌ها از فهرست‌های عمومی‌اند و از ایران آزمایش نشده‌اند — اگر بازی باز نشد sudo smartdns-watch را وقت ورود اجرا کنید. garena.com جداست و در گروه گارنا است",
+#          "domains": [
+#            "freefiremobile.com",
+#            "garenanow.com",
+#            "ggbluefox.com",
+#            "ggblueshark.com"
 #          ]
 #        }
 #      ],
@@ -41283,6 +41386,86 @@ exit 0
 #      "section": "ai"
 #    },
 #    {
+#      "key": "kimi",
+#      "label": "Kimi",
+#      "groups": [
+#        {
+#          "key": "main",
+#          "label": "چت و اپ",
+#          "domains": [
+#            "kimi.ai",
+#            "kimi.com",
+#            "moonshot.cn"
+#          ]
+#        },
+#        {
+#          "key": "api",
+#          "label": "API پلتفرم Moonshot",
+#          "domains": [
+#            "moonshot.ai"
+#          ]
+#        }
+#      ],
+#      "section": "ai"
+#    },
+#    {
+#      "key": "qwen",
+#      "label": "Qwen",
+#      "groups": [
+#        {
+#          "key": "main",
+#          "label": "چت و اپ",
+#          "domains": [
+#            "qwen.ai",
+#            "qwenlm.ai"
+#          ]
+#        },
+#        {
+#          "key": "api",
+#          "label": "API و مدل‌ها (DashScope، ModelScope)",
+#          "domains": [
+#            "dashscope-intl.aliyuncs.com",
+#            "dashscope.aliyuncs.com",
+#            "modelscope.cn"
+#          ]
+#        }
+#      ],
+#      "section": "ai"
+#    },
+#    {
+#      "key": "manus",
+#      "label": "Manus",
+#      "groups": [
+#        {
+#          "key": "main",
+#          "label": "همه",
+#          "note": "manuscdn.com فایل‌های خروجی و manus.space سایت‌هایی است که خود Manus منتشر می‌کند",
+#          "domains": [
+#            "manus.ai",
+#            "manus.im",
+#            "manus.space",
+#            "manuscdn.com"
+#          ]
+#        }
+#      ],
+#      "section": "ai"
+#    },
+#    {
+#      "key": "kling",
+#      "label": "Kling",
+#      "groups": [
+#        {
+#          "key": "main",
+#          "label": "همه",
+#          "domains": [
+#            "kling.ai",
+#            "klingai.com"
+#          ]
+#        }
+#      ],
+#      "section": "ai"
+#    },
+#    {
 #      "key": "otherai",
 #      "label": "Other AI",
 #      "groups": [
@@ -41653,6 +41836,70 @@ exit 0
 #            "slack-edge.com",
 #            "slack.com",
 #            "zoom.us"
+#          ]
+#        }
+#      ],
+#      "section": "media"
+#    },
+#    {
+#      "key": "microsoft365",
+#      "label": "Microsoft 365 — Teams, OneDrive, Outlook",
+#      "groups": [
+#        {
+#          "key": "account",
+#          "label": "حساب و ورود مایکروسافت (مشترک)",
+#          "note": "ورود و فایل‌های مشترک Office؛ Teams، OneDrive و Outlook همه از این‌ها ورود می‌کنند. ایمیل‌خوان‌های IMAP/SMTP روی پورت‌های دیگرند و همیشه مستقیم می‌مانند",
+#          "domains": [
+#            "cloud.microsoft",
+#            "live.com",
+#            "microsoft365.com",
+#            "microsoftonline-p.com",
+#            "microsoftonline.com",
+#            "msauth.net",
+#            "msauthimages.net",
+#            "msftauth.net",
+#            "office.com",
+#            "office.net",
+#            "office365.com"
+#          ]
+#        },
+#        {
+#          "key": "teams",
+#          "label": "Teams و Skype",
+#          "domains": [
+#            "lync.com",
+#            "skype.com",
+#            "skypeassets.com",
+#            "teams.cloud.microsoft",
+#            "teams.live.com",
+#            "teams.microsoft.com",
+#            "teams.office.com"
+#          ]
+#        },
+#        {
+#          "key": "onedrive",
+#          "label": "OneDrive و SharePoint",
+#          "note": "فایل‌های خود مشتری از این نام‌ها می‌گذرد؛ آپلود و دانلود حجیم روی رله هزینه دارد",
+#          "domains": [
+#            "1drv.com",
+#            "1drv.ms",
+#            "onedrive.com",
+#            "onedrive.live.com",
+#            "sfx.ms",
+#            "sharepoint.com"
+#          ]
+#        },
+#        {
+#          "key": "outlook",
+#          "label": "Outlook و Hotmail",
+#          "note": "اپ و وب Outlook روی ۴۴۳ کار می‌کنند. اگر مشتری با IMAP به outlook.office365.com وصل می‌شود، پورت ۹۹۳ از رله رد نمی‌شود؛ آن نام را در قالب خاموش کنید",
+#          "domains": [
+#            "hotmail.com",
+#            "outlook.cloud.microsoft",
+#            "outlook.com",
+#            "outlook.live.com",
+#            "outlook.office.com",
+#            "outlook.office365.com"
 #          ]
 #        }
 #      ],
@@ -42090,6 +42337,19 @@ exit 0
 #          "note": "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود"
 #        },
 #        {
+#          "key": "msmail",
+#          "label": "Microsoft — ایمیل IMAP/SMTP",
+#          "opt_in": true,
+#          "locked": true,
+#          "note": "روشن کردنش ایمیل‌خوان‌های Outlook/Hotmail را قطع می‌کند — این‌ها روی پورت‌های ۹۹۳، ۹۹۵ و ۵۸۷ هستند و رله فقط ۸۰ و ۴۴۳ را می‌برد",
+#          "domains": [
+#            "imap-mail.outlook.com",
+#            "pop-mail.outlook.com",
+#            "smtp-mail.outlook.com",
+#            "smtp.office365.com"
+#          ]
+#        },
+#        {
 #          "key": "playstation",
 #          "label": "PlayStation — STUN و API",
 #          "opt_in": true,
@@ -42254,6 +42514,7 @@ exit 0
 #      "kind": "platform",
 #      "needs": [
 #        "xbox/online",
+#        "xbox/extras",
 #        "xbox/download"
 #      ]
 #    },
@@ -42463,6 +42724,16 @@ exit 0
 #        "blizzard/cod-https"
 #      ],
 #      "note": "پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد"
+#    },
+#    {
+#      "key": "codm",
+#      "name": "کال آو دیوتی موبایل",
+#      "en": "Call of Duty: Mobile",
+#      "kind": "game",
+#      "needs": [
+#        "blizzard/codm"
+#      ],
+#      "note": "نسخهٔ جهانی روی codm.activision.com است و با «همه»ی Activision هم مسیر می‌شود. نسخهٔ گارنا (جنوب‌شرق آسیا) روی garena.com است؛ اگر ورود نشد، گروه «همه»ی Blizzard / Activision را هم روشن کنید"
 #    },
 #    {
 #      "key": "overwatch",
@@ -42807,6 +43078,16 @@ exit 0
 #        "pubgmobile/main"
 #      ],
 #      "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد"
+#    },
+#    {
+#      "key": "freefire",
+#      "name": "فری فایر",
+#      "en": "Free Fire",
+#      "kind": "game",
+#      "needs": [
+#        "freefire/main"
+#      ],
+#      "note": "پیش‌فرض خاموش، مثل پابجی موبایل: فقط نام‌های ۴۴۳ آمده؛ بازی و صدا روی UDP یا پورت‌های دیگر است و با DNS عوض نمی‌شود"
 #    },
 #    {
 #      "key": "pubgpc",
@@ -44106,6 +44387,7 @@ exit 0
 #  "bypass/azure": "microsoftazure",
 #  "bypass/ea": "ea",
 #  "bypass/epic": "epicgames",
+#  "bypass/msmail": "microsoft",
 #  "bypass/playstation": "playstation",
 #  "bypass/steam": "steam",
 #  "bypass/voice": "discord",
@@ -44117,6 +44399,7 @@ exit 0
 #  "epic": "epicgames",
 #  "figma": "figma",
 #  "finance": "credit-card",
+#  "freefire": "gamepad-2",
 #  "gamebackend": "riotgames",
 #  "github": "github",
 #  "gitlab": "gitlab",
@@ -44125,7 +44408,11 @@ exit 0
 #  "hardware": "cpu",
 #  "jetbrains": "jetbrains",
 #  "kick": "kick",
+#  "kimi": "sparkles",
+#  "kling": "video",
+#  "manus": "sparkles",
 #  "microsoft": "microsoft",
+#  "microsoft365": "microsoft",
 #  "minecraft": "pickaxe",
 #  "netflix": "netflix",
 #  "nintendo": "nintendoswitch",
@@ -44140,6 +44427,7 @@ exit 0
 #  "packages": "npm",
 #  "playstation": "playstation",
 #  "pubgmobile": "pubg",
+#  "qwen": "sparkles",
 #  "riot": "riotgames",
 #  "roblox": "roblox",
 #  "rockstar": "rockstargames",
@@ -46804,7 +47092,28 @@ exit 0
 # "شاتل موبایل": "Shatel Mobile",
 # "همراه اول": "MCI (Hamrah-e Avval)",
 # "تست NAT کنسول (us.np.stun.playstation.net) عمداً مستقیم می‌ماند؛ رله جای سونی به STUN جواب نمی‌دهد. اگر ورود روی ایرانسل می‌افتد، در تنظیمات «نام‌هایی که از خود رلهٔ ایران بروند» را ببینید": "The console's NAT test (us.np.stun.playstation.net) stays direct on purpose; the relay does not answer STUN in Sony's place. If the login fails on Irancell, see \"Names that go out of the Iran relay itself\" in Settings",
-# "ورود Rockstar (ros، cloud و prod-locator-cloud) عمداً مستقیم می‌ماند: رله آدرس خروجی را به Rockstar نشان می‌داد و ورود با خطای 0x50060190 رد می‌شد. سایت، Social Club و آپدیت از رله می‌روند": "Rockstar's login (ros, cloud and prod-locator-cloud) stays direct on purpose: the relay showed Rockstar the exit's address and the login was refused with error 0x50060190. The site, Social Club and updates go through the relay"
+# "ورود Rockstar (ros، cloud و prod-locator-cloud) عمداً مستقیم می‌ماند: رله آدرس خروجی را به Rockstar نشان می‌داد و ورود با خطای 0x50060190 رد می‌شد. سایت، Social Club و آپدیت از رله می‌روند": "Rockstar's login (ros, cloud and prod-locator-cloud) stays direct on purpose: the relay showed Rockstar the exit's address and the login was refused with error 0x50060190. The site, Social Club and updates go through the relay",
+# "فری فایر": "Free Fire",
+# "نسخهٔ جهانی روی codm.activision.com است و با «همه»ی Activision هم مسیر می‌شود. نسخهٔ گارنا (جنوب‌شرق آسیا) روی garena.com است؛ اگر ورود نشد، گروه «همه»ی Blizzard / Activision را هم روشن کنید": "The global version is on codm.activision.com, which Activision's \"all\" group routes too. The Garena version (Southeast Asia) is on garena.com; if sign-in fails, turn on Blizzard / Activision's \"all\" group as well",
+# "پیش‌فرض خاموش، مثل پابجی موبایل: فقط نام‌های ۴۴۳ آمده؛ بازی و صدا روی UDP یا پورت‌های دیگر است و با DNS عوض نمی‌شود": "Off by default, like PUBG Mobile: only names on 443 are here; the game and its voice are on UDP or other ports, which DNS cannot change",
+# "کال آو دیوتی موبایل": "Call of Duty: Mobile",
+# "API و مدل‌ها (DashScope، ModelScope)": "API and models (DashScope, ModelScope)",
+# "API پلتفرم Moonshot": "Moonshot platform API",
+# "Microsoft — ایمیل IMAP/SMTP": "Microsoft - IMAP/SMTP mail",
+# "OneDrive و SharePoint": "OneDrive and SharePoint",
+# "Outlook و Hotmail": "Outlook and Hotmail",
+# "Teams و Skype": "Teams and Skype",
+# "manuscdn.com فایل‌های خروجی و manus.space سایت‌هایی است که خود Manus منتشر می‌کند": "manuscdn.com carries the output files and manus.space the sites Manus itself publishes",
+# "اپ و وب Outlook روی ۴۴۳ کار می‌کنند. اگر مشتری با IMAP به outlook.office365.com وصل می‌شود، پورت ۹۹۳ از رله رد نمی‌شود؛ آن نام را در قالب خاموش کنید": "Outlook on the web and the apps work on 443. If a customer reaches outlook.office365.com by IMAP, port 993 does not go through the relay; switch that name off in the template",
+# "حساب مایکروسافت و PlayFab": "Microsoft account and PlayFab",
+# "حساب و ورود مایکروسافت (مشترک)": "Microsoft account and sign-in (shared)",
+# "روشن کردنش ایمیل‌خوان‌های Outlook/Hotmail را قطع می‌کند — این‌ها روی پورت‌های ۹۹۳، ۹۹۵ و ۵۸۷ هستند و رله فقط ۸۰ و ۴۴۳ را می‌برد": "Turning it on cuts Outlook/Hotmail mail clients off - these are on ports 993, 995 and 587, and the relay carries only 80 and 443",
+# "سرورهای کالاف موبایل (نسخهٔ جهانی) زیر codm.activision.com هستند که با گروه «همه» هم مسیر می‌شود؛ این گروه برای قالبی است که فقط کالاف موبایل را می‌خواهد. نسخهٔ گارنا روی garena.com است": "Call of Duty: Mobile's servers (the global version) are under codm.activision.com, which the \"all\" group routes too; this group is for a template that wants only Call of Duty: Mobile. The Garena version is on garena.com",
+# "فایل‌های خود مشتری از این نام‌ها می‌گذرد؛ آپلود و دانلود حجیم روی رله هزینه دارد": "The customer's own files pass through these names; heavy uploads and downloads cost the relay",
+# "ورود به حساب مایکروسافت (login.live.com) و بک‌اند بازی‌های مایکروسافت (playfab.com، Forza). بدون این‌ها ورود به فروشگاه و برخی بازی‌ها ممکن است از مسیر مستقیم نرود": "Microsoft account sign-in (login.live.com) and the back end of Microsoft's games (playfab.com, Forza). Without them, sign-in to the store and some games may not go the direct way",
+# "ورود و فایل‌های مشترک Office؛ Teams، OneDrive و Outlook همه از این‌ها ورود می‌کنند. ایمیل‌خوان‌های IMAP/SMTP روی پورت‌های دیگرند و همیشه مستقیم می‌مانند": "Sign-in and the Office files they share; Teams, OneDrive and Outlook all sign in through these. IMAP/SMTP mail clients are on other ports and always stay direct",
+# "پیش‌فرض خاموش، مثل پابجی موبایل: تا وقتی روی اپراتوری لازم نشده مسیرش نکنید. فقط نام‌های ۴۴۳ آمده؛ سرور بازی و صدا روی UDP یا پورت‌های دیگر است و از رله رد نمی‌شود. نام‌ها از فهرست‌های عمومی‌اند و از ایران آزمایش نشده‌اند — اگر بازی باز نشد sudo smartdns-watch را وقت ورود اجرا کنید. garena.com جداست و در گروه گارنا است": "Off by default, like PUBG Mobile: do not route it until an operator needs it. Only names on 443 are here; the game and its voice are on UDP or other ports and do not pass through the relay. The names come from public lists and have not been tested from Iran - if the game will not start, run sudo smartdns-watch while it signs in. garena.com is separate and is in the Garena group",
+# "چت و اپ": "Chat and app"
 #}
 #__END_I18N_EN__
 

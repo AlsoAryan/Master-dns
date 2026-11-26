@@ -48,6 +48,10 @@ MUST_BE_DIRECT = [
     ("cloud.rockstargames.com", "GTA Online cloud saves, same reason"),
     ("prod-locator-cloud.rockstargames.com", "GTA Online locator, same reason"),
     ("steamserver.net", "Steam connection managers, ports 27018-27024"),
+    ("smtp.office365.com", "Microsoft mail, SMTP 587"),
+    ("smtp-mail.outlook.com", "Microsoft mail, SMTP 587"),
+    ("imap-mail.outlook.com", "Microsoft mail, IMAP 993"),
+    ("pop-mail.outlook.com", "Microsoft mail, POP 995"),
 ]
 # Names that must go through the relay: plain HTTPS on 443 that answers an Iranian address 403.
 MUST_BE_ROUTED = [

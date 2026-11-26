@@ -54,6 +54,17 @@
           ]
         },
         {
+          "key": "extras",
+          "label": "حساب مایکروسافت و PlayFab",
+          "join": true,
+          "note": "ورود به حساب مایکروسافت (login.live.com) و بک‌اند بازی‌های مایکروسافت (playfab.com، Forza). بدون این‌ها ورود به فروشگاه و برخی بازی‌ها ممکن است از مسیر مستقیم نرود",
+          "domains": [
+            "forza.net",
+            "login.live.com",
+            "playfab.com"
+          ]
+        },
+        {
           "key": "download",
           "label": "دانلود بازی",
           "domains": [
@@ -248,6 +259,15 @@
             "objectstore-publishers-cod.prod.demonware.net",
             "rex-gvs.prod.demonware.net",
             "user-consent.prod.demonware.net"
+          ]
+        },
+        {
+          "key": "codm",
+          "label": "Call of Duty: Mobile",
+          "join": true,
+          "note": "سرورهای کالاف موبایل (نسخهٔ جهانی) زیر codm.activision.com هستند که با گروه «همه» هم مسیر می‌شود؛ این گروه برای قالبی است که فقط کالاف موبایل را می‌خواهد. نسخهٔ گارنا روی garena.com است",
+          "domains": [
+            "codm.activision.com"
           ]
         },
         {
@@ -459,6 +479,25 @@
             "igamecj.com",
             "intlgame.com",
             "pubgmobile.com"
+          ]
+        }
+      ],
+      "section": "bypass"
+    },
+    {
+      "key": "freefire",
+      "label": "Free Fire",
+      "groups": [
+        {
+          "key": "main",
+          "label": "همه",
+          "opt_in": true,
+          "note": "پیش‌فرض خاموش، مثل پابجی موبایل: تا وقتی روی اپراتوری لازم نشده مسیرش نکنید. فقط نام‌های ۴۴۳ آمده؛ سرور بازی و صدا روی UDP یا پورت‌های دیگر است و از رله رد نمی‌شود. نام‌ها از فهرست‌های عمومی‌اند و از ایران آزمایش نشده‌اند — اگر بازی باز نشد sudo smartdns-watch را وقت ورود اجرا کنید. garena.com جداست و در گروه گارنا است",
+          "domains": [
+            "freefiremobile.com",
+            "garenanow.com",
+            "ggbluefox.com",
+            "ggblueshark.com"
           ]
         }
       ],
@@ -1345,6 +1384,86 @@
       "section": "ai"
     },
     {
+      "key": "kimi",
+      "label": "Kimi",
+      "groups": [
+        {
+          "key": "main",
+          "label": "چت و اپ",
+          "domains": [
+            "kimi.ai",
+            "kimi.com",
+            "moonshot.cn"
+          ]
+        },
+        {
+          "key": "api",
+          "label": "API پلتفرم Moonshot",
+          "domains": [
+            "moonshot.ai"
+          ]
+        }
+      ],
+      "section": "ai"
+    },
+    {
+      "key": "qwen",
+      "label": "Qwen",
+      "groups": [
+        {
+          "key": "main",
+          "label": "چت و اپ",
+          "domains": [
+            "qwen.ai",
+            "qwenlm.ai"
+          ]
+        },
+        {
+          "key": "api",
+          "label": "API و مدل‌ها (DashScope، ModelScope)",
+          "domains": [
+            "dashscope-intl.aliyuncs.com",
+            "dashscope.aliyuncs.com",
+            "modelscope.cn"
+          ]
+        }
+      ],
+      "section": "ai"
+    },
+    {
+      "key": "manus",
+      "label": "Manus",
+      "groups": [
+        {
+          "key": "main",
+          "label": "همه",
+          "note": "manuscdn.com فایل‌های خروجی و manus.space سایت‌هایی است که خود Manus منتشر می‌کند",
+          "domains": [
+            "manus.ai",
+            "manus.im",
+            "manus.space",
+            "manuscdn.com"
+          ]
+        }
+      ],
+      "section": "ai"
+    },
+    {
+      "key": "kling",
+      "label": "Kling",
+      "groups": [
+        {
+          "key": "main",
+          "label": "همه",
+          "domains": [
+            "kling.ai",
+            "klingai.com"
+          ]
+        }
+      ],
+      "section": "ai"
+    },
+    {
       "key": "otherai",
       "label": "Other AI",
       "groups": [
@@ -1715,6 +1834,70 @@
             "slack-edge.com",
             "slack.com",
             "zoom.us"
+          ]
+        }
+      ],
+      "section": "media"
+    },
+    {
+      "key": "microsoft365",
+      "label": "Microsoft 365 — Teams, OneDrive, Outlook",
+      "groups": [
+        {
+          "key": "account",
+          "label": "حساب و ورود مایکروسافت (مشترک)",
+          "note": "ورود و فایل‌های مشترک Office؛ Teams، OneDrive و Outlook همه از این‌ها ورود می‌کنند. ایمیل‌خوان‌های IMAP/SMTP روی پورت‌های دیگرند و همیشه مستقیم می‌مانند",
+          "domains": [
+            "cloud.microsoft",
+            "live.com",
+            "microsoft365.com",
+            "microsoftonline-p.com",
+            "microsoftonline.com",
+            "msauth.net",
+            "msauthimages.net",
+            "msftauth.net",
+            "office.com",
+            "office.net",
+            "office365.com"
+          ]
+        },
+        {
+          "key": "teams",
+          "label": "Teams و Skype",
+          "domains": [
+            "lync.com",
+            "skype.com",
+            "skypeassets.com",
+            "teams.cloud.microsoft",
+            "teams.live.com",
+            "teams.microsoft.com",
+            "teams.office.com"
+          ]
+        },
+        {
+          "key": "onedrive",
+          "label": "OneDrive و SharePoint",
+          "note": "فایل‌های خود مشتری از این نام‌ها می‌گذرد؛ آپلود و دانلود حجیم روی رله هزینه دارد",
+          "domains": [
+            "1drv.com",
+            "1drv.ms",
+            "onedrive.com",
+            "onedrive.live.com",
+            "sfx.ms",
+            "sharepoint.com"
+          ]
+        },
+        {
+          "key": "outlook",
+          "label": "Outlook و Hotmail",
+          "note": "اپ و وب Outlook روی ۴۴۳ کار می‌کنند. اگر مشتری با IMAP به outlook.office365.com وصل می‌شود، پورت ۹۹۳ از رله رد نمی‌شود؛ آن نام را در قالب خاموش کنید",
+          "domains": [
+            "hotmail.com",
+            "outlook.cloud.microsoft",
+            "outlook.com",
+            "outlook.live.com",
+            "outlook.office.com",
+            "outlook.office365.com"
           ]
         }
       ],
@@ -2150,6 +2333,19 @@
           "opt_in": true,
           "locked": true,
           "note": "روشن کردنش ورود GTA Online را با خطای 0x50060190 رد می‌کند — Rockstar آی‌پی سرور خارج را روی ورود می‌بیند، در حالی که کنسول از آی‌پی ایران بازی می‌کند. خود rockstargames.com (سایت، Social Club و آپدیت) همچنان از سرور می‌رود"
+        },
+        {
+          "key": "msmail",
+          "label": "Microsoft — ایمیل IMAP/SMTP",
+          "opt_in": true,
+          "locked": true,
+          "note": "روشن کردنش ایمیل‌خوان‌های Outlook/Hotmail را قطع می‌کند — این‌ها روی پورت‌های ۹۹۳، ۹۹۵ و ۵۸۷ هستند و رله فقط ۸۰ و ۴۴۳ را می‌برد",
+          "domains": [
+            "imap-mail.outlook.com",
+            "pop-mail.outlook.com",
+            "smtp-mail.outlook.com",
+            "smtp.office365.com"
+          ]
         },
         {
           "key": "playstation",

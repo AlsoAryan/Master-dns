@@ -58,6 +58,7 @@
       "kind": "platform",
       "needs": [
         "xbox/online",
+        "xbox/extras",
         "xbox/download"
       ]
     },
@@ -267,6 +268,16 @@
         "blizzard/cod-https"
       ],
       "note": "پلی‌استیشن و ایکس‌باکس بازی را از فروشگاه خودشان می‌گیرند، پس دانلود Battle.net لازم نیست؛ بررسی به‌روزرسانی فقط به این دو گروه نیاز دارد"
+    },
+    {
+      "key": "codm",
+      "name": "کال آو دیوتی موبایل",
+      "en": "Call of Duty: Mobile",
+      "kind": "game",
+      "needs": [
+        "blizzard/codm"
+      ],
+      "note": "نسخهٔ جهانی روی codm.activision.com است و با «همه»ی Activision هم مسیر می‌شود. نسخهٔ گارنا (جنوب‌شرق آسیا) روی garena.com است؛ اگر ورود نشد، گروه «همه»ی Blizzard / Activision را هم روشن کنید"
     },
     {
       "key": "overwatch",
@@ -611,6 +622,16 @@
         "pubgmobile/main"
       ],
       "note": "پیش‌فرض خاموش: روی بیشتر اپراتورها مستقیم بهتر کار می‌کند. «Server is busy» با کد restrict-area یعنی ورود (proximabeta.com روی ۸۰۸۵/۸۰۸۶) آی‌پی ایران را دیده؛ رله فقط ۸۰ و ۴۴۳ را می‌برد و با DNS نمی‌شود آن را عوض کرد"
+    },
+    {
+      "key": "freefire",
+      "name": "فری فایر",
+      "en": "Free Fire",
+      "kind": "game",
+      "needs": [
+        "freefire/main"
+      ],
+      "note": "پیش‌فرض خاموش، مثل پابجی موبایل: فقط نام‌های ۴۴۳ آمده؛ بازی و صدا روی UDP یا پورت‌های دیگر است و با DNS عوض نمی‌شود"
     },
     {
       "key": "pubgpc",
